@@ -71,6 +71,11 @@ jobs:
           echo "🔧 Installing cogutil prerequisite for ${{ matrix.component }}"
           if [ -d "cogutil" ]; then
             cd cogutil
+            
+            # Clean any stale CMake cache files
+            rm -f CMakeCache.txt
+            rm -rf CMakeFiles
+            
             mkdir -p build && cd build
             
             # Configure
@@ -104,6 +109,11 @@ jobs:
           fi
           
           cd "${{ matrix.component }}"
+          
+          # Clean any stale CMake cache files
+          rm -f CMakeCache.txt
+          rm -rf CMakeFiles
+          
           mkdir -p build && cd build
           
           # Configure
@@ -197,6 +207,10 @@ jobs:
 
       - name: build & install cogutil
         run: |
+          # Clean any stale CMake cache files
+          rm -f cogutil/CMakeCache.txt
+          rm -rf cogutil/CMakeFiles
+          
           mkdir -p cogutil/build
           cd cogutil/build
           cmake ..
@@ -243,6 +257,10 @@ jobs:
           fi
           
           cd "${{ matrix.component }}"
+          
+          # Clean any stale CMake cache files
+          rm -f CMakeCache.txt
+          rm -rf CMakeFiles
           
           # Handle special cases for atomspace extensions
           case "${{ matrix.component }}" in
@@ -351,6 +369,10 @@ jobs:
 
       - name: build & install cogutil
         run: |
+          # Clean any stale CMake cache files
+          rm -f cogutil/CMakeCache.txt
+          rm -rf cogutil/CMakeFiles
+          
           mkdir -p cogutil/build
           cd cogutil/build
           cmake ..
@@ -361,6 +383,10 @@ jobs:
 
       - name: build & install atomspace
         run: |
+          # Clean any stale CMake cache files
+          rm -f atomspace/CMakeCache.txt
+          rm -rf atomspace/CMakeFiles
+          
           mkdir -p atomspace/build
           cd atomspace/build
           cmake ..
@@ -474,6 +500,10 @@ jobs:
           fi
           
           cd "${{ matrix.component }}"
+          
+          # Clean any stale CMake cache files
+          rm -f CMakeCache.txt
+          rm -rf CMakeFiles
           
           # Handle special cases for atomspace extensions
           case "${{ matrix.component }}" in
@@ -697,6 +727,10 @@ jobs:
               exit 0
             fi
             cd "${{ matrix.component }}"
+            
+            # Clean any stale CMake cache files
+            rm -f CMakeCache.txt
+            rm -rf CMakeFiles
           fi
           
           mkdir -p build && cd build
@@ -965,6 +999,10 @@ jobs:
           fi
           
           cd "${{ matrix.component }}"
+          
+          # Clean any stale CMake cache files
+          rm -f CMakeCache.txt
+          rm -rf CMakeFiles
           
           # Handle special cases
           case "${{ matrix.component }}" in
@@ -1275,6 +1313,10 @@ jobs:
           fi
           
           cd "${{ matrix.component }}"
+          
+          # Clean any stale CMake cache files
+          rm -f CMakeCache.txt
+          rm -rf CMakeFiles
           mkdir -p build && cd build
           
           if cmake .. -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
@@ -1570,6 +1612,10 @@ jobs:
           
           cd "${{ matrix.component }}"
           
+          # Clean any stale CMake cache files
+          rm -f CMakeCache.txt
+          rm -rf CMakeFiles
+          
           if [ -f "CMakeLists.txt" ]; then
             mkdir -p build && cd build
             cmake .. -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
@@ -1691,6 +1737,10 @@ jobs:
           fi
           
           cd "${{ matrix.component }}"
+          
+          # Clean any stale CMake cache files
+          rm -f CMakeCache.txt
+          rm -rf CMakeFiles
           
           if [ -f "CMakeLists.txt" ]; then
             mkdir -p build && cd build
@@ -2030,6 +2080,11 @@ jobs:
           fi
           
           cd "${{ matrix.component }}"
+          
+          # Clean any stale CMake cache files
+          rm -f CMakeCache.txt
+          rm -rf CMakeFiles
+          
           mkdir -p build && cd build
           
           if cmake .. -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
