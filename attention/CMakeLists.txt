@@ -88,7 +88,7 @@ ENDIF (ATOMSPACE_FOUND)
 # Check for existance of various required, optional packages.
 
 # CogServer
-FIND_PACKAGE(CogServer)
+FIND_PACKAGE(CogServer 0.1.4 CONFIG REQUIRED)
 IF (COGSERVER_FOUND)
 	MESSAGE(STATUS "CogServer found.")
 	ADD_DEFINITIONS(-DHAVE_COGSERVER)
