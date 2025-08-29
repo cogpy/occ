@@ -23,6 +23,11 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
+# Fix for modern CMake Boost module policy
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
+    cmake_policy(SET CMP0167 OLD)
+endif()
+
 message(STATUS "Building Agent-Zero C++ for OpenCog Integration")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
@@ -33,6 +38,24 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options(-g -O0)
 else()
     add_compile_options(-O3 -DNDEBUG)
+endif()
+
+# ----------------------------------------------------------
+# Check for Boost dependencies (cross-platform)
+#
+set(Boost_USE_STATIC_LIBS OFF)
+set(Boost_USE_MULTITHREADED ON)
+set(MIN_BOOST 1.46)
+
+# Required boost packages
+find_package(Boost ${MIN_BOOST} COMPONENTS system filesystem thread REQUIRED)
+
+if(Boost_FOUND)
+    message(STATUS "Found Boost ${Boost_VERSION}: ${Boost_INCLUDE_DIRS}")
+    include_directories(${Boost_INCLUDE_DIRS})
+    link_directories(${Boost_LIBRARY_DIRS})
+else()
+    message(FATAL_ERROR "Boost ${MIN_BOOST} or newer is needed to build Agent-Zero!")
 endif()
 
 # Find required OpenCog dependencies
@@ -103,6 +126,7 @@ include_directories(
     ${COGUTIL_INCLUDE_DIRS}
     ${ATOMSPACE_INCLUDE_DIRS}
     ${COGSERVER_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
 )
 
 # Global link directories
@@ -110,6 +134,7 @@ link_directories(
     ${COGUTIL_LIBRARY_DIRS}
     ${ATOMSPACE_LIBRARY_DIRS}
     ${COGSERVER_LIBRARY_DIRS}
+    ${Boost_LIBRARY_DIRS}
 )
 
 # Add subdirectories for each Agent-Zero module
@@ -196,6 +221,13 @@ configure_file(
 # Installation
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/AgentZeroCppConfig.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AgentZeroCpp
+)
+
+# Export targets for installation
+install(EXPORT AgentZeroCppTargets
+    FILE AgentZeroCppTargets.cmake
+    NAMESPACE AgentZero::
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AgentZeroCpp
 )
 
