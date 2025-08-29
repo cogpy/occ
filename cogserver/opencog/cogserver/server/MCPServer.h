@@ -12,7 +12,9 @@
 
 #include <opencog/network/ConsoleSocket.h>
 #include <opencog/cogserver/server/Request.h>
+#if HAVE_MCP
 #include <opencog/cogserver/shell/McpEval.h>
+#endif // HAVE_MCP
 
 namespace opencog
 {
@@ -26,7 +28,9 @@ namespace opencog
 class MCPServer : public ConsoleSocket
 {
 private:
+#if HAVE_MCP
 	McpEval* _eval;
+#endif // HAVE_MCP
 
 protected:
 	virtual void OnConnection(void);

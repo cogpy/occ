@@ -81,13 +81,13 @@ ELSE (ATOMSPACE_FOUND)
 ENDIF (ATOMSPACE_FOUND)
 
 # AtomSpace Storage proves s-expression parsing
-FIND_PACKAGE(AtomSpaceStorage CONFIG REQUIRED)
+FIND_PACKAGE(AtomSpaceStorage CONFIG)
 IF (ATOMSPACE_STORAGE_FOUND)
 	MESSAGE(STATUS "AtomSpace Storage found.")
 	ADD_DEFINITIONS(-DHAVE_ATOMSPACE_STORAGE)
 	SET(HAVE_ATOMSPACE_STORAGE 1)
 ELSE (ATOMSPACE_STORAGE_FOUND)
-	MESSAGE(FATAL_ERROR "AtomSpace Storage missing: it is needed!")
+	MESSAGE(STATUS "AtomSpace Storage missing: optional dependency.")
 ENDIF (ATOMSPACE_STORAGE_FOUND)
 
 # ----------------------------------------------------------
@@ -177,6 +177,9 @@ INCLUDE("${ATOMSPACE_DATA_DIR}/cmake/OpenCogCython.cmake")
 # ==========================================================
 # Decide what to build, based on the packages found.
 
+# Set semantic version for package configuration
+SET(SEMANTIC_VERSION 0.1.4)
+
 IF(HAVE_ATOMSPACE AND HAVE_COGUTIL)
 	SET(HAVE_SERVER 1)
 ENDIF(HAVE_ATOMSPACE AND HAVE_COGUTIL)
@@ -246,7 +249,6 @@ STRING(TIMESTAMP UTC_DATE %Y%m%d UTC)
 FILE(WRITE "${PROJECT_BINARY_DIR}/install_manifest.txt")
 ## It doesn't have a header-file declaring the version similar to cogutil and
 ## atomspace.
-SET(SEMANTIC_VERSION 0.1.4)
 
 ## Cpack configuration
 SET(CPACK_GENERATOR "DEB")
