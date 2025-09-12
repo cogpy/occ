@@ -21,7 +21,7 @@
  */
 
 #include <opencog/asmoses/data/table/table_io.h>
-#include <opencog/util/comprehension.h>
+#include <opencog/asmoses/utils/comprehension.h>
 #include <opencog/atoms/base/Link.h>
 #include <opencog/atoms/base/Node.h>
 #include <opencog/atoms/core/NumberNode.h>
@@ -116,7 +116,7 @@ Handle mk_boolean_cell_eval(const builtin b,
 	Handle h = createLink(EVALUATION_LINK,
 	                      createNode(PREDICATE_NODE, label),
 	                      mk_row_number_cell(row_num));
-	TruthValuePtr tv(SimpleTruthValue::createTV(builtin_to_bool(b), 1));
+	TruthValuePtr tv(createSimpleTruthValue(builtin_to_bool(b), 1));
 	h->setTruthValue(tv);
 	return h;
 }
