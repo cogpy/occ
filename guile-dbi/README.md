@@ -50,22 +50,26 @@ drivers.  You have to build each independently.  You will need to do
 something like this:
 
 ```
-apt-get install autoconf automake texinfo
+apt-get install autoconf automake texinfo gettext
 ```
 or maybe
 ```
-yum install autoconf automake texinfo
+yum install autoconf automake texinfo gettext
 ```
-Then:
+Some users might also need to install `autoconf-archive`.
+
+Next:
 ```
 cd guile-dbi
 ./autogen.sh --no-configure
 ```
-Optionally:
+If the above has errors, it is possible that some autoconf macros
+cannot be found. In that case, try the below, adjusting `ACLOCAL_PATH`
+as needed.
 ```
 ACLOCAL_PATH=/usr/local/share/aclocal/ ./autogen.sh --no-configure
 ```
-Then
+Next:
 ```
 mkdir build
 cd build
