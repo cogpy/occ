@@ -637,4 +637,208 @@ The problem is the above is measuring single-process AtomSpace threaded
 performance; it is not comparing multi-process dispatching. Also, its
 not stressing the RAM/memory bandwidth all that much... That would be
 a more interesting evaluation.
+
+====================================================================
+26 Aug 2025
+
+Fanny -- with Atom MutexPool, sparse_hash_set<WinkPtr> and TypeIndex
+AtomPtr Pool
+Debian Stable from 2022 aka Bookworm
+
+w/o HugeTLB or any other tuning; just the stock default:
+$ guile -l bio-loop.scm
+Triangle relations for 681 genes in 237.13 seconds
+Triangle relations for 681 genes in 244.77 seconds
+Triangle relations for 681 genes in 245.88 seconds
+Protein expression for 12 pathways in 138.46 seconds
+Protein expression for 12 pathways in 134.80 seconds
+Protein expression for 12 pathways in 140.34 seconds
+skip long pentagaon
+
+-- Ouch Triangle is twice as slow as Jan 2020 a bit worse than Nov 2021
+
+$ guile -l bio-loop2.scm
+Crashes with  (LinkValue
+  (GeneNode "MAVS")
+  (GeneNode "MAVS"))
+Probably because MeetLink QueueValue blah blah, bad port. Ignore this
+test. It needs fixing though. Per README, there's no measureable
+difference from plain bio-loop
+
+$ guile -l bio-loop3.scm
+Triangle relations for 1 threads in 248.69 seconds
+Rate 2.7384 genes/sec Rate per thread: 2.7384 genes/sec
+Threads: 2  speedup vs 1x = 1.6387
+Threads: 3  speedup vs 1x = 2.1904
+Threads: 4  speedup vs 1x = 2.5456
+Threads: 6  speedup vs 1x = 3.1094
+Threads: 8  speedup vs 1x = 3.5178
+Threads: 12  speedup vs 1x = 3.7197
+Threads: 16  speedup vs 1x = 3.6943
+
+So that is better than before. Comparing to Nov 2021, the 3-thread
+speedup is finally larger than 2. But reviewing the diary entries from
+that era, it seems that removing the Incoming and TypeSet locks back
+then did not improve performance, suggesting bottleneck was elsewhere.
+Yet here, things got better.
+
+Lets see: Current git, above, has three significant changes:
+* Use of sparse_has_set<WinkPtr> for IncomingSet
+* Use of MutexPool for Atom mutexes.
+* Use of pool in AtomSpace TypeIndex.
+
+Commit with mutex-pool and sparse_hash but NOT TypeIndex:
+c048fc468651a0c80c0522358134d25b342e02f0 mutex-pool (pre typeindex)
+
+The sparse_hash only commit is:
+9baf1bf04ce857dbf1cad5f2c1b95b8d1d077b4f spareshash (pre mutex-pool)
+
+A recent commit without any of these is:
+e585cf3c45cde2b9eb7c6534c3054e804bf32a72 untruth (pre sparse-hash)
+
+XXX Using ccache causes misleading results!! Below had to be measured
+twice; reported results are w/o using ccache.
+
+Results for sparsehash plus Atom MutexPool: (64)
+Clean build, NOT ccache:
+Triangle relations for 1 threads in 239.65 seconds
+Threads: 2  speedup vs 1x = 1.4669
+Threads: 3  speedup vs 1x = 1.9203
+Threads: 4  speedup vs 1x = 2.0638
+Threads: 6  speedup vs 1x = 2.7616
+Threads: 8  speedup vs 1x = 3.3458
+Threads: 12  speedup vs 1x = 3.5655
+
+-- Conclude: The pool in the TypeIndex has a significant impact.
+   Assuming, that is, the above is not some cache aliasing effect.
+
+Results for sparsehash only: (no Atom MutexPool)
+Clean build, NOT ccache:
+Triangle relations for 1 threads in 240.87 seconds
+Threads: 2  speedup vs 1x = 1.5863
+Threads: 3  speedup vs 1x = 2.0475
+Threads: 4  speedup vs 1x = 2.4617
+Threads: 6  speedup vs 1x = 3.1035
+Threads: 8  speedup vs 1x = 3.4842
+Threads: 12  speedup vs 1x = 3.6639
+
+Results without any of these:
+Triangle relations for 1 threads in 220.13 seconds
+Threads: 2  speedup vs 1x = 1.5470
+Threads: 3  speedup vs 1x = 1.8680
+Threads: 4  speedup vs 1x = 2.2145
+Threads: 6  speedup vs 1x = 2.7239
+Threads: 8  speedup vs 1x = 2.9669
+Threads: 12  speedup vs 1x = 3.1519
+
+Conclusion:
+-- sparsehash on the IncomingSet improves parallelism.
+   But does not account for all improvemenets.
+-- Adding the MutexPool causes some set-associative caching collision.
+   All performance gains are reverted. WTF but .. interesting.
+
+Lets try again: current master, enable bare pointers:
+Clean build, NOT ccache:
+Triangle relations for 1 threads in 251.90 seconds
+Threads: 2  speedup vs 1x = 1.5692
+Threads: 3  speedup vs 1x = 2.0713
+Threads: 4  speedup vs 1x = 2.4561
+Threads: 6  speedup vs 1x = 3.0862
+Threads: 8  speedup vs 1x = 3.4744
+Threads: 12  speedup vs 1x = 3.6851
+
+Wow. Loss of performance, compared to WinkPtr. This confirms that it's
+some set-associative cache aliasing problem, because the only thing
+that changes here is the size of the Atom.
+
+Lets try again: current master, disable sparshash, enable bare pointers:
+Clean build, NOT ccache:
+Triangle relations for 1 threads in 227.44 seconds
+Threads: 2  speedup vs 1x = 1.5941
+Threads: 3  speedup vs 1x = 1.9225
+Threads: 4  speedup vs 1x = 2.2610
+Threads: 6  speedup vs 1x = 2.8270
+Threads: 8  speedup vs 1x = 3.1316
+double free or corruption (out)
+
+So, curiously, sparsehash improves performance slightly over std::set,
+even for bare pointers, where std::set<Atom*> has a size advantage.
+The aliasing effect still sees to be at play.
+And one memory corruption for bare pointers. So ...
+
+Lets try again: current master, disable sparshash, keep smart WinkPtrs
+Clean build, NOT ccache:
+Triangle relations for 1 threads in 232.66 seconds
+Threads: 2  speedup vs 1x = 1.4368
+Threads: 3  speedup vs 1x = 1.8510
+Threads: 4  speedup vs 1x = 2.2372
+Threads: 6  speedup vs 1x = 2.7923
+Threads: 8  speedup vs 1x = 3.1236
+Threads: 12  speedup vs 1x = 3.3076
+
+-- Result: Slightly slower than bare pointers.
+-- A LOT slower than sparsehash.
+   I doubt this is spareshash itself; I think its a cache aliasing
+   effect.
+
+Validate the above results: retest on pure master:
+Triangle relations for 1 threads in 237.14 seconds
+Threads: 2  speedup vs 1x = 1.6166
+Threads: 3  speedup vs 1x = 2.0998
+Threads: 4  speedup vs 1x = 2.4543
+Threads: 6  speedup vs 1x = 2.9742
+Threads: 8  speedup vs 1x = 3.3629
+Threads: 12  speedup vs 1x = 3.5927
+
+OK, so results reproduce. Earlier runs had ccache insanity in them.
+(Erased from this diary; I won't memorialize the insane results.)
+(Look at earlier git commits if its important.)
+rm -r and rebuild:
+
+Triangle relations for 1 threads in 245.14 seconds
+Threads: 2  speedup vs 1x = 1.6556
+Threads: 3  speedup vs 1x = 2.1622
+Threads: 4  speedup vs 1x = 2.6445
+Threads: 6  speedup vs 1x = 3.1359
+Threads: 8  speedup vs 1x = 3.4929
+
+So, this looks like natural variability.
+Conclude:
+-- cache-line aliasing is a huge issue.
+-- sparasehash for incoming set makes a big difference,
+   but this might be a cache-line aliasing issue.
+-- The other optimizations help.
+   But the true effects are swamped by aliasing.
+
+--------------------------
+How about sparsehash used in the TypeIndex? This decreases per-Atom
+RAM use by 24 Bytes. Slows Atom insert by 10%
+
+Triangle relations for 1 threads in 244.49 seconds
+Threads: 2  speedup vs 1x = 1.6279
+Threads: 3  speedup vs 1x = 2.1285
+Threads: 4  speedup vs 1x = 2.4566
+Threads: 6  speedup vs 1x = 3.1817
+Threads: 8  speedup vs 1x = 3.5761
+Threads: 12  speedup vs 1x = 3.8390
+
+-- No significant change for 2,3,4 threads.
+-- Sets an all-time record for 6,8 and 12 threads.
+
+--------------------------
+How about an IncomingIndex with
+struct InSet : std::map<Handle, InSetMap>
+
+Triangle relations for 1 threads in 250.54 seconds
+Threads: 2  speedup vs 1x = 1.6570
+Threads: 3  speedup vs 1x = 1.9774
+Threads: 4  speedup vs 1x = 2.3217
+Threads: 6  speedup vs 1x = 2.9759
+Threads: 8  speedup vs 1x = 3.4174
+Threads: 12  speedup vs 1x = 3.8679
+
+This is mediocre, surprisingly so. ... Well, in retrospect, no. Turns
+out this "improvement" saves no space, due to extra required pointers.
+See notes in IncomeIndex.h for details.
+
 --------------------------
