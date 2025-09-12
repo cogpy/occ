@@ -70,3 +70,30 @@ If you are a commercial business looking to use any of these components in your 
 we can provide full-time support, if that's what you want. We'll custom-taylor components,
 systems, and API's to suit your needs. If you are an investor looking to build up a venture,
 well yes, that could happen too. Talk to us. Contact [Linas Vepstas](linasvepstas@gmail.com).
+
+## GNU Guix Shepherd DevContainer
+
+This repository includes a **GNU Guix Shepherd devcontainer** setup for reproducible development environments. The devcontainer automatically turns the OpenCog repo into Guix packages and provides a FSF-compliant, declarative development environment.
+
+### Usage Flow
+
+1. **Clone the repo** with devcontainer setup
+2. **Open in VSCode** (or compatible IDE) and select "Open in Container"
+3. **Shepherd is ready** - run build/test services with `shepherd` and `herd` in the container
+4. **Guix package definition** is ready for local and CI builds
+
+### CI/CD Integration
+
+Automate CI using GitHub Actions with the included Guix build workflow:
+```yaml
+- name: Build with Guix
+  run: guix build packaging/opencog.scm
+```
+
+### Features
+
+- **Reproducible builds** with Guix package manager
+- **Service orchestration** with GNU Shepherd
+- **FSF-endorsed** development experience
+- **Full Scheme integration** for cognitive computing
+- **Declarative environment** configuration
