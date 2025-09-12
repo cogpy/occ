@@ -10,14 +10,7 @@
 #
 
 # Require "modern" CMake
-cmake_minimum_required(VERSION 3.0)
-# if (COMMAND CMAKE_POLICY)
-# 	cmake_policy(set CMP0003 NEW)
-# endif (COMMAND CMAKE_POLICY)
-
-# if(CMAKE_VERSION VERSION_GREATER 3.0.2)
-# 	cmake_policy(set CMP0037 OLD)
-# endif(CMAKE_VERSION VERSION_GREATER 3.0.2)
+cmake_minimum_required(VERSION 3.12)
 
 project(atomspace-vision)
 
@@ -85,7 +78,7 @@ endif (NOT Catch2_FOUND)
 # Guile Python and Cython
 
 include(OpenCogFindGuile)
-# include(OpenCogFindPython)
+include(OpenCogFindPython)
 
 # ----------------------------------------------------------
 # Optional, currently needed only to hush up DRD in util/Logger.cc
@@ -116,7 +109,7 @@ endif (NOT DEFINED ATOMSPACE_DATA_DIR)
 
 include("${ATOMSPACE_DATA_DIR}/cmake/OpenCogMacros.cmake")
 include("${ATOMSPACE_DATA_DIR}/cmake/OpenCogGuile.cmake")
-# include("${ATOMSPACE_DATA_DIR}/cmake/OpenCogCython.cmake")
+include("${ATOMSPACE_DATA_DIR}/cmake/OpenCogCython.cmake")
 
 # ==========================================================
 # Decide what to build, based on the packages found.
