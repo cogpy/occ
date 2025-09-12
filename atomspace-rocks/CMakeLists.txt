@@ -9,14 +9,19 @@
 # -- print pretty summary
 #
 
-# cogutils already requires 3.0.2, so may as well ask for that.
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0.2)
+# cogutils already requires 3.12, so may as well ask for that.
+CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 IF (COMMAND CMAKE_POLICY)
 	# These must be explicitly set, as otherwise warnings are printed.
 	CMAKE_POLICY(SET CMP0003 NEW)
 	CMAKE_POLICY(SET CMP0037 NEW)
 	CMAKE_POLICY(SET CMP0045 NEW)
 ENDIF (COMMAND CMAKE_POLICY)
+
+# Python venv seems to need this.
+IF(CMAKE_VERSION VERSION_GREATER 3.31)
+	CMAKE_POLICY(SET CMP0177 NEW)
+ENDIF(CMAKE_VERSION VERSION_GREATER 3.31)
 
 PROJECT(atomspace-rocks)
 
@@ -87,13 +92,22 @@ ELSE (ATOMSPACE_FOUND)
 	MESSAGE(FATAL_ERROR "AtomSpace missing: it is needed!")
 ENDIF (ATOMSPACE_FOUND)
 
+FIND_PACKAGE(AtomSpaceStorage 4.1 CONFIG REQUIRED)
+IF (ATOMSPACE_STORAGE_FOUND)
+	MESSAGE(STATUS "AtomSpace Storage found.")
+	ADD_DEFINITIONS(-DHAVE_ATOMSPACE_STORAGE)
+	SET(HAVE_ATOMSPACE_STORAGE 1)
+ELSE (ATOMSPACE_STORAGE_FOUND)
+	MESSAGE(FATAL_ERROR "AtomSpace Storage missing: it is needed!")
+ENDIF (ATOMSPACE_STORAGE_FOUND)
+
 # RocksDB
-FIND_PACKAGE(RocksDB)
+FIND_PACKAGE(RocksDB REQUIRED)
 IF (ROCKSDB_FOUND)
 	MESSAGE(STATUS "RocksDB found.")
 	SET(HAVE_ROCKSDB 1)
 ELSE (ROCKSDB_FOUND)
-	MESSAGE(STATUS "RocksDB was not found.")
+	MESSAGE(FATAL_ERROR "RocksDB was not found.")
 ENDIF (ROCKSDB_FOUND)
 
 # ----------------------------------------------------------
@@ -108,7 +122,7 @@ ENDIF (NOT CXXTEST_FOUND)
 # Guile Python and Cython
 
 include(OpenCogFindGuile)
-# include(OpenCogFindPython)
+include(OpenCogFindPython)
 
 # ----------------------------------------------------------
 # Optional, currently needed only to hush up DRD in util/Logger.cc
@@ -132,19 +146,14 @@ ENDIF (VALGRIND_FOUND)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}
 	${COGUTIL_INCLUDE_DIR} ${ATOMSPACE_INCLUDE_DIR})
 
-# Macros that define how atom types get declared.
-IF (NOT DEFINED ATOMSPACE_DATA_DIR)
-	SET (ATOMSPACE_DATA_DIR "${COGUTIL_DATA_DIR}")
-ENDIF (NOT DEFINED ATOMSPACE_DATA_DIR)
-
-INCLUDE("${ATOMSPACE_DATA_DIR}/cmake/OpenCogMacros.cmake")
-INCLUDE("${ATOMSPACE_DATA_DIR}/cmake/OpenCogGuile.cmake")
-# INCLUDE("${ATOMSPACE_DATA_DIR}/cmake/OpenCogCython.cmake")
+INCLUDE(OpenCogMacros)
+INCLUDE(OpenCogGuile)
+INCLUDE(OpenCogCython)
 
 # ==========================================================
 # Decide what to build, based on the packages found.
 
-ADD_SUBDIRECTORY(lib)
+ADD_SUBDIRECTORY(cmake)
 ADD_SUBDIRECTORY(opencog)
 
 IF (CXXTEST_FOUND)
@@ -254,8 +263,10 @@ FIND_PACKAGE(Doxygen)
 # ===================================================================
 # Show a summary of what we found, what we will do.
 
-SUMMARY_ADD("AtomSpace-Rocks" "AtomSpace RocksDB Backend" HAVE_ATOMSPACE AND HAVE_ROCKSDB)
-SUMMARY_ADD("Doxygen" "Code documentation" DOXYGEN_FOUND)
+SUMMARY_ADD("AtomSpace-Rocks" "AtomSpace RocksDB Backend"
+	HAVE_ATOMSPACE AND HAVE_ATOMSPACE_STORAGE AND HAVE_ROCKSDB)
+SUMMARY_ADD("Cython"     "Cython (python) bindings" HAVE_CYTHON)
+SUMMARY_ADD("Doxygen"    "Code documentation" DOXYGEN_FOUND)
 SUMMARY_ADD("Unit tests" "Unit tests" CXXTEST_FOUND)
 
 SUMMARY_SHOW()

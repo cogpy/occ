@@ -27,11 +27,12 @@
 #define _OPENCOG_FEATURE_MAX_MI_ALGO_H
 
 #include <functional>
+#include <mutex>
 
 #include <opencog/util/numeric.h>
-#include <opencog/util/lru_cache.h>
+#include <opencog/asmoses/utils/lru_cache.h>
 #include <opencog/util/algorithm.h>
-#include <opencog/util/functional.h>
+#include <opencog/asmoses/utils/functional.h>
 #include <opencog/util/oc_omp.h>
 
 #include "opencog/asmoses/feature-selection/main/feature-selection.h" // needed for feature_set, feature_selection_parameters
@@ -96,8 +97,8 @@ feature_set_pop stochastic_max_dependency_selection(const feature_set& features,
 
     typedef typename feature_set::value_type feature_id;
     typedef feature_set_pop ranks_t;
-    typedef boost::shared_mutex shared_mutex;
-    typedef boost::unique_lock<shared_mutex> unique_lock;
+    typedef std::shared_mutex shared_mutex;
+    typedef std::unique_lock<shared_mutex> unique_lock;
     shared_mutex mutex;
 
     // Start with the initial feature set
@@ -153,7 +154,7 @@ feature_set_pop stochastic_max_dependency_selection(const feature_set& features,
 
                                        // insert it in ranks
                                        std::pair<double, feature_set> pdf(sc, prod);
-                                       unique_lock lock(mutex);
+                                       std::unique_lock lock(mutex);
                                        ranks.insert(pdf);
                                    }
                                });

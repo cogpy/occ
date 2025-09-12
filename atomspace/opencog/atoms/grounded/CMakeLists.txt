@@ -3,16 +3,19 @@
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_BINARY_DIR})
 
 ADD_LIBRARY (grounded
-	DLScheme.cc
 	GroundedPredicateNode.cc
 	GroundedSchemaNode.cc
 	LibraryManager.cc
 	LibraryRunner.cc
-	SCMRunner.cc
 )
 
+IF (HAVE_GUILE)
+	TARGET_SOURCES(grounded PRIVATE DLScheme.cc)
+	TARGET_SOURCES(grounded PRIVATE SCMRunner.cc)
+ENDIF (HAVE_GUILE)
+
 IF (HAVE_CYTHON)
-	INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+	INCLUDE_DIRECTORIES(${Python3_INCLUDE_DIRS})
 	TARGET_SOURCES(grounded PRIVATE DLPython.cc)
 	TARGET_SOURCES(grounded PRIVATE PythonRunner.cc)
 ENDIF (HAVE_CYTHON)

@@ -3,10 +3,11 @@ OpenCog Docker Containers
 This directory contains docker configurations for some of OpenCog's
 projects.  Some of the notable images include:
 
-* `opencog/atomspace`  -- Core AtomSpace only.
-* `opencog/learn`      -- Learning subsystem.
-* `opencog/lang-pairs` -- Tabulate and visualize word pairs from
-                          text corpora.
+* `opencog/atomspace`    -- Core AtomSpace only.
+* `opencog/atomspace-py` -- AtomSpace plus many Python tools.
+* `opencog/learn`        -- Learning subsystem.
+* `opencog/lang-pairs`   -- Tabulate and visualize word pairs from
+                            text corpora.
 
 Older, obsolete images can be found in the [archive](../archive)
 directory. If someone sent you here, and you can't find what you were
@@ -24,8 +25,9 @@ told about, then it is probably in the archive.
    this is not needed. If you do create an account, be sure to say
    `sudo docker login` or
 
-3. Pull images that are used for opencog development by running
-   `./docker-build.sh -a`
+3. (Caution: dockerhub images appear to be out-of-date, and its not
+   clear how to fix this. So please do NOT do this step.)
+   Pull opencog images from dockerhub by running `./docker-build.sh -a`
 
 4. The above pull should have downloaded the latest images. These
    are rebuilt weekly, and thus should be up-to-date, more or less.
@@ -38,10 +40,13 @@ List the current set of docker images with the command `docker images`.
 The most notable include:
 
 * `opencog/opencog-deps` -- A base operating system image, with
-  most required depdencies installed.
+  most required dependencies installed.
 
 * `opencog/atomspace` -- An image containing the core AtomSpace.
   The AtomSpace is needed by all other subsystems.
+
+* `opencog/atomspace-py` -- The AtomSpace, plus a large collection of
+  Python tools commonly used for machine learning and DL/NN work.
 
 * `opencog/learn` -- An image containing the language-learning
   subproject.
@@ -73,3 +78,7 @@ relevant directory, and follow the instructions there.
 
 ## TODO
 1. Add more images to github workflow for automated publishing
+
+## Bonus
+There are some "bonus" containers, which might be useful:
+* `claude-code` -- Container with Anthropic's Claude Code installed.

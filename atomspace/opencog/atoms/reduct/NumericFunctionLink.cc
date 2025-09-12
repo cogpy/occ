@@ -26,7 +26,6 @@
 
 #include <opencog/atoms/atom_types/atom_types.h>
 #include <opencog/atoms/atom_types/NameServer.h>
-#include <opencog/atoms/core/DefineLink.h>
 #include <opencog/atoms/core/NumberNode.h>
 #include "NumericFunctionLink.h"
 
@@ -62,42 +61,12 @@ void NumericFunctionLink::init(void)
 		throw InvalidParamException(TRACE_INFO, "RandomNumberLink expects two arguments");
 	else if (SINE_LINK == t and 1 != _outgoing.size())
 		throw InvalidParamException(TRACE_INFO, "SineLink expects one argument");
-}
-
-// ===========================================================
-
-/// Generic utility -- execute the argument, and return the result
-/// of the execution.
-ValuePtr NumericFunctionLink::get_value(AtomSpace* as, bool silent, ValuePtr vptr)
-{
-	if (vptr->is_type(DEFINED_PROCEDURE_NODE))
-	{
-		vptr = DefineLink::get_definition(HandleCast(vptr));
-	}
-	while (vptr->is_atom())
-	{
-		Handle h(HandleCast(vptr));
-		if (not h->is_executable()) break;
-
-		ValuePtr red(h->execute(as, silent));
-
-		// It would probably be better to throw a silent exception, here?
-		if (nullptr == red) return vptr;
-		if (*red == *vptr) return vptr;
-		vptr = red;
-
-		// The executable function might be a GetLink, which returns
-		// a SetLink of results. If the SetLink is wrapping only one
-		// atom, then unwrap it and return that value. If it contains
-		// more than one atom, we don't know what to do.
-		if (SET_LINK == vptr->get_type())
-		{
-			Handle setl(HandleCast(vptr));
-			if (1 == setl->get_arity())
-				vptr = setl->getOutgoingAtom(0);
-		}
-	}
-	return vptr;
+	else if (COSINE_LINK == t and 1 != _outgoing.size())
+		throw InvalidParamException(TRACE_INFO, "CosineLink expects one argument");
+	else if (TAN_LINK == t and 1 != _outgoing.size())
+		throw InvalidParamException(TRACE_INFO, "TanLink expects one argument");
+	else if (EXP_LINK == t and 1 != _outgoing.size())
+		throw InvalidParamException(TRACE_INFO, "ExpLink expects one argument");
 }
 
 // ===========================================================
@@ -106,7 +75,7 @@ ValuePtr NumericFunctionLink::get_value(AtomSpace* as, bool silent, ValuePtr vpt
 /// if possible.  Return nullptr if not possible.
 const std::vector<double>*
 NumericFunctionLink::get_vector(AtomSpace* as, bool silent,
-                           ValuePtr vptr, Type& t)
+                                ValuePtr vptr, Type& t)
 {
 	t = vptr->get_type();
 
@@ -153,9 +122,9 @@ NumericFunctionLink::apply_func(AtomSpace* as, bool silent,
 		funvec.push_back(fun(xvec->operator[](i)));
 
 	if (NUMBER_NODE == vxtype)
-		return createNumberNode(funvec);
+		return createNumberNode(std::move(funvec));
 
-	return createFloatValue(funvec);
+	return createFloatValue(std::move(funvec));
 }
 
 // ============================================================
@@ -212,9 +181,9 @@ NumericFunctionLink::apply_func(AtomSpace* as, bool silent,
 	}
 
 	if (NUMBER_NODE == vxtype and NUMBER_NODE == vytype)
-		return createNumberNode(funvec);
+		return createNumberNode(std::move(funvec));
 
-	return createFloatValue(funvec);
+	return createFloatValue(std::move(funvec));
 }
 
 // ============================================================
@@ -284,6 +253,12 @@ ValuePtr NumericFunctionLink::execute_unary(AtomSpace* as, bool silent)
 		result = apply_func(as, silent, _outgoing[0], log2, reduction);
 	else if (SINE_LINK == t)
 		result = apply_func(as, silent, _outgoing[0], sin, reduction);
+	else if (COSINE_LINK == t)
+		result = apply_func(as, silent, _outgoing[0], cos, reduction);
+	else if (TAN_LINK == t)
+		result = apply_func(as, silent, _outgoing[0], tan, reduction);
+	else if (EXP_LINK == t)
+		result = apply_func(as, silent, _outgoing[0], exp, reduction);
 	else
 		throw InvalidParamException(TRACE_INFO,
 			"Internal Error: unhandled derived type!");

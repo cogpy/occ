@@ -103,7 +103,7 @@ QueryLink::QueryLink(const HandleSeq&& hseq, Type t)
  * atoms that could be a ground are found in the atomspace, then they
  * will be reported.
  */
-QueueValuePtr QueryLink::do_execute(AtomSpace* as, bool silent)
+ContainerValuePtr QueryLink::do_execute(AtomSpace* as, bool silent)
 {
 	if (nullptr == as) as = _atom_space;
 
@@ -116,14 +116,20 @@ QueueValuePtr QueryLink::do_execute(AtomSpace* as, bool silent)
 	 * get naive users into trouble, but there are legit uses, not just
 	 * in the URE, for doing disconnected searches.
 	 */
-	bool do_conn_check=false;
+	bool do_conn_check = false;
 	if (do_conn_check and 0 == _virtual.size() and 1 < _components.size())
 		throw InvalidParamException(TRACE_INFO,
 		                            "QueryLink consists of multiple "
 		                            "disconnected components!");
 
-	Implicator impl(as);
-	impl.implicand = this->get_implicand();
+	// Where shall we place results? Why, right here!
+	ValuePtr vp(getValue(get_handle()));
+	ContainerValuePtr cvp(ContainerValueCast(vp));
+	if (nullptr == cvp)
+		throw RuntimeException(TRACE_INFO,
+			"Expecting QueueValue for results!");
+
+	Implicator impl(as, cvp);
 
 	try
 	{
@@ -141,10 +147,9 @@ QueueValuePtr QueryLink::do_execute(AtomSpace* as, bool silent)
 	}
 
 	// If we got a non-empty answer, just return it.
-	QueueValuePtr qv(impl.get_result_queue());
-	OC_ASSERT(qv->is_closed(), "Unexpected queue state!");
-	if (0 < qv->concurrent_queue<ValuePtr>::size())
-		return qv;
+	OC_ASSERT(cvp->is_closed(), "Unexpected queue state!");
+	if (0 < cvp->size())
+		return cvp;
 
 	// If we are here, then there were zero matches.
 	//
@@ -165,14 +170,15 @@ QueueValuePtr QueryLink::do_execute(AtomSpace* as, bool silent)
 	if (0 == pat.pmandatory.size() and 0 < pat.absents.size()
 	    and not intu->optionals_present())
 	{
-		qv->open();
-		for (const Handle& himp: impl.implicand)
-			qv->push(std::move(impl.inst.execute(himp, true)));
-		qv->close();
-		return qv;
+		Instantiator inst(as);
+		cvp->open();
+		for (const Handle& himp: get_implicand())
+			cvp->add(std::move(inst.execute(himp, true)));
+		cvp->close();
+		return cvp;
 	}
 
-	return qv;
+	return cvp;
 }
 
 ValuePtr QueryLink::execute(AtomSpace* as, bool silent)

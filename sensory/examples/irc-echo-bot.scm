@@ -9,26 +9,20 @@
 ; See `irc-api.scm` for a tutorial on the interfaces used here.
 ; See `xterm-bridge.scm` for a simple demo of hooking input to output.
 ;
-(use-modules (ice-9 threads))
-(use-modules (srfi srfi-1))
 (use-modules (opencog) (opencog exec) (opencog sensory))
 
-; Open connection to an IRC server, and attach the stream to an Atom.
-; This allows it to be located, when needed. If the Atom is "well
-; known", then everyone can find it.
-(cog-execute!
-	(SetValue
-		(Anchor "IRC Bot") (Predicate "echo")
-		(Open (Type 'IRChatStream)
-			(SensoryNode "irc://echobot@irc.libera.chat:6667"))))
+; Open connection to an IRC server.
 
-; Build a pair of read and Write accessors for the above location.
-; Using the StreamValueOf automatically dereferences the stream for us.
-; Using the naked ValueOf gives direct (read and write) access.
-(define bot-read (StreamValueOf (Anchor "IRC Bot") (Predicate "echo")))
-(define bot-raw (ValueOf (Anchor "IRC Bot") (Predicate "echo")))
+(define chatnode (IRChatNode "echobot"))
+(cog-execute!
+	(SetValue chatnode (Predicate "*-open-*")
+	(Concept "irc://echobot@irc.libera.chat:6667")))
+
+; The StreamValueOf automatically unqueues one message from the stream.
+(define bot-read (StreamValueOf chatnode (Predicate "*-stream-*")))
 
 ; Individual messages can be read like so:
+(cog-execute! bot-read)
 (cog-execute! bot-read)
 
 ; An alternate design would be to finish setting everything up, before
@@ -71,9 +65,10 @@
 				(Variable "$from")
 				(Item "you said: ")
 				(Variable "$msg")))
-		bot-raw))
+		bot-read))
 
-(define private-echo (Write bot-raw make-private-reply))
+(define private-echo
+	(SetValue chatnode (Predicate "*-write-*") make-private-reply))
 
 ; Try it, once
 (cog-execute! private-echo)
@@ -118,16 +113,18 @@
 		(LinkSignature (Type 'LinkValue)
 			CONCLUSION)))
 
-; Convenience wrapper
+; Convenience wrapper.
+; Note that executing this will hang, waiting on input, and so you
+; have to say something to the bot before this returns.
 (define (make-applier CONCLUSION)
 	(Filter
 		(make-msg-rule CONCLUSION)
-		bot-raw))
+		bot-read))
 
 ; Convenience wrapper. Reads from IRC, extracts message, rewrites
 ; it into CONCLUSION, writes out to IRC.
 (define (make-echoer CONCLUSION)
-	(WriteLink bot-raw (make-applier CONCLUSION)))
+	(SetValue chatnode (Predicate "*-write-*") (make-applier CONCLUSION)))
 
 ; Most of the demos below need the bot to know it's own name.
 (cog-set-value! (Anchor "IRC Bot")
@@ -138,13 +135,16 @@
 ; to sit on some public channel, in order to work.
 
 ; Join a channel.
-(cog-execute! (Write bot-raw (List (Concept "JOIN #opencog"))))
+(cog-execute! (SetValue chatnode (Predicate "*-write-*")
+	(List (Concept "JOIN #opencog"))))
 
 ; Leave a channel.
-(cog-execute! (Write bot-raw (List (Concept "PART #opencog"))))
+(cog-execute! (SetValue chatnode (Predicate "*-write-*")
+	(List (Concept "PART #opencog"))))
 
 ; --------
 ; Example: Show message
+; This hangs, until you say something to the bot.
 (define show (list (Variable "$from") (Variable "$to") (Variable "$msg")))
 (cog-execute! (make-applier show))
 
@@ -166,7 +166,7 @@
 		(Item "public message")))
 (cog-execute! (make-applier is-pub?))
 
-; Create a private reply to the sender, printing mssage diagnostics.
+; Create a private reply to the sender, printing message diagnostics.
 (define id-reply
 	(list (Item "PRIVMSG") (Variable "$from")
 	(Item "Message to ")
@@ -200,7 +200,7 @@
 	is-pub?
 	(Item " from ")
 	(Variable "$from")
-	(Item "that ")
+	(Item " that ")
 	is-callout?
 	(Item ": ")
 	(Variable "$msg")))
@@ -272,46 +272,69 @@
 
 ; --------
 ; Example: listen to everything, and write it to a file. This requires
-; opening a log-file.
+; opening a log-file, and then piping chat content to that file.
 
-; XXX unfinished...
+(define irc-log-file (TextFile "file:///tmp/irc-chatlog.txt"))
+(cog-execute!
+	(SetValue irc-log-file (Predicate "*-open-*") (Type 'StringValue)))
 
-; -------------------------------------------------------
+(cog-set-value! irc-log-file (Predicate "*-write-*")
+	(StringValue "Start of the log file\n"))
 
-; Hack for long-running streams. This part of the system is not yet
-; fully designed. Details will change.
-;
-; The `OutputStream::do_write_out()` method does enter an inf loop,
-; copying source to sink for as long as the source stays open. For
-; whatever reason, that is not happening in this IRC demo, probably
-; because all the filters obscure that there is a stream at the far
-; end. So this needs work.
-;
-; So, for now, hack around this. Create an inf loop here, and run it
-; in it's own thread. FYI, Tail-recursive loops can also be done in
-; Atomese; the below is done in pure scheme.
+;;; (cog-execute!
+;;;	(SetValue irc-log-file (Predicate "*-close-*") (Type 'StringValue)))
 
-(define do-exit-loop #f)
-(define (inf-loop AGENT)
-	(cog-execute! AGENT)
-	(if (not do-exit-loop) (inf-loop AGENT)))
+;; This logger will pull everything from IRC (that the bit can hear)
+;; and will write it to the logfile. It will do this forever, i.e.
+;; it's an infini9te loop, so it needs to be run in it's own thread.
+;;
+;; It works, except that there's a small problem: There are no newlines
+;; at the end of messages, and the send & recipient are not demarcated.
+;; So everything written to the logfile will be an ever-expanding blob.
+(define logger
+	(SetValue irc-log-file (Predicate "*-write-*")
+		(ValueOf chatnode (Predicate "*-stream-*"))))
 
-(define thread-id #f)
-(define (exit-loop)
-	(set! do-exit-loop #t)
-	(join-thread thread-id)
-	(format #t "Exited main loop\n")
-	(set! do-exit-loop #f))
+; Don't do this, unless you want the blob, explained above.
+; (cog-execute! (ExecuteThreaded logger))
 
-; Start an inf loop with the private-echo handler.
-;(define thread-id (call-with-new-thread
-;	(lambda () (inf-loop private-echo))))
+; Instead, write a message formatter. This picks apart the message,
+; wraps it in some delimiters, and prints to the logfile. Much nicer!
+(define format-for-logger
+	(Filter
+		(Rule
+			(VariableList
+				(Variable "$from") (Variable "$to") (Variable "$msg"))
+			(LinkSignature (Type 'LinkValue)
+				(Variable "$from") (Variable "$to") (Variable "$msg"))
+			(LinkSignature (Type 'LinkValue)
+				(Item "MSG From: ")
+				(Variable "$from")
+				(Item " To: ")
+				(Variable "$to")
+				(Item " Message: ")
+				(Variable "$msg")
+				(Item "\n")))
+		(StreamValueOf chatnode (Predicate "*-stream-*"))))
 
-; Start an inf loop with the friendly echo handler
-(define thread-id (call-with-new-thread
-	(lambda () (inf-loop (make-echoer reply-to-callout)))))
+; The formater runs fine: Try it, one line at a time
+(define one-at-a-time-logger
+	(SetValue irc-log-file (Predicate "*-write-*") format-for-logger))
+(cog-execute! one-at-a-time-logger)
 
-(exit-loop)
+; But we don't want a one-a-a-time interface; we want this to run
+; indefinitely.  For that, we need a promise, that can pull items
+; through the filter. (The filter itself cannot push.)
+; The PromiseLink can pull items through the Filter. So wrap the
+; filter in that. When this is attached to the file writer, it
+; will run forever. The infinite loop doing this is located in
+; StreamNode::write() method.
+(define logger
+	(SetValue irc-log-file (Predicate "*-write-*")
+		(Promise (TypeNode 'FutureStream) format-for-logger)))
+
+; Run the logger in it's own thread.
+(cog-execute! (ExecuteThreaded logger))
 
 ; The End. That's all, folks!
 ; -------------------------------------------------------

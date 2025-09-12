@@ -111,6 +111,7 @@ are the logics of theorem-proving, in general.)
 * `presence.scm`     -- Testing for presence of an Atom ("there-exists").
 * `absent.scm`       -- Using the AbsentLink ("there-does-not-exist").
 * `always.scm`       -- Testing if a clause always holds ("for-all").
+* `group-by.scm`     -- Grouping results together ("local for-all").
 * `recursive.scm`    -- Recursive pattern matching aka forward chaining.
 * `value-of.scm`     -- Looking for high or low TruthValues.
 * `dot-product.scm`  -- Numeric computations on query results.
@@ -260,6 +261,8 @@ a kind-of one-sided unification, and thus simpler than full-fledged
 * `put-filter.scm`     -- Using PutLink to filter sets of atoms.
 * `filter.scm`         -- Extracting and re-writing with FilterLink.
 * `filter-value.scm`   -- Using FilterLink on data streams.
+* `filter-strings.scm` -- Matching specific StringValues in data streams.
+* `vector-column.scm`  -- Packing float point data into vectors (for GPU's).
 
 Unfinished examples
 -------------------

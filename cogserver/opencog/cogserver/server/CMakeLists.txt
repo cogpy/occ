@@ -1,8 +1,8 @@
 # ------------------------------------------------------------
 
 ADD_LIBRARY (server SHARED
-	BaseServer.cc
 	CogServer.cc
+	MCPServer.cc
 	ModuleManager.cc
 	Request.cc
 	RequestManager.cc
@@ -18,6 +18,10 @@ TARGET_LINK_LIBRARIES(server
 	dl
 )
 
+IF(HAVE_MCP)
+	TARGET_LINK_LIBRARIES(server mcp-eval)
+ENDIF(HAVE_MCP)
+
 # ------------------------------------------------------------
 # This defines the guile scheme loadable module
 
@@ -30,7 +34,6 @@ IF (HAVE_GUILE)
 
 	TARGET_LINK_LIBRARIES(guile-cogserver
 		server
-		# ${Boost_SYSTEM_LIBRARY}
 		${GUILE_LIBRARIES}
 	)
 
@@ -47,10 +50,8 @@ ADD_EXECUTABLE(cogserver
 
 TARGET_LINK_LIBRARIES(cogserver
 	server
-	${Boost_FILESYSTEM_LIBRARY}
 )
 
-SET_TARGET_PROPERTIES(cogserver PROPERTIES LINK_DIRECTORIES "${BOOST_LIBRARY_DIRS}")
 IF (WIN32)
 	SET_TARGET_PROPERTIES(cogserver PROPERTIES LINK_FLAGS "/NODEFAULTLIB:libctm")
 ENDIF (WIN32)
@@ -64,9 +65,9 @@ INSTALL (TARGETS server
 )
 
 INSTALL (FILES
-	BaseServer.h
 	CogServer.h
 	Factory.h
+	MCPServer.h
 	Module.h
 	ModuleManager.h
 	Request.h

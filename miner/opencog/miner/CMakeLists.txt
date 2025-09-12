@@ -1,10 +1,11 @@
 ADD_LIBRARY(miner SHARED
-	Miner
-	MinerLogger
-	MinerUtils
-	HandleTree
-	Valuations
-	Surprisingness
+	Miner.cc
+	MinerLogger.cc
+	MinerUtils.cc
+	HandleTree.cc
+	tree.cc
+	Valuations.cc
+	Surprisingness.cc
 )
 
 TARGET_LINK_LIBRARIES(miner
@@ -21,15 +22,16 @@ INSTALL (FILES
 	MinerLogger.h
 	MinerUtils.h
 	HandleTree.h
+	tree.h
 	Valuations.h
 	Surprisingness.h
 	DESTINATION "include/opencog/miner"
 )
 
 IF (HAVE_GUILE)
-  ADD_LIBRARY(guile-miner SHARED
-    MinerSCM
-  )
+	ADD_LIBRARY(guile-miner SHARED
+		MinerSCM.cc
+	)
 
   TARGET_LINK_LIBRARIES(guile-miner
     miner

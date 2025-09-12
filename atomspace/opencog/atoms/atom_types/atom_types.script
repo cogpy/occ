@@ -20,19 +20,48 @@ NOTYPE
 // https://en.wikipedia.org/wiki/Top_type
 TOP_TYPE
 
+// Helper type, for type factories. These indicate the types of
+// arguments that can be passed to type constructors. The goal is
+// to simplify the structure of dynamic type factories, and
+// specifically the scheme/guile factory. Python does not currently
+// use this, but I guess it could!? C++ does not use this, because
+// it's factories are all static compile-time factories.
+ARG <- TOP_TYPE
+BOOL_ARG <- ARG
+FLOAT_ARG <- ARG
+INT_ARG <- ARG
+HANDLE_ARG <- ARG
+STRING_ARG <- ARG
+VALUE_ARG <- ARG
+VOID_ARG <- ARG
+
+BOOL_VEC_ARG <-  ARG
+FLOAT_VEC_ARG <-  ARG
+HANDLE_VEC_ARG <-  ARG
+STRING_VEC_ARG <-  ARG
+VALUE_VEC_ARG <-  ARG
+
 // --------------------------------------------------------------
 // Values are collections of data that can be associated with Atoms.
 // Think of them as decorations that can be hung on an Atom.
 VALUE <- TOP_TYPE
 
-VOID_VALUE <- VALUE     // singleton Value holding nothing at all.
-BOOL_VALUE <- VALUE     // vector of booleans
-FLOAT_VALUE <- VALUE    // vector of floats
-STRING_VALUE <- VALUE   // vector of strings
-LINK_VALUE <- VALUE     // vector of Values ("link" holding Values)
-VALUATION <- VALUE      // (Atom,key,Value) triple
+VOID_VALUE <- VALUE,VOID_ARG          // singleton Value holding nothing at all.
+BOOL_VALUE <- VALUE,BOOL_VEC_ARG,INT_ARG  // vector of booleans
+FLOAT_VALUE <- VALUE,FLOAT_VEC_ARG    // vector of floats
+STRING_VALUE <- VALUE,STRING_VEC_ARG  // vector of strings
+LINK_VALUE <- VALUE,VALUE_VEC_ARG     // vector of Values ("link" holding Values)
 
-LIST_VALUE <- VALUE     // Deserialization helper Can be combined with above.
+// StreamValue is used in Sensory and other projects to distinguish
+// between LinkValues that are static and serve to package together
+// a bunch of other things (i.e. function like a "struct") and
+// LinkValues that represent time-varying streams of Values.
+// (.. and items in that stream are typically static LinkValues.)
+STREAM_VALUE <- LINK_VALUE            // volatile steam of Values
+
+// Same thing as Section, but the Value variant thereof.
+// Currently used experimentally in atomese-simd to specify GPU kernels.
+SECTION_VALUE <- LINK_VALUE
 
 // ===========================================================
 // Streams aka Futures. Futures deliver a Value when asked.
@@ -40,47 +69,48 @@ LIST_VALUE <- VALUE     // Deserialization helper Can be combined with above.
 // over time, we call them "streams".  They provide wrappers for
 // any kind of time-varying data.
 
-// A base class for time-varying floating-point Values.
-STREAM_VALUE <- FLOAT_VALUE
-
 // An example of a time-varying Value stream
-RANDOM_STREAM <- STREAM_VALUE
+RANDOM_STREAM <- FLOAT_VALUE,INT_ARG
 
 // A stream of FloatValues computed by a formula held in the AtomSpace.
 // Similar to the FutureStream, except it is specialized for FloatValues.
 // Typically computed by one of the FunctionLinks, below.
-FORMULA_STREAM <- STREAM_VALUE,LIST_VALUE
+FORMULA_STREAM <- FLOAT_VALUE,HANDLE_VEC_ARG
 
-// A base class for time-varying Value sequences.
-LINK_STREAM_VALUE <- LINK_VALUE
+// A base class for thread-safe concurrent containers.
+CONTAINER_VALUE <- STREAM_VALUE
 
 // A thread-safe FIFO queue of Value sequences.
-QUEUE_VALUE <- LINK_STREAM_VALUE
+QUEUE_VALUE <- CONTAINER_VALUE
+
+// A thread-safe set of Values (uniset; deduplicates multiple entries.)
+// Note that 'SET_VALUE' already taken by SET_VALUE_LINK
+UNISET_VALUE <- CONTAINER_VALUE
 
 // A stream of Values, computed by a function held in the AtomSpace.
 // Just like FormulaStream, but for vectors of Values.
-FUTURE_STREAM <- LINK_STREAM_VALUE,LIST_VALUE
+FUTURE_STREAM <- STREAM_VALUE,HANDLE_VEC_ARG
 
 // ===========================================================
+// TruthValues are an older concept in Atomese. They are deprecated and
+// are in a slow process of being removed, in favor of the more flexible
+// and more general Value concept.
+//
 // TruthValues are the subobject classifiers for Atomese; they are used
 // to generalize the notion of a subset (in exactly the same way that
 // a subobject classifier does so in an arbitrary topos.) In some cases,
 // these will be probabilities; in other cases, these are probabilities
 // with additional evidence associated to them. In yet other cases,
 // these resemble the truth values of "fuzzy logic", and so on.
+// (FuzzyTruthValue, etc has been removed.)
 //
 // Many Atoms and operations on Atoms explicitly require TruthValues
 // -- for example, PredicateNodes and EvaluationLinks -- and so these
-// are vital and centrally important for getting things to work.
+// remain important for the core infrastructure.
 //
 TRUTH_VALUE                <- FLOAT_VALUE
 SIMPLE_TRUTH_VALUE         <- TRUTH_VALUE
 COUNT_TRUTH_VALUE          <- TRUTH_VALUE
-INDEFINITE_TRUTH_VALUE     <- TRUTH_VALUE
-FUZZY_TRUTH_VALUE          <- TRUTH_VALUE
-PROBABILISTIC_TRUTH_VALUE  <- TRUTH_VALUE
-EVIDENCE_COUNT_TRUTH_VALUE <- TRUTH_VALUE
-
 FORMULA_TRUTH_VALUE        <- SIMPLE_TRUTH_VALUE, FORMULA_STREAM
 
 // ===========================================================
@@ -217,6 +247,8 @@ SET_LINK <- UNORDERED_LINK,COLLECTION_LINK
 // Measure-theoretic (probabilistic) versions of AND_LINK, OR_LINK
 // These use probabilistic formulas to compute TruthValues.
 // See issue opencog/atomspace#2814 for a discussion.
+// XXX OBSOLETE -- These are unused, unimplemented, and are candidates
+// for removal.
 UNION_LINK <- UNORDERED_LINK,COLLECTION_LINK
 INTERSECTION_LINK <- UNORDERED_LINK,COLLECTION_LINK
 COMPLEMENT_LINK <- UNORDERED_LINK,COLLECTION_LINK
@@ -261,9 +293,10 @@ SEQUENTIAL_OR_LINK <- ORDERED_LINK,CRISP_OUTPUT_LINK,CRISP_INPUT_LINK
 
 // ====================================================================
 // Pattern-engine links. These have a special meaning for the pattern
-// engine; they are used to specify what is searched for.
+// engine; they are used to specify what is searched for, and how
+// results are presented.
 
-// The 'intuitionist logic' version of OR_LINK is 'multiple choice'
+// The 'intuitionist logic' version of OR_LINK is 'multiple choice'.
 // The ChoiceLink states that a choice must be made.  Like a restaurant
 // menu, it lists a menu of things: you can pick one (and only one).
 // Thus, ChoiceLink is an exclusive choice: you can only choose one of
@@ -314,6 +347,17 @@ ABSENT_LINK <- PRESENT_LINK
 // case" condition during matching. It's a kind-of `ForAll`, just like
 // Present is a kind-of `ThereExists`.
 ALWAYS_LINK <- PRESENT_LINK
+
+// A collection of variables or clauses that should be grouped together
+// when presenting results. Inspired by the "GROUP BY" statement in SQL,
+// and intended to have similar semantics & effects. Results having a
+// common grouping will be placed in the same LinkValue. Disjoint
+// results will be presented disjointly.
+//
+// The inheritance from AlwaysLink is meant to indicate that the
+// grouping behave like an AlwaysLink, in that every member of the
+// grouping always has the same groundings.
+GROUP_LINK <- ALWAYS_LINK
 
 // Continuations are used in the Pattern Engine to implement infinite
 // recursion. They currently behave like an explicit declaration of tail
@@ -402,7 +446,7 @@ SECTION <- ORDERED_LINK             // Sheaf section, connector set
 //
 // The original germ "playing" is now the head of the shape. The word
 // "level" becomes the germ of the CrossSection. The wild-card indicates
-// which slot the the germ of the CrossSection came from. Thus, the
+// which slot the germ of the CrossSection came from. Thus, the
 // original Section can be obtained from the CrossSection by reinserting
 // the new germ into the wild-card.
 //
@@ -448,6 +492,9 @@ ITEM_CLASS_NODE <- LEXICAL_NODE
 // A TagNode is a name for a data stream that is generating Items.
 // Data streams are kind-of-like sets, except that they are constantly
 // popping out more Items, so they're not static or fixed.
+// TODO: should these be OBJECT_NODEs?
+// Defacto, at least one of these is a STREAM_NODE (the OpenclNode
+// in the atomese-simd repo.) Some in the sensory repo might be also.
 TAG_NODE <- LEXICAL_NODE
 
 // A TagLink is a link between a TagNode and the Item being tagged.
@@ -470,7 +517,8 @@ TAG_LINK <- ORDERED_LINK // <- MEMBER_LINK
 // A Variable.  Use Lambda's to hide these. Use types to type them.
 VARIABLE_NODE <- ANY_NODE
 
-// A list of variables or variable declarations.
+// A list of variables or variable declarations. These may be typed,
+// with possibly complex types, such as signatures.
 VARIABLE_LIST <- CONNECTOR_SEQ
 
 // A set (thus unordered) of variables or variable declarations. This
@@ -626,7 +674,7 @@ PUT_LINK <- PRENEX_LINK
 
 // The JoinLink searches for containing links that satsify the specified
 // predicates. This is the AtomSpace version of "join and meet" in a
-// partially ordered set. See wikipedia "meet and join".
+// partially ordered set. See Wikipedia "meet and join".
 // The MinimalJoin is the supremum.
 // The MaximalJoin is the top.
 // The UpperSet is everything in between.
@@ -747,12 +795,8 @@ TYPE_INTERSECTION_LINK <- TYPE_CHOICE
 // connectors (the input, and the output).
 ARROW_LINK <- CONNECTOR_SEQ,TYPE_OUTPUT_LINK
 
-// Type constructor.
-// The SignatureLink implements "deep types", a way for specifying
-// the type of an entire graph, and not just some node or link.
-// The type specification is "precise", in contrast to the fuzzy
-// type specification, below. It is a Connector, as it specifies
-// only one connectable thing at a time.
+// Type constructor compound structured types.
+// It is a Connector, as it specifies only one connectable thing at a time.
 SIGNATURE_LINK <- CONNECTOR,TYPE_OUTPUT_LINK
 
 // Short-hand for above: (SignNode 'BlahLink) is shorthand for
@@ -762,9 +806,9 @@ SIGNATURE_LINK <- CONNECTOR,TYPE_OUTPUT_LINK
 // a variable without a name binding.
 SIGN_NODE <- TYPE_NODE
 
-// Signature for a typed link. This is needed for encoding signatures
+// Signature for a typed LinkValue. This is needed for encoding signatures
 // involving LinkValue and similar. It also simplifies polymorphsm.
-// Thus, for example, the siggnature of
+// Thus, for example, the signature of
 // (LinkValue (FloatValue...) (Concept ...)) cannot be encoded with
 // a regular SignatureLink, because the LinkValue blocks this. However,
 // it can be encoded as
@@ -871,7 +915,7 @@ SATISFACTION_LINK <- SATISFYING_LINK,VIRTUAL_LINK
 // Functions that do NOT bind variables.
 
 // A FunctionLink is a Link that can be executed, with the result of
-// execution being some Atom.  FunctionLink does NOT derive from
+// execution being some Value.  FunctionLink does NOT derive from
 // LambdaLink, which may seem counter-intuitive; here's why, so
 // listen up.  All of the explicitly-named functions (e.g. PlusLink)
 // do not need to explicitly name their arguments, and it would even
@@ -900,9 +944,23 @@ FUNCTION_LINK <- FREE_LINK,EXECUTABLE_LINK
 //
 // How widespread is this? The ExecutionOutputLink makes use of this,
 // and so does FormulaPredicateLink.cc. Altering the first is easy.
-// The second is easy to stub out, but then siz unit tests fail. Sooo
+// The second is easy to stub out, but then six unit tests fail. Sooo
 // leave as-is seems like the correct choice.
-
+//
+// XXX TODO-FIXME Many of link types below take a *single* argument, or
+// perhaps just two, and thus behave quite differently from the original
+// intent for the FunctionLink as a base class. The intent was for
+// FunctionLink to handle arbitrary-arity functions, like PlusLink.
+// That is, PlusLink works directly as
+//     (Plus (Number 1) (Number 1))
+// and not as
+//     (Plus (List (Number 1) (Number 1)))
+// whereas many of the link types below (in particular, the various
+// ValueOf link types) want the second form. Many of these also seem
+// not to need the FreeLink inheritance, either. There does not seem to
+// be any point in inventing a special FixedArityFunctionLink because
+// the ExecutableLink already covers this case. Currently, there is no
+// C++ class for ExecutableLink; perhaps there should be?
 // --------------------
 // Boolean-valued functions
 
@@ -953,8 +1011,11 @@ POW_LINK <- NUMERIC_FUNCTION_LINK
 // Return uniformly distributed random number between two limits.
 RANDOM_NUMBER_LINK <- NUMERIC_FUNCTION_LINK
 
-// Trigonometric Sine function
+// Trigonometric functions
 SINE_LINK <- NUMERIC_FUNCTION_LINK
+COSINE_LINK <- NUMERIC_FUNCTION_LINK
+TAN_LINK <- NUMERIC_FUNCTION_LINK
+EXP_LINK <- NUMERIC_FUNCTION_LINK
 
 // Return the sum of vector components of a NumberNode or FloatValue.
 ACCUMULATE_LINK <- NUMERIC_FUNCTION_LINK
@@ -1009,25 +1070,43 @@ TYPE_OF_LINK <- VALUE_OF_LINK
 // Grab an IncomingSet of an Atom, and return it as a LinkValue.
 INCOMING_OF_LINK <- VALUE_OF_LINK
 
-// Convert a LinkValue to a SetLink. The argument is presumed to
+// Convert between Link/LinkValue types. If no type is specified,
+// then convert to SetLink. Primarily intended to convert a LinkValue
+// to a SetLink, but can go other ways. The argument is presumed to
 // be some executable link that, when executed, returns a LinkValue
 // (or some derived type, e.g. a QueueValue) and now we want an
 // actual set.
 COLLECTION_OF_LINK <- FUNCTION_LINK,COLLECTION_LINK
+
+// Convert StringValues into Nodes, or vice-versa, or convert
+// from one type of Node to another. The string is kept; the
+// type is rewritten. This is the string version of NumberOfLink.
+STRING_OF_LINK <- FUNCTION_LINK
 
 // Opposite of the ValueOfLink; attach a Value to an Atom.
 // Verb: "to set", and not noun "a set (collection)"
 SET_VALUE_LINK <- FUNCTION_LINK
 SET_TV_LINK <- SET_VALUE_LINK,EVALUATABLE_LINK "SetTVLink"
 
+// Numeric increment. Combined (SetValue (Plus (FloatValueOf ...)))
+// Its atomic, so thread-safe.
+INCREMENT_VALUE_LINK <- FUNCTION_LINK
+
 // Internal-use-only wrapper for Values. Older code for function
 // application and beta reduction only works with Atoms, not Values.
-// Rewriting it to flow Values is really hard: we don't have a strategy
-// for applying functions to Values. This is the tactical work-around:
-// It can be placed inside a Link, so beta-reduction works. It holds
-// a Value, which functions can obtain by calling execute(). It *cannot*
-// be placed in the AtomSpace, so is not quite a "real" Atom.
+// Rewriting that code to flow Values is really hard: we don't have a
+// strategy for applying functions to Values. This is the tactical
+// work-around: It can be placed inside a Link, so beta-reduction works.
+// It holds a Value, which functions can obtain by calling execute().
+// It *cannot* be placed in the AtomSpace, so is not quite a "real" Atom.
 VALUE_SHIM_LINK <- EXECUTABLE_LINK,NUMERIC_OUTPUT_LINK
+
+// --------------------
+// String functions
+
+// SplitLink will take a StringValue or Node, and split the value/name
+// into multiple strings, according to whitespace.
+SPLIT_LINK <- COLLECTION_OF_LINK
 
 // -----------
 // Similar to ValueOfLink, but this returns a promise to return a Value
@@ -1063,9 +1142,21 @@ FORMULA_PREDICATE_LINK <- SCOPE_LINK,EVALUATABLE_LINK
 // only its argument list, instead of the entire AtomSpace.
 //
 // MapLink, because it resembles the standard functional-programming
-// concept of "map", except that it discard unmatchable entries, so
+// concept of "map", except that it discards unmatchable entries, so
 // it's really FilterMapLink. That's a mouthful, so we go with FilterLink.
 FILTER_LINK <- FUNCTION_LINK
+
+// ConcatenateLink concatenates a list-of-lists, flattening a two-level
+// nesting down to one. Like the FilterLink above, this is another
+// list-processing type. Until now, Atomese has managed to avoid
+// implementing SRFI-1-like list processing primitives, but the the
+// introduction of the concept of Value Streams makes that subsystem
+// look like "list processing", and so a lisp-like insfrastructure
+// seems unavoidable. Unlike lisp/scheme, our primitives continue to be
+// Atoms, so its not like we can avoid re-inventing SRFI-1 by providing
+// a bunch of callouts to scheme. So this journey seems unavoidable,
+// for now, and is driven by necessity.
+CONCATENATE_LINK <- COLLECTION_OF_LINK
 
 // --------------------
 // Other kinds of functions.
@@ -1113,7 +1204,20 @@ EXECUTE_THREADED_LINK <- EXECUTABLE_LINK
 PURE_EXEC_LINK <- EXECUTABLE_LINK
 
 // ==============================================================
-// Procedure and schema nodes.
+// Object, procedure and schema nodes.
+//
+// ObjectNodes represent external, "real", "physical" objects that
+// "exist" out there, in the "real world". Objects can be sent
+// "messages", and thus resemble object-oriented (OO) objects.
+// (The concept of "sending a message" dates back to older ideas about
+// OO programming. For languages like C++/Java, sending a message is the
+// same thing as calling a method on that object.)
+// ObjectNodes have per-instance state that is opaque to the AtomSpace,
+// and the opaque state cannot (in general) be saved (even though the
+// ObjectNode iself can be.) That state is in general associated with
+// some external object or device: a file, a library function, a socket,
+// a database, etc.
+OBJECT_NODE <- NODE
 //
 // These form the foundation for a different way of looking at
 // Values and Predicates: they generalize the notion of "predicate"
@@ -1122,7 +1226,7 @@ PURE_EXEC_LINK <- EXECUTABLE_LINK
 //
 // Procedures are generic terms; when they are executed, they can
 // return any Value, including Atoms, and not just TruthValues.
-PROCEDURE_NODE <- NODE
+PROCEDURE_NODE <- OBJECT_NODE
 
 // DefinedProcedureNodes are used to make human-written Atomese easier
 // to read by humans. They have no other fundamental usefulness...
@@ -1137,6 +1241,17 @@ DEFINED_PROCEDURE_NODE <- PROCEDURE_NODE
 // http://lambda-the-ultimate.org/node/5482 for discussion of jets.
 GROUNDED_PROCEDURE_NODE <- PROCEDURE_NODE
 
+// SchemaNodes are similar to ProcedureNodes, except they must
+// necessarily return Atoms when executed.
+SCHEMA_NODE <- PROCEDURE_NODE
+DEFINED_SCHEMA_NODE <- SCHEMA_NODE,DEFINED_PROCEDURE_NODE
+GROUNDED_SCHEMA_NODE <- SCHEMA_NODE,GROUNDED_PROCEDURE_NODE
+
+// -----
+// Predicates are somewhat similar to Procedures, but have some
+// important differences. They are evaluated, not executed, and
+// thus necessarily return TruthValues.
+
 // GroundedPredicates wrap something that returns a TruthValue.
 GROUNDED_PREDICATE_NODE <- PREDICATE_NODE,GROUNDED_PROCEDURE_NODE
 
@@ -1146,11 +1261,27 @@ GROUNDED_PREDICATE_NODE <- PREDICATE_NODE,GROUNDED_PROCEDURE_NODE
 // some TruthValue.
 DEFINED_PREDICATE_NODE <- PREDICATE_NODE,PROCEDURE_NODE
 
-// SchemaNodes are similar to PredicateNodes, except they must
-// necessarily return Atoms when executed.
-SCHEMA_NODE <- PROCEDURE_NODE
-DEFINED_SCHEMA_NODE <- SCHEMA_NODE,DEFINED_PROCEDURE_NODE
-GROUNDED_SCHEMA_NODE <- SCHEMA_NODE,GROUNDED_PROCEDURE_NODE
+// ==============================================================
+// Serializers, for GPU's
+// Convert collections of Atoms or Values into vectors,
+// e.g. StringValue or FloatValue vectors.
+
+// Base class
+COLUMN <- EXECUTABLE_LINK
+
+// Convert collection to a StringValue of s-expressions.
+SEXPR_COLUMN <- COLUMN
+
+// Convert collection to a FloatValue of numbers.
+FLOAT_COLUMN <- COLUMN
+
+// Convert collection to a LinkValue of Values.
+LINK_COLUMN <- COLUMN
+
+// Combine LinkColumn and FloatColumn into one does-it-all matrix
+// transpose. (Q: are FloatColumn and LinkColumn needed, if we do it
+// all, here?)
+TRANSPOSE_COLUMN <- COLUMN
 
 // ==============================================================
 // Foreign abstrast syntax trees (AST's)

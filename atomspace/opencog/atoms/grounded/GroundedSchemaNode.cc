@@ -61,20 +61,32 @@ void GroundedSchemaNode::init()
 	// At this point, we only run scheme and python schemas.
 	if (0 == schema.compare(0, 4, "scm:", 4))
 	{
+#ifdef HAVE_GUILE
 		// Be friendly, and strip leading white-space, if any.
 		size_t pos = 4;
 		while (' ' == schema[pos]) pos++;
 		_runner = new SCMRunner(schema.substr(pos));
+#else
+		throw RuntimeException(TRACE_INFO,
+		        "This binary does not have guile support in it; "
+		        "Cannot evaluate scheme GroundedSchemaNode!");
+#endif /* HAVE_GUILE */
 		return;
 	}
 
 	if (0 == schema.compare(0, 10, "scm-eager:", 10))
 	{
+#ifdef HAVE_GUILE
 		_eager = true;
 		// Be friendly, and strip leading white-space, if any.
 		size_t pos = 10;
 		while (' ' == schema[pos]) pos++;
 		_runner = new SCMRunner(schema.substr(pos));
+#else
+		throw RuntimeException(TRACE_INFO,
+		        "This binary does not have guile support in it; "
+		        "Cannot evaluate scheme GroundedSchemaNode!");
+#endif /* HAVE_GUILE */
 		return;
 	}
 
@@ -88,7 +100,8 @@ void GroundedSchemaNode::init()
 		_runner = new PythonRunner(schema.substr(pos));
 #else
 		throw RuntimeException(TRACE_INFO,
-		                       "Cannot evaluate python GroundedSchemaNode!");
+		       "This binary does not have python support in it; "
+		       "Cannot evaluate python GroundedSchemaNode!");
 #endif /* HAVE_CYTHON */
 		return;
 	}
@@ -105,14 +118,14 @@ GroundedSchemaNode::~GroundedSchemaNode()
 	if (_runner) delete _runner;
 }
 
-/// execute -- execute the SchemaNode of the ExecutionOutputLink
+/// execute_args -- execute the SchemaNode of the ExecutionOutputLink
 ///
 /// Expects "cargs" to be a ListLink unless there is only one argument
 /// Executes the GroundedSchemaNode, supplying cargs as arguments
 ///
-ValuePtr GroundedSchemaNode::execute(AtomSpace* as,
-                                     const ValuePtr& cargs,
-                                     bool silent)
+ValuePtr GroundedSchemaNode::execute_args(AtomSpace* as,
+                                          const ValuePtr& cargs,
+                                          bool silent)
 {
 	// Unknown procedure type
 	if (nullptr == _runner)

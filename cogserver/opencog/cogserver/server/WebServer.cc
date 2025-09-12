@@ -19,14 +19,18 @@
 
 using namespace opencog;
 
-WebServer::WebServer(void) :
+WebServer::WebServer(CogServer& cs) :
+	_cserver(cs),
 	_request(nullptr)
 {
 }
 
 WebServer::~WebServer()
 {
-	logger().info("Closed WebSocket Shell");
+	// Log this as 'debug' not 'info', due to nuisance websocket
+	// traffic coming from systemd which pings it every 5 seconds.
+	// Or maybe its the gnome dbus or soething like that.
+	logger().debug("Closed WebSocket Shell");
 }
 
 // ==================================================================
@@ -34,14 +38,14 @@ WebServer::~WebServer()
 // Called before any data is sent/received.
 void WebServer::OnConnection(void)
 {
-	// If the the socket didn't connect as a websocet, then just
-	// report the stats as an HTML page.
-	if (not _got_websock_header)
+	if (0 == _url.compare("/favicon.ico"))
 	{
-		if (0 == _url.compare("/favicon.ico"))
-			Send(favicon());
-		else
-			Send(html_stats());
+		Send(favicon());
+		throw SilentException();
+	}
+	if (0 == _url.compare("/stats"))
+	{
+		Send(html_stats());
 		throw SilentException();
 	}
 
@@ -49,8 +53,7 @@ void WebServer::OnConnection(void)
 	// whatever, and, stripping away the leading slash, it
 	// should be one of the supported comands.
 	std::string cmdName = _url.substr(1);
-	CogServer& cs = cogserver();
-	_request = cs.createRequest(cmdName);
+	_request = _cserver.createRequest(cmdName);
 
 	// Reject URL's we don't know about.
 	if (nullptr == _request)
@@ -58,14 +61,21 @@ void WebServer::OnConnection(void)
 		logger().info("[WebServer] Unsupported request %s", _url.c_str());
 		Send("HTTP/1.1 404 Not Found\r\n"
 			"Server: CogServer\r\n"
-			"Content-Type: text/plain\r\n"
+			"Content-Type: text/html\r\n"
 			"\r\n"
-			"404 Not Found\n"
-			"The Cogserver doesn't know about " + _url + "\n");
+			"<!DOCTYPE html>\n"
+			"<html lang=\"en\">\n"
+			"<head><meta charset=\"UTF-8\">\n"
+			"<link rel=\"stylesheet\" href=\"styles.css\"></head>\n"
+			"<body><h1>404 Not Found</h1>\n"
+			"The Cogserver doesn't know about " + _url + "\n"
+			"<p>The <a href=\"stats\">stats page is here</a>.\n"
+			"<p>The RESTful URL's include json, python and scm.\n"
+			"</body</html>\n");
 		throw SilentException();
 	}
 
-	logger().info("Opened WebSocket %s Shell", cmdName.c_str());
+	logger().info("Opened Http Socket %s Shell", cmdName.c_str());
 }
 
 // Called for each newline-terminated line received.
@@ -103,25 +113,67 @@ std::string WebServer::html_stats(void)
 		"Server: CogServer\r\n"
 		"Content-Type: text/html\r\n"
 		"\r\n"
-		"<!DOCTYPE html>"
-		"<html>"
-		"<head><title>CogServer Stats</title>"
-		"  <meta charset=\"UTF-8\"></head>"
-		"<body>"
-		"<h2>Loaded Modules</h2>"
-		"<pre>\n";
-	response += cogserver().listModules();
+		"<!DOCTYPE html>\n"
+		"<html lang=\"en\">\n"
+		"<head>\n"
+		"  <meta charset=\"UTF-8\">\n"
+		"  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+		"  <title>CogServer Status</title>\n"
+		"  <style>\n"
+		"    body {\n"
+		"      font-family: monospace;\n"
+		"      margin: 20px;\n"
+		"      line-height: 1.6;\n"
+		"      background: #fafafa;\n"
+		"    }\n"
+		"    h1 {\n"
+		"      border-bottom: 2px solid #333;\n"
+		"      padding-bottom: 10px;\n"
+		"      color: #333;\n"
+		"    }\n"
+		"    h2 {\n"
+		"      border-bottom: 1px solid #ccc;\n"
+		"      padding-bottom: 5px;\n"
+		"      margin-top: 30px;\n"
+		"      color: #444;\n"
+		"    }\n"
+		"    pre {\n"
+		"      background: #f0f0f0;\n"
+		"      padding: 15px;\n"
+		"      border: 1px solid #ccc;\n"
+		"      border-radius: 4px;\n"
+		"      overflow-x: auto;\n"
+		"      font-size: 14px;\n"
+		"      line-height: 1.4;\n"
+		"    }\n"
+		"    a {\n"
+		"      color: #007bff;\n"
+		"      text-decoration: none;\n"
+		"    }\n"
+		"    a:hover {\n"
+		"      text-decoration: underline;\n"
+		"    }\n"
+		"  </style>\n"
+		"</head>\n"
+		"<body>\n"
+		"  <h1>CogServer Status</h1>\n"
+		"  <h2>Loaded Modules</h2>\n"
+		"  <pre>\n";
+	response += _cserver.listModules();
 	response +=
-		"</pre>"
-		"<h2>CogServer Stats</h2>"
-		"<pre>\n";
-	response += cogserver().display_web_stats();
+		"</pre>\n"
+		"  <h2>Connection Statistics</h2>\n"
+		"  <pre>\n";
+	response += _cserver.display_web_stats();
 	response +=
-		"</pre>"
-		"<h2>Stats Legend</h2>"
-		"<pre>";
+		"</pre>\n"
+		"  <h2>Connection Stats Legend</h2>\n"
+		"  <pre>";
 	response += CogServer::stats_legend();
-	response += "</pre></body></html>";
+	response +=
+		"</pre>\n"
+		"</body>\n"
+		"</html>";
 
 	return response;
 }

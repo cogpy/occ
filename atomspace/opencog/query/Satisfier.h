@@ -26,8 +26,7 @@
 
 #include <vector>
 
-#include <opencog/atoms/truthvalue/TruthValue.h>
-#include <opencog/atoms/value/QueueValue.h>
+#include <opencog/atoms/value/ContainerValue.h>
 #include <opencog/atomspace/AtomSpace.h>
 
 #include <opencog/query/ContinuationMixin.h>
@@ -41,26 +40,25 @@ namespace opencog {
  * pattern matcher calls the callback, it will do so with a particular
  * grounding of the search pattern.
  *
- * This will set the result TV to TRUE_TV if a grounding is found. More
- * sophisticated TV calculations can be obtained by overloading this class.
+ * This will set the _result to true if a grounding is found.
  */
 
 class Satisfier :
 	public ContinuationMixin
 {
-	public: // Arghhh. OpenPsi accesses these directly...
+	protected:
 		Handle _pattern_body;
 		bool _have_variables;
 
 	public:
 		Satisfier(AtomSpace* as) :
 			ContinuationMixin(as),
-			_result(TruthValue::FALSE_TV()) {}
+			_result(false) {}
 
 		DECLARE_PE_MUTEX;
 		HandleSeq _varseq;
 		Handle _ground;
-		TruthValuePtr _result;
+		bool _result;
 
 		virtual void set_pattern(const Variables& vars,
 		                         const Pattern& pat)
@@ -76,8 +74,8 @@ class Satisfier :
 		// groundings, this will usually return false, so the
 		// patternMatchEngine can keep looking for ever more
 		// groundings.
-		virtual bool grounding(const GroundingMap &var_soln,
-		                       const GroundingMap &term_soln);
+		virtual bool propose_grounding(const GroundingMap &var_soln,
+		                               const GroundingMap &term_soln);
 
 		// Final pass, if no grounding was found.
 		virtual bool search_finished(bool);
@@ -101,13 +99,21 @@ class SatisfyingSet :
 	protected:
 		AtomSpace* _as;
 		DECLARE_PE_MUTEX;
+		PatternLinkPtr _plp;
 		HandleSeq _varseq;
-		QueueValuePtr _result_queue;
+		ContainerValuePtr _result_queue;
+		std::map<Handle, ContainerValuePtr> _var_marginals;
+		void setup_marginals(void);
+
+		ValuePtr wrap_result(const GroundingMap &var_soln);
+		size_t _num_results;
+		std::map<GroundingMap, ValueSet> _groups;
 
 	public:
-		SatisfyingSet(AtomSpace* as) :
+		SatisfyingSet(AtomSpace* as, const ContainerValuePtr& cvp) :
 			ContinuationMixin(as),
-			_as(as), max_results(SIZE_MAX) {}
+			_as(as), _result_queue(cvp),
+			_num_results(0), max_results(SIZE_MAX) {}
 
 		size_t max_results;
 
@@ -116,6 +122,12 @@ class SatisfyingSet :
 		{
 			_varseq = vars.varseq;
 			ContinuationMixin::set_pattern(vars, pat);
+			setup_marginals();
+		}
+
+		virtual bool satisfy(const PatternLinkPtr& plp) {
+			_plp = plp;
+			return ContinuationMixin::satisfy(plp);
 		}
 
 		// Return true if a satisfactory grounding has been
@@ -123,14 +135,14 @@ class SatisfyingSet :
 		// groundings, this will usually return false, so the
 		// patternMatchEngine can keep looking for ever more
 		// groundings.
-		virtual bool grounding(const GroundingMap &var_soln,
-		                       const GroundingMap &term_soln);
+		virtual bool propose_grounding(const GroundingMap &var_soln,
+		                               const GroundingMap &term_soln);
+		virtual bool propose_grouping(const GroundingMap &var_soln,
+		                              const GroundingMap &term_soln,
+		                              const GroundingMap &group);
 
 		virtual bool start_search(void);
 		virtual bool search_finished(bool);
-
-		virtual QueueValuePtr get_result_queue()
-		{ return _result_queue; }
 };
 
 }; // namespace opencog

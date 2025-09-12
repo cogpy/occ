@@ -23,7 +23,7 @@
 #ifndef _OPENCOG_RANDOM_STREAM_H
 #define _OPENCOG_RANDOM_STREAM_H
 
-#include <opencog/atoms/value/StreamValue.h>
+#include <opencog/atoms/value/FloatValue.h>
 
 namespace opencog
 {
@@ -36,10 +36,10 @@ namespace opencog
  * RandomStreams provide an example of streaming data.
  */
 class RandomStream
-	: public StreamValue
+	: public FloatValue
 {
 protected:
-	RandomStream(Type t) : StreamValue(t) {}
+	RandomStream(Type t) : FloatValue(t) {}
 	int _len;
 
 	virtual void update() const;
@@ -53,15 +53,8 @@ public:
 	virtual std::string to_string(const std::string& indent = "") const;
 };
 
-typedef std::shared_ptr<RandomStream> RandomStreamPtr;
-static inline RandomStreamPtr RandomStreamCast(ValuePtr& a)
-	{ return std::dynamic_pointer_cast<RandomStream>(a); }
-
-template<typename ... Type>
-static inline std::shared_ptr<RandomStream> createRandomStream(Type&&... args) {
-	return std::make_shared<RandomStream>(std::forward<Type>(args)...);
-}
-
+VALUE_PTR_DECL(RandomStream);
+CREATE_VALUE_DECL(RandomStream);
 
 /** @}*/
 } // namespace opencog

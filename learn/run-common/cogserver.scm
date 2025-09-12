@@ -59,10 +59,14 @@
 (define base-storage-node (eval-string sns))
 
 (define write-buff (WriteBufferProxy "write buffer"))
-(ProxyParameters write-buff base-storage-node (Number 600))
+; (ProxyParameters write-buff base-storage-node (Number 600))
+(cog-set-value! write-buff (*-proxy-parts-*) base-storage-node)
+(cog-set-value! write-buff (*-decay-const-*) (Number 600))
 
 (define storage-node (ReadWriteProxy "buffered writer"))
-(ProxyParameters storage-node (List base-storage-node write-buff))
+; (ProxyParameters storage-node (List base-storage-node write-buff))
+(cog-set-value! storage-node (*-proxy-parts-*)
+	(List base-storage-node write-buff))
 
 (cog-open storage-node)
 
@@ -84,10 +88,11 @@
 ; sending data until *after* the DB is opened.
 (start-cogserver
 	#:port (string->number (getenv "PORT"))
+	#:web (string->number (getenv "WEBPORT"))
+	#:mcp 0
 	#:scmprompt (getenv "PROMPT")
 	#:prompt (getenv "OCPROMPT")
-	#:logfile (getenv "LOGFILE")
-	#:web 0)
+	#:logfile (getenv "LOGFILE"))
 
 ; XXX Is this needed? Didn't cogserver already get the top?
 (when (< 0 (length frame-tops))

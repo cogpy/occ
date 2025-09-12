@@ -1,7 +1,7 @@
 /*
  * opencog/atomspace/TypeIndex.h
  *
- * Copyright (C) 2008 Linas Vepstas <linasvepstas@gmail.com>
+ * Copyright (C) 2008,2025 Linas Vepstas <linasvepstas@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License v3 as
@@ -23,14 +23,18 @@
 #define _OPENCOG_TYPEINDEX_H
 
 #include <mutex>
+#include <set>
 #include <vector>
 
 #if HAVE_FOLLY
 #include <folly/container/F14Set.h>
-#else
-#include <set>
 #endif
 
+#if HAVE_SPARSEHASH
+#include <sparsehash/sparse_hash_set>
+#endif
+
+#include <opencog/util/oc_assert.h>
 #include <opencog/atoms/base/Atom.h>
 #include <opencog/atoms/base/Handle.h>
 #include <opencog/atoms/atom_types/types.h>
@@ -51,14 +55,47 @@ namespace opencog
 //    sometimes reports the same result twice. Why? I dunno. This
 //    one failure is enough to say "not recommended." I don't need
 //    to be chasing obscure bugs.
-#if HAVE_FOLLY_XXX
-typedef folly::F14ValueSet<Handle> AtomSet;
-#else
-typedef std::unordered_set<Handle> AtomSet;
+#if USE_FOLLY
+	typedef folly::F14ValueSet<Handle> AtomHanSet;
 #endif
 
-#define TYPE_INDEX_SHARED_LOCK std::shared_lock<std::shared_mutex> lck(_mtx);
-#define TYPE_INDEX_UNIQUE_LOCK std::unique_lock<std::shared_mutex> lck(_mtx);
+// DO NOT ENABLE sparshash for the TypeSet!!
+// #define USE_SPARSE_TYPESET 1
+//
+// sparsehash
+// -- Size of Atom shrinks by 24 Bytes; this is the size of the
+//    std::shared_ptr<> in Handle. Empty buckets would normally have
+//    one of these; here, there are zero.
+// -- addNode performce is 4x slower.
+// -- addLink performance is 3x slower.
+// Above are measured using `atomspace_bm` from
+// https://github.com/opencog/benchmark.git
+// This total collapse in performance screams: NO!!!
+//
+#if USE_SPARSE_TYPESET
+	typedef google::sparse_hash_set<Handle> AtomHanSet;
+#endif
+
+#if not (USE_SPARSE_TYPESET || USE_FOLLY)
+	typedef std::unordered_set<Handle> AtomHanSet;
+#endif
+
+// The AtomSet is just a set, plus a lock on that set.
+struct AtomSet : AtomHanSet
+{
+	mutable std::shared_mutex _mtx;
+#if USE_SPARSE_TYPESET
+	AtomSet() { set_deleted_key(Handle()); }
+#else
+	AtomSet() = default;
+#endif
+	AtomSet(AtomSet&& other) noexcept :
+		AtomHanSet(std::move(other))
+	{}
+};
+
+#define TYPE_INDEX_SHARED_LOCK(s) std::shared_lock<std::shared_mutex> lck(s._mtx);
+#define TYPE_INDEX_UNIQUE_LOCK(s) std::unique_lock<std::shared_mutex> lck(s._mtx);
 
 /**
  * Implements a vector of AtomSets; each AtomSet is a hash table of
@@ -77,22 +114,47 @@ typedef std::unordered_set<Handle> AtomSet;
 class TypeIndex
 {
 	private:
-		std::vector<AtomSet> _idx;
-		size_t _num_types;
+		mutable int _num_types;
+		mutable int _reserved;
+		int _offset_to_atom;
 		NameServer& _nameserver;
+		mutable std::vector<AtomSet> _idx;
 
-		// Single, global mutex for locking the index.
-		mutable std::shared_mutex _mtx;
+		static constexpr int TYPE_RESERVE_SIZE = 1024;
+		static constexpr int POOL_SIZE = 8;
+		static constexpr int VEC_SIZE = TYPE_RESERVE_SIZE * POOL_SIZE;
+		int get_bucket_start(Type t) const
+		{
+			OC_ASSERT(_offset_to_atom <= t, "BUG with type buckets!");
+			if (_reserved + _offset_to_atom <= t) resize();
+			return POOL_SIZE * (t - _offset_to_atom);
+		}
+		int get_bucket(const Handle& h) const
+		{
+			int ibu = h->get_hash() % POOL_SIZE;
+			Type hty = h->get_type();
+			if (_reserved + _offset_to_atom <= hty) resize();
+			ibu += POOL_SIZE * (hty - _offset_to_atom);
+			return ibu;
+		}
+		AtomSet& get_atom_set(const Handle& h)
+		{
+			return _idx[get_bucket(h)];
+		}
+		const AtomSet& get_atom_set_const(const Handle& h) const
+		{
+			return _idx[get_bucket(h)];
+		}
 	public:
 		TypeIndex(void);
-		void resize(void);
+		void resize(void) const;
 
 		// Return a Handle, if it's already in the set.
 		// Else, return nullptr
 		Handle insertAtom(const Handle& h)
 		{
-			AtomSet& s(_idx.at(h->get_type()));
-			TYPE_INDEX_UNIQUE_LOCK;
+			AtomSet& s(get_atom_set(h));
+			TYPE_INDEX_UNIQUE_LOCK(s);
 			auto iter = s.find(h);
 			if (s.end() != iter) return *iter;
 			s.insert(h);
@@ -101,15 +163,15 @@ class TypeIndex
 
 		bool removeAtom(const Handle& h)
 		{
-			AtomSet& s(_idx.at(h->get_type()));
-			TYPE_INDEX_UNIQUE_LOCK;
+			AtomSet& s(get_atom_set(h));
+			TYPE_INDEX_UNIQUE_LOCK(s);
 			return 1 == s.erase(h);
 		}
 
 		Handle findAtom(const Handle& h) const
 		{
-			const AtomSet& s(_idx.at(h->get_type()));
-			TYPE_INDEX_SHARED_LOCK;
+			const AtomSet& s(get_atom_set_const(h));
+			TYPE_INDEX_SHARED_LOCK(s);
 			auto iter = s.find(h);
 			if (s.end() == iter) return Handle::UNDEFINED;
 			return *iter;
@@ -118,28 +180,40 @@ class TypeIndex
 		// How many atoms are there of type t?
 		size_t size(Type t) const
 		{
-			const AtomSet& s(_idx.at(t));
-			TYPE_INDEX_SHARED_LOCK;
-			return s.size();
+			if (t < _offset_to_atom) return 0;
+			size_t cnt = 0;
+			int start = get_bucket_start(t);
+			for (int ibu = start; ibu < start + POOL_SIZE; ibu++)
+			{
+				const AtomSet& s(_idx[ibu]);
+				TYPE_INDEX_SHARED_LOCK(s);
+				cnt += s.size();
+			}
+			return cnt;
 		}
 
 		// How many atoms, grand total?
 		size_t size(void) const
 		{
 			size_t cnt = 0;
-			TYPE_INDEX_SHARED_LOCK;
 			for (const auto& s : _idx)
+			{
+				TYPE_INDEX_SHARED_LOCK(s);
 				cnt += s.size();
+			}
 			return cnt;
 		}
 
 		// How many atoms, of type t, and subclasses also?
 		size_t size(Type type, bool subclass) const
 		{
-			size_t result = size(type);
+			size_t result = 0;
+			if (_offset_to_atom <= type)
+				result = size(type);
 			if (not subclass) return result;
 
-			for (Type t = ATOM; t<_num_types; t++)
+			// All subclassed types have a larger type.
+			for (Type t = type+1; t<_num_types; t++)
 			{
 				if (t != type and _nameserver.isA(t, type))
 					result += size(t);

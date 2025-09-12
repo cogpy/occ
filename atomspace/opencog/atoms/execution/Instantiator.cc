@@ -27,6 +27,7 @@
 #include <opencog/atoms/core/PutLink.h>
 #include <opencog/atoms/execution/ExecutionOutputLink.h>
 #include <opencog/atoms/execution/EvaluationLink.h>
+#include <opencog/atoms/flow/ValueShimLink.h>
 
 #include "Instantiator.h"
 
@@ -128,10 +129,6 @@ Handle Instantiator::reduce_exout(const Handle& expr,
 	Handle args(eolp->get_args());
 
 	sn = beta_reduce(sn, ist._varmap);
-
-	// If its a DSN, obtain the correct body for it.
-	if (sn->is_type(DEFINED_PROCEDURE_NODE))
-		sn = DefineLink::get_definition(sn);
 
 	// If its an anonymous function link, execute it here.
 	if (LAMBDA_LINK == sn->get_type())
@@ -414,7 +411,11 @@ Handle Instantiator::walk_tree(const Handle& expr,
 		if (nameserver().isA(tbr, VALUE_OF_LINK) or
 		    nameserver().isA(tbr, SET_VALUE_LINK)) return flh;
 
-		return HandleCast(flh->execute(_as, ist._silent));
+		ValuePtr vp(flh->execute(_as, ist._silent));
+		if (vp->is_atom())
+			return HandleCast(vp);
+
+		return HandleCast(createValueShimLink(vp));
 	}
 
 	// None of the above. Create a duplicate link, but with an outgoing
@@ -490,7 +491,8 @@ ValuePtr Instantiator::instantiate(const Handle& expr,
 	Type t = expr->get_type();
 	if (nameserver().isA(t, VALUE_OF_LINK) or
 	    nameserver().isA(t, SET_VALUE_LINK) or
-	    nameserver().isA(t, ARITHMETIC_LINK))
+	    nameserver().isA(t, ARITHMETIC_LINK) or
+	    nameserver().isA(t, COLUMN))
 	{
 		HandleSeq oset_results;
 		for (const Handle& h: expr->getOutgoingSet())
@@ -576,6 +578,12 @@ ValuePtr Instantiator::instantiate(const Handle& expr,
 
 	// Instantiate.
 	Handle grounded(walk_tree(expr, ist));
+
+	// Patterns with DeleteLink in them become nulls.
+	if (nullptr == grounded) return nullptr;
+
+	if (VALUE_SHIM_LINK == grounded->get_type())
+		return grounded->execute();
 
 	// The returned handle is not yet in the atomspace. Add it now.
 	// We do this here, instead of in walk_tree(), because adding

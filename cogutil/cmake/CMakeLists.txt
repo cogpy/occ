@@ -3,6 +3,7 @@
 # This is usually /usr/local/share/opencog/cmake
 INSTALL(FILES
 	AddCxxtest.cmake
+	FindAsio.cmake
 	FindBFD.cmake
 	Findcpprest.cmake
 	FindCxxtest.cmake
@@ -23,6 +24,7 @@ INSTALL(FILES
 	FindPthreads.cmake
 	FindRocksDB.cmake
 	FindSIGAR.cmake
+	FindSparseHash.cmake
 	FindStack.cmake
 	FindSTLPort.cmake
 	FindTBB.cmake

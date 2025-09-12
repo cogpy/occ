@@ -26,10 +26,35 @@
 
 #include <dlfcn.h>
 #include <unistd.h>
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 
-#include <boost/scope_exit.hpp>
+// A simple callback wrapper to do RAII when coing out of scope,
+// capable of handling exceptions. Boost provides this (in the form of
+// BOOST_SCOPE_EXIT macros), but we want to avoid the overkill of boost.
+// Some future C++ will provide this, but gcc does not, as of mid-2025.
+// Anyway, this is so simple, it seems best to avoid the dependencies.
+// Just do it ourselves.
+#include <iostream>
+#include <utility>
+
+template <typename Callback>
+class scope_exit
+{
+	private:
+		Callback _callback;
+	public:
+		explicit scope_exit(Callback&& callback)
+			: _callback(std::forward<Callback>(callback)) {}
+
+		~scope_exit() { _callback(); }
+};
+
+#define SCOPE_GUARD0 scope_exit scope_guard_void([](void)
+#define SCOPE_GUARD(X) scope_exit scope_guard([X](void)
+#define SCOPE_GUARD4(A,B,C,D) scope_exit scope_guard([&](void)
+#define SCOPE_GUARD_END )
 
 #include <opencog/util/exceptions.h>
 #include <opencog/util/Logger.h>
@@ -477,7 +502,7 @@ void PythonEval::initialize_python_objects_and_imports(void)
         __FUNCTION__);
 }
 
-PyObject* PythonEval::atomspace_py_object(AtomSpace* atomspace)
+PyObject* PythonEval::atomspace_py_object(AtomSpacePtr asp)
 {
     // The py_atomspace function pointer will be NULL if the
     // opencog.atomspace cython module failed to load. Avert
@@ -489,16 +514,7 @@ PyObject* PythonEval::atomspace_py_object(AtomSpace* atomspace)
         return NULL;
     }
 
-/***********
-    Weird ... I guess NULL atomspaces are OK!?
-    if (NULL == atomspace) {
-        logger().warn("PythonEval::%s No atomspace specified!",
-                       __FUNCTION__);
-        return NULL;
-    }
-************/
-
-    PyObject * pyAtomSpace = py_atomspace(atomspace);
+    PyObject * pyAtomSpace = py_atomspace(asp);
 
     if (!pyAtomSpace) {
         if (PyErr_Occurred())
@@ -971,14 +987,14 @@ PyObject* PythonEval::call_user_function(const std::string& moduleFunction,
     // Grab the GIL.
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    // BOOST_SCOPE_EXIT is a declaration for a scope-exit handler.
+    // SCOPE_GUARD is a declaration for a scope-exit handler.
     // It will call PyGILState_Release() when this function returns
     // (e.g. due to a throw).  The below is not a call; it's just a
     // declaration. Anyway, once the GIL is released, no more python
     // API calls are allowed.
-    BOOST_SCOPE_EXIT(&gstate) {
+    SCOPE_GUARD(&gstate) {
         PyGILState_Release(gstate);
-    } BOOST_SCOPE_EXIT_END
+    } SCOPE_GUARD_END;
 
     // Create the Python tuple for the function call with python
     // atoms for each of the atoms in the link arguments.
@@ -1000,10 +1016,10 @@ ValuePtr PythonEval::apply_v(AtomSpace * as,
                              Handle varargs)
 {
     std::lock_guard<std::recursive_mutex> lck(_mtx);
-    push_context_atomspace(as);
-    BOOST_SCOPE_EXIT(void) {
+    push_context_atomspace(AtomSpaceCast(as));
+    SCOPE_GUARD0 {
         pop_context_atomspace();
-    } BOOST_SCOPE_EXIT_END
+    } SCOPE_GUARD_END;
 
     // Get the python value object returned by this user function.
     PyObject *pyValue = call_user_function(func, varargs);
@@ -1017,9 +1033,9 @@ ValuePtr PythonEval::apply_v(AtomSpace * as,
     // Grab the GIL.
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    BOOST_SCOPE_EXIT(&gstate) {
+    SCOPE_GUARD(&gstate) {
         PyGILState_Release(gstate);
-    } BOOST_SCOPE_EXIT_END
+    } SCOPE_GUARD_END;
 
     // Did we actually get a Value?
     // One way to do this would be to say
@@ -1073,19 +1089,19 @@ void PythonEval::apply_as(const std::string& moduleFunction,
     // Grab the GIL.
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    // BOOST_SCOPE_EXIT is a declaration for a scope-exit handler.
+    // SCOPE_GUARD is a declaration for a scope-exit handler.
     // It will call PyGILState_Release() when this function returns
     // (e.g. due to a throw).  The below is not a call; it's just a
     // declaration. Anyway, once the GIL is released, no more python
     // API calls are allowed.
-    BOOST_SCOPE_EXIT(&gstate) {
+    SCOPE_GUARD(&gstate) {
         PyGILState_Release(gstate);
-    } BOOST_SCOPE_EXIT_END
+    } SCOPE_GUARD_END;
 
     // Create the Python tuple for the function call with python
     // atomspace.
     PyObject* pyArguments = PyTuple_New(1);
-    PyObject* pyAtomSpace = this->atomspace_py_object(as_argument);
+    PyObject* pyAtomSpace = this->atomspace_py_object(AtomSpacePtr(as_argument));
 
     PyTuple_SetItem(pyArguments, 0, pyAtomSpace);
     // Py_DECREF(pyAtomSpace);
@@ -1255,14 +1271,14 @@ std::string PythonEval::execute_script(const std::string& script)
     // Grab the GIL
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    // BOOST_SCOPE_EXIT is a declaration for a scope-exit handler.
+    // SCOPE_GUARD is a declaration for a scope-exit handler.
     // It will call PyGILState_Release() when this function returns
     // (e.g. due to a throw).  The below is not a call; it's just a
     // declaration. Anyway, once the GIL is released, no more python
     // API calls are allowed.
-    BOOST_SCOPE_EXIT(&gstate) {
+    SCOPE_GUARD(&gstate) {
         PyGILState_Release(gstate);
-    } BOOST_SCOPE_EXIT_END
+    } SCOPE_GUARD_END;
 
     check_for_error();
 
@@ -1292,7 +1308,7 @@ std::string PythonEval::exec_wrap_stdout(const std::string& expr)
     rc = dup2(pipefd[1], fileno(stdout));
     OC_ASSERT(0 < rc, "pipe splice failure");
 
-    BOOST_SCOPE_EXIT(&pipefd, &rc, &stdout_backup, &_capture_stdout)
+    SCOPE_GUARD4(&pipefd, &rc, &stdout_backup, &_capture_stdout)
     {
         // Restore stdout
         fflush(stdout);
@@ -1315,7 +1331,7 @@ std::string PythonEval::exec_wrap_stdout(const std::string& expr)
 
         // Cleanup.
         close(pipefd[0]);
-    } BOOST_SCOPE_EXIT_END
+    } SCOPE_GUARD_END;
 
     std::string res;
     try {

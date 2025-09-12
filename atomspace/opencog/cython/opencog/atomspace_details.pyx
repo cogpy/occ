@@ -9,10 +9,6 @@ from cython.operator cimport dereference as deref, preincrement as inc
 # @todo use the guide here to separate out into a hierarchy
 # http://wiki.cython.org/PackageHierarchy
 
-cdef api string get_path_as_string() with gil:
-    import sys
-    return str(sys.path).encode('UTF-8')
-
 cdef convert_handle_seq_to_python_list(vector[cHandle] handles):
     cdef vector[cHandle].iterator handle_iter
     cdef cHandle handle
@@ -20,13 +16,13 @@ cdef convert_handle_seq_to_python_list(vector[cHandle] handles):
     handle_iter = handles.begin()
     while handle_iter != handles.end():
         handle = deref(handle_iter)
-        value = create_python_value_from_c_value(<cValuePtr&>handle)
+        value = create_python_value_from_c_value(<cValuePtr&>(handle, handle.get()))
         result.append(value)
         inc(handle_iter)
     return result
 
 cdef convert_handle_set_to_python_list(cpp_set[cHandle] handles):
-    return [create_python_value_from_c_value(<cValuePtr&> h) for h in handles]
+    return [create_python_value_from_c_value(<cValuePtr&>(h, h.get())) for h in handles]
 
 
 cdef vector[cHandle] atom_list_to_vector(list lst):
@@ -39,26 +35,22 @@ cdef vector[cHandle] atom_list_to_vector(list lst):
     return handle_vector
 
 
-cdef AtomSpace_factory(cAtomSpace *to_wrap):
-    cdef AtomSpace instance = AtomSpace.__new__(AtomSpace)
-    instance.atomspace = to_wrap
-    # print "Debug: atomspace factory={0:x}".format(<long unsigned int>to_wrap)
-    return instance
+cdef extern from "opencog/cython/opencog/ExecuteStub.h" namespace "opencog":
+    cdef cValuePtr c_do_execute_atom "do_execute"(cAtomSpace*, cHandle) except +
+
 
 cdef AtomSpace_factoid(cValuePtr to_wrap):
     cdef AtomSpace instance = AtomSpace.__new__(AtomSpace)
     instance.asp = to_wrap
     instance.atomspace = <cAtomSpace*> to_wrap.get()
-    # print "Debug: atomspace factory={0:x}".format(<long unsigned int>to_wrap.get())
+    # print("Debug: atomspace factory={0:x}".format(<long unsigned int>to_wrap.get()))
     return instance
+
 
 cdef class AtomSpace(Value):
     # these are defined in atomspace.pxd:
-    #cdef cAtomSpace *atomspace
-    #cdef object parent_atomspace
-
-    #def __cinit__(self):
-    #    self.owns_atomspace = False
+    # cdef cAtomSpace *atomspace
+    # cdef object parent_atomspace
 
     # A tacky hack to pass in a pointer to an atomspace from C++-land.
     # basically, pass an int, and cast it to the C++ pointer.  This
@@ -67,10 +59,11 @@ cdef class AtomSpace(Value):
     def __init__(self, long addr = 0, object parent=None):
         if (addr == 0) :
             self.asp = createAtomSpace(<cAtomSpace*> NULL)
-            self.atomspace = <cAtomSpace*> self.asp.get()
         else :
-            self.atomspace = <cAtomSpace*> PyLong_AsVoidPtr(addr)
+            self.asp = as_cast(<cAtomSpace*> PyLong_AsVoidPtr(addr))
+        self.atomspace = <cAtomSpace*> self.asp.get()
         self.parent_atomspace = parent
+        self.ptr_holder = PtrHolder.create(<shared_ptr[cValue]&>self.asp);
 
     def __richcmp__(as_1, as_2, int op):
         if not isinstance(as_1, AtomSpace) or not isinstance(as_2, AtomSpace):
@@ -78,8 +71,8 @@ cdef class AtomSpace(Value):
         cdef AtomSpace atomspace_1 = <AtomSpace>as_1
         cdef AtomSpace atomspace_2 = <AtomSpace>as_1
 
-        cdef cAtomSpace* c_atomspace_1 = atomspace_1.atomspace
-        cdef cAtomSpace* c_atomspace_2 = atomspace_2.atomspace
+        cdef cValuePtr c_atomspace_1 = atomspace_1.asp
+        cdef cValuePtr c_atomspace_2 = atomspace_2.asp
 
         is_equal = True
         if c_atomspace_1 != c_atomspace_2:
@@ -103,7 +96,7 @@ cdef class AtomSpace(Value):
         cdef cHandle result = self.atomspace.add_atom(atom.get_c_handle())
         if result == result.UNDEFINED:
             return None
-        return create_python_value_from_c_value(<cValuePtr&>result)
+        return create_python_value_from_c_value(<cValuePtr&>(result, result.get()))
 
     def add_node(self, Type t, atom_name, TruthValue tv=None):
         """ Add Node to AtomSpace
@@ -112,8 +105,11 @@ cdef class AtomSpace(Value):
         @returns the newly created Atom
         """
         if self.atomspace == NULL:
-            return None
-        cdef string name = atom_name.encode('UTF-8')
+            raise RuntimeError("Null AtomSpace!")
+
+        # See comments on encoding "invalid" bytes in utilities.pyx
+        # These bytes are from Microsoft Windows doggie litter.
+        cdef string name = atom_name.encode('UTF-8', 'surrogateescape')
         cdef cHandle result = self.atomspace.xadd_node(t, name)
 
         if result == result.UNDEFINED: return None
@@ -129,7 +125,7 @@ cdef class AtomSpace(Value):
         @returns handle referencing the newly created Atom
         """
         if self.atomspace == NULL:
-            return None
+            raise RuntimeError("Null AtomSpace!")
         # create temporary cpp vector
         cdef vector[cHandle] handle_vector = atom_list_to_vector(outgoing)
         cdef cHandle result
@@ -144,7 +140,7 @@ cdef class AtomSpace(Value):
         """ Check whether the passed handle refers to an actual atom
         """
         if self.atomspace == NULL:
-            return False
+            raise RuntimeError("Null AtomSpace!")
         try:
             assert isinstance(atom, Atom)
         except AssertionError:
@@ -165,21 +161,21 @@ cdef class AtomSpace(Value):
 
         """
         if self.atomspace == NULL:
-            return None
+            raise RuntimeError("Null AtomSpace!")
         cdef bint recurse = recursive
         return self.atomspace.extract_atom(deref(atom.handle),recurse)
 
     def clear(self):
         """ Remove all atoms from the AtomSpace """
         if self.atomspace == NULL:
-            return None
+            raise RuntimeError("Null AtomSpace!")
         self.atomspace.clear()
 
     def set_value(self, Atom atom, Atom key, Value value):
         """ Set the value on the atom at key
         """
         if self.atomspace == NULL:
-            return None
+            raise RuntimeError("Null AtomSpace!")
         self.atomspace.set_value(deref(atom.handle), deref(key.handle),
                                  value.get_c_value_ptr())
 
@@ -187,7 +183,7 @@ cdef class AtomSpace(Value):
         """ Set the truth value on atom
         """
         if self.atomspace == NULL:
-            return None
+            raise RuntimeError("Null AtomSpace!")
         self.atomspace.set_truthvalue(deref(atom.handle), deref(tv._tvptr()))
 
     # Methods to make the atomspace act more like a standard Python container
@@ -212,63 +208,43 @@ cdef class AtomSpace(Value):
     def __iter__(self):
         """ Support iterating across all atoms in the atomspace """
         if self.atomspace == NULL:
-            return None
-        return iter(self.get_atoms_by_type(0))
+            raise RuntimeError("Null AtomSpace!")
+        return iter(self.get_atoms_by_type(types.Atom))
 
     def size(self):
         """ Return the number of atoms in the AtomSpace """
         if self.atomspace == NULL:
-            return 0
+            raise RuntimeError("Null AtomSpace!")
         return self.atomspace.get_size()
 
     # query methods
     def get_atoms_by_type(self, Type t, subtype = True):
         if self.atomspace == NULL:
-            return None
+            raise RuntimeError("Null AtomSpace!")
         cdef vector[cHandle] handle_vector
         cdef bint subt = subtype
         self.atomspace.get_handles_by_type(handle_vector,t,subt)
         return convert_handle_seq_to_python_list(handle_vector)
 
-    @classmethod
-    def include_incoming(cls, atoms):
-        """
-        Deprecated. Who uses this? Anyone? Is it useful for anyone?
-        Returns the conjunction of a set of atoms and their incoming sets.
-
-        Example:
-        self.atomspace.include_incoming(self.atomspace.get_atoms_by_type(types.ConceptNode))
-        """
-        return list(set(atoms +
-                [item for sublist in [atom.incoming for atom in atoms if len(atom.incoming) > 0] for item in sublist]))
-
-    @classmethod
-    def include_outgoing(cls, atoms):
-        """
-        Deprecated. Who uses this? Anyone? Is it useful for anyone?
-        Returns the conjunction of a set of atoms and their outgoing sets.
-        Useful when used in combination with include_incoming.
-
-        Example:
-        self.atomspace.include_outgoing(
-            self.atomspace.include_incoming(self.atomspace.get_atoms_by_type(types.ConceptNode)))
-        """
-        return list(set(atoms +
-                [item for sublist in [atom.out for atom in atoms if len(atom.out) > 0] for item in sublist]))
-
     def is_node_in_atomspace(self, Type t, s):
-        cdef string name = s.encode('UTF-8')
-        result = self.atomspace.get_handle(t, name)
+        cdef string name = s.encode('UTF-8', 'surrogateescape')
+        result = self.atomspace.xget_handle(t, name)
         return result != result.UNDEFINED
 
     def is_link_in_atomspace(self, Type t, outgoing):
         cdef vector[cHandle] handle_vector = atom_list_to_vector(outgoing)
-        result = self.atomspace.get_handle(t, handle_vector)
+        result = self.atomspace.xget_handle(t, handle_vector)
         return result != result.UNDEFINED
 
+    def execute(self, Atom atom):
+        if atom is None:
+            raise ValueError("No atom provided!")
+        cdef cValuePtr c_value_ptr = c_do_execute_atom(
+            self.atomspace, deref(atom.handle))
+        return create_python_value_from_c_value(c_value_ptr)
 
-cdef api object py_atomspace(cAtomSpace* c_atomspace) with gil:
-    cdef AtomSpace atomspace = AtomSpace_factory(c_atomspace)
+cdef api object py_atomspace(cValuePtr c_atomspace) with gil:
+    cdef AtomSpace atomspace = AtomSpace_factoid(c_atomspace)
     return atomspace
 
 cdef api object py_atom(const cHandle& h):

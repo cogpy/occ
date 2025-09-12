@@ -27,7 +27,7 @@ ConsoleSocket::~ConsoleSocket()
     logger().debug("[ConsoleSocket] destructor");
 
     // We need the use-count and the condition variables because
-    // the design of boost:asio is broken. Basically, the boost::asio
+    // the design of asio is broken. Basically, the asio
     // code calls this destructor for ConsoleSocket while there are
     // still requests outstanding in another thread.  We have to stall
     // the destructor until all the in-flight requests are complete;
@@ -35,7 +35,7 @@ ConsoleSocket::~ConsoleSocket()
     //
     // Some details: basically, the remote end of the socket "fires and
     // forgets" a bunch of commands, and then closes the socket before
-    // these requests have completed.  boost:asio notices that the
+    // these requests have completed.  asio notices that the
     // remote socket has closed, and so decides its a good day to call
     // destructors. But of course, its not ... because the requests
     // still have to be handled.

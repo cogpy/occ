@@ -19,15 +19,10 @@ IF (CXXTEST_FOUND)
 	ADD_SUBDIRECTORY (atomspace)
 	ADD_SUBDIRECTORY (atoms)
 
-	# Persistence is for saving/restoring atomspace to disk.
-	ADD_SUBDIRECTORY (persist)
-
 	# guile provides scheme bindings for the atomspace.
-	ADD_SUBDIRECTORY (scm)
-
-	IF(HAVE_SQL_STORAGE)
-		ADD_SUBDIRECTORY (matrix)
-	ENDIF(HAVE_SQL_STORAGE)
+	IF (HAVE_GUILE)
+		ADD_SUBDIRECTORY (scm)
+	ENDIF (HAVE_GUILE)
 
 	# Many of the query tests require a working guile, so run
 	# these only after guile has been tested.

@@ -16,7 +16,6 @@
 #include <opencog/atoms/base/Node.h>
 #include <opencog/atoms/base/Link.h>
 #include <opencog/atoms/truthvalue/CountTruthValue.h>
-#include <opencog/atoms/truthvalue/IndefiniteTruthValue.h>
 #include <opencog/atoms/truthvalue/SimpleTruthValue.h>
 #include <opencog/atoms/truthvalue/TruthValue.h>
 #include <opencog/persist/tlb/TLB.h>
@@ -105,9 +104,6 @@ size_t AtomSpaceBenchmark::estimateOfAtomSize(Handle h)
         else
         if (tvt == COUNT_TRUTH_VALUE)
             total += sizeof(CountTruthValue);
-        else
-        if (tvt == INDEFINITE_TRUTH_VALUE)
-            total += sizeof(IndefiniteTruthValue);
     }
 
     NodePtr n(NodeCast(h));
@@ -159,7 +155,6 @@ void AtomSpaceBenchmark::printTypeSizes()
     cout << "Link = " << sizeof(Link) << endl;
     cout << "SimpleTruthValue = " << sizeof(SimpleTruthValue) << endl;
     cout << "CountTruthValue = " << sizeof(CountTruthValue) << endl;
-    cout << "IndefiniteTruthValue = " << sizeof(IndefiniteTruthValue) << endl;
     cout << "IncomingSet = " << sizeof(IncomingSet) << endl;
     cout << DIVIDER_LINE << endl;
 
@@ -448,7 +443,7 @@ void AtomSpaceBenchmark::startBenchmark(int numThreads)
     cout << "\nRandom generator: MT19937\n";
     cout << "Random seed: " << randomseed << "\n\n";
 
-    if (saveToFile) cout << "Ingnore this: " << global << std::endl;
+    if (saveToFile) cout << "Ignore this: " << global << std::endl;
 
     // Initialize the random number generator with the seed which might
     // have been passed in on the command line.
@@ -583,19 +578,23 @@ Type AtomSpaceBenchmark::randomType(Type t)
         nameserver().isA(candidateType, BOOLEAN_OUTPUT_LINK) or
         nameserver().isA(candidateType, CRISP_INPUT_LINK) or
         nameserver().isA(candidateType, CRISP_OUTPUT_LINK) or
+        nameserver().isA(candidateType, DEFINE_LINK) or
+        nameserver().isA(candidateType, EXECUTABLE_LINK) or
+        nameserver().isA(candidateType, FOREIGN_AST) or
+        nameserver().isA(candidateType, FREE_LINK) or
         nameserver().isA(candidateType, NUMERIC_INPUT_LINK) or
         nameserver().isA(candidateType, NUMERIC_OUTPUT_LINK) or
-        nameserver().isA(candidateType, TYPE_INPUT_LINK) or
-        nameserver().isA(candidateType, TYPE_OUTPUT_LINK) or
-        nameserver().isA(candidateType, EXECUTE_THREADED_LINK) or
-        nameserver().isA(candidateType, FREE_LINK) or
+        nameserver().isA(candidateType, PROMISE_LINK) or
         nameserver().isA(candidateType, SCOPE_LINK) or
         nameserver().isA(candidateType, UNIQUE_LINK) or
+        nameserver().isA(candidateType, TYPE_INPUT_LINK) or
+        nameserver().isA(candidateType, TYPE_OUTPUT_LINK) or
         nameserver().isA(candidateType, TYPED_VARIABLE_LINK) or
+        nameserver().isA(candidateType, VALUE_OF_LINK) or
+        candidateType == NUMBER_NODE or
         candidateType == VARIABLE_LIST or
         candidateType == VARIABLE_SET or
-        candidateType == DEFINE_LINK or
-        candidateType == NUMBER_NODE or
+        nameserver().isA(candidateType, TAG_NODE) or
         nameserver().isA(candidateType, TYPE_NODE));
 
     return candidateType;
@@ -1253,7 +1252,7 @@ timepair_t AtomSpaceBenchmark::bm_setTruthValue()
         clock_t t_begin = clock();
         for (unsigned int i=0; i<Nclock; i++)
         {
-            TruthValuePtr stv(SimpleTruthValue::createTV(strg[i], conf[i]));
+            TruthValuePtr stv(createSimpleTruthValue(strg[i], conf[i]));
             hs[i]->setTruthValue(stv);
         }
         clock_t time_taken = clock() - t_begin;
@@ -1385,7 +1384,7 @@ timepair_t AtomSpaceBenchmark::bm_pointerCast()
     {
         // Summing prevents the optimizer from optimizing away.
         // We want to measure how long it takes to perform a cast.
-        // To avoid the optimizer from playing tricks, we hav to do
+        // To avoid the optimizer from playing tricks, we have to do
         // something with the resulting pointer.  We already know that
         // get_type() is very fast -- a method call, so we treat that as
         // a kind-of no-op.

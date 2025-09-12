@@ -1,13 +1,12 @@
 
 from opencog.atomspace import AtomSpace, types
-from opencog.utilities import initialize_opencog, finalize_opencog
-from opencog.execute import execute_atom
+from opencog.utilities import set_default_atomspace, finalize_opencog
 import opencog.scheme as scheme
 from opencog.scheme import scheme_eval
 from opencog.type_constructors import *
 
 atomspace = AtomSpace()
-initialize_opencog(atomspace)
+set_default_atomspace(atomspace)
 
 executed = False
 
@@ -41,7 +40,7 @@ else:
     print ("add_link - did NOT execute")
 
 executed = False
-execute_atom( atomspace,
+atomspace.execute(
     ExecutionOutputLink(
         GroundedSchemaNode("py: add_link"),
         ListLink(

@@ -247,29 +247,30 @@ void ExecutionOutputUTest::test_varsub(void)
 	BindLinkPtr predicament(BindLinkCast(pred));
 
 	// Now perform the search.
-	Implicator simpl(as.get());
-	simpl.implicand = situation->get_implicand();
+	QueueValuePtr qvp(createQueueValue());
+	ContainerValuePtr cvp(qvp);
+	qvp->close();
+	Implicator simpl(as.get(), cvp);
 	simpl.satisfy(situation);
 
 	// The result_list contains a list of the grounded expressions.
-	simpl.get_result_queue()->open();
+	qvp->open();
 
 	// If it's empty, it will hang ...
-	TSM_ASSERT_EQUALS("no results returned",
-		false, simpl.get_result_queue()->is_empty());
+	TSM_ASSERT("no results returned", 0 != qvp->size());
 
-	Handle res = HandleCast(simpl.get_result_queue()->value_pop());
+	Handle res = HandleCast(qvp->remove());
 	printf("res is %s\n", res->to_short_string().c_str());
 	TSM_ASSERT_EQUALS("incorrect resolution", res, resolution);
 
 	// Now perform the search.
-	Implicator pimpl(as.get());
-	pimpl.implicand = predicament->get_implicand();
+	qvp->close();
+	Implicator pimpl(as.get(), cvp);
 	pimpl.satisfy(predicament);
 
 	// The result_list contains a list of the grounded expressions.
-	pimpl.get_result_queue()->open();
-	Handle del = HandleCast(pimpl.get_result_queue()->value_pop());
+	qvp->open();
+	Handle del = HandleCast(qvp->remove());
 	printf("del is %s\n", del->to_short_string().c_str());
 	TSM_ASSERT_EQUALS("incorrect delivarance", del, deliverance);
 
@@ -418,9 +419,9 @@ void ExecutionOutputUTest::test_function(void)
 				an(VARIABLE_NODE, "X"))));
 
 	Handle exout =
-	al(EXECUTION_OUTPUT_LINK,
+	al(EXECUTION_OUTPUT_LINK, {
 		an(DEFINED_PROCEDURE_NODE, "remainder"),
-		an(NUMBER_NODE, "2.1 4.2 5.3 2.4 6.5 7.6 0.7 -0.2 -8.1"));
+		an(NUMBER_NODE, "2.1 4.2 5.3 2.4 6.5 7.6 0.7 -0.2 -8.1")});
 
 	ValuePtr result = exout->execute(as.get());
 	printf("Got: %s\n", result->to_string().c_str());
@@ -470,12 +471,12 @@ void ExecutionOutputUTest::test_lambda(void)
 
 	Instantiator inst(as.get());
 	Handle result = HandleCast(inst.execute(bl));
-	Handle expect = al(SET_LINK,
-	                   al(LAMBDA_LINK,
+	Handle expect = al(SET_LINK, {
+	                   al(LAMBDA_LINK, {
 	                      an(VARIABLE_NODE, "$X"),
-	                      al(EVALUATION_LINK,
+	                      al(EVALUATION_LINK, {
 	                         an(PREDICATE_NODE, "P"),
-	                         an(CONCEPT_NODE, "A"))));
+	                         an(CONCEPT_NODE, "A")})})});
 
 	logger().debug() << "result = " << oc_to_string(result);
 	logger().debug() << "expect = " << oc_to_string(expect);
@@ -495,7 +496,7 @@ void ExecutionOutputUTest::test_lambda_get(void)
 
 	Instantiator inst(as.get());
 	Handle result = HandleCast(inst.execute(exo));
-	Handle expect = al(SET_LINK, an(NUMBER_NODE, "0.6"));
+	Handle expect = al(SET_LINK, {an(NUMBER_NODE, "0.6")});
 
 	logger().debug() << "result = " << oc_to_string(result);
 	logger().debug() << "expect = " << oc_to_string(expect);
@@ -507,81 +508,81 @@ void ExecutionOutputUTest::test_lambda_get(void)
 
 void ExecutionOutputUTest::test_variable_schema(void)
 {
-	al(DEFINE_LINK,
+	al(DEFINE_LINK, {
 		an(DEFINED_SCHEMA_NODE, "sum"),
-		al(LAMBDA_LINK,
-			al(VARIABLE_LIST,
+		al(LAMBDA_LINK, {
+			al(VARIABLE_LIST, {
 				an(VARIABLE_NODE, "x"),
-				an(VARIABLE_NODE, "y")),
-			al(PLUS_LINK,
+				an(VARIABLE_NODE, "y")}),
+			al(PLUS_LINK, {
 				an(VARIABLE_NODE, "x"),
-				an(VARIABLE_NODE, "y"))
-		));
+				an(VARIABLE_NODE, "y")})
+		})});
 
-	al(DEFINE_LINK,
+	al(DEFINE_LINK, {
 		an(DEFINED_SCHEMA_NODE, "mul"),
-		al(LAMBDA_LINK,
-			al(VARIABLE_LIST,
+		al(LAMBDA_LINK, {
+			al(VARIABLE_LIST, {
 				an(VARIABLE_NODE, "x"),
-				an(VARIABLE_NODE, "y")),
-			al(TIMES_LINK,
+				an(VARIABLE_NODE, "y")}),
+			al(TIMES_LINK, {
 				an(VARIABLE_NODE, "x"),
-				an(VARIABLE_NODE, "y"))
-		));
+				an(VARIABLE_NODE, "y")})
+		})});
 
-	al(INHERITANCE_LINK,
+	al(INHERITANCE_LINK, {
 		an(DEFINED_SCHEMA_NODE, "mul"),
 		an(CONCEPT_NODE, "current-schema")
-	);
+	});
 
 
 	Handle get_link =
-	al(BIND_LINK,
-		al(TYPED_VARIABLE_LINK,
-			an(VARIABLE_NODE, "$SCHEMA"), an(TYPE_NODE, "DefinedSchemaNode")),
-		al(AND_LINK,
-			al(INHERITANCE_LINK,
+	al(BIND_LINK, {
+		al(TYPED_VARIABLE_LINK, {
+			an(VARIABLE_NODE, "$SCHEMA"), an(TYPE_NODE, "DefinedSchemaNode")}),
+		al(AND_LINK, {
+			al(INHERITANCE_LINK, {
 				an(VARIABLE_NODE, "$SCHEMA"),
 				an(CONCEPT_NODE, "current-schema")
-		    )
-		),
-		al(EXECUTION_OUTPUT_LINK,
+		    })
+		}),
+		al(EXECUTION_OUTPUT_LINK, {
 			an(VARIABLE_NODE, "$SCHEMA"),
-			al(LIST_LINK, an(NUMBER_NODE, "6"), an(NUMBER_NODE, "7"))
-		)
-	);
+			al(LIST_LINK, {an(NUMBER_NODE, "6"), an(NUMBER_NODE, "7")})
+		})
+	});
 	Instantiator inst(as.get());
 
 	ValuePtr result = inst.execute(get_link);
-	TS_ASSERT_EQUALS(result, al(SET_LINK, an(NUMBER_NODE, "42")));
+	TS_ASSERT_EQUALS(result, al(SET_LINK, {an(NUMBER_NODE, "42")}));
 }
 
 void ExecutionOutputUTest::test_exec_variable(void)
 {
-	al(DEFINE_LINK,
+	al(DEFINE_LINK, {
 		an(DEFINED_SCHEMA_NODE, "x*y"),
-		al(LAMBDA_LINK,
-			al(VARIABLE_LIST,
+		al(LAMBDA_LINK, {
+			al(VARIABLE_LIST, {
 				an(VARIABLE_NODE, "x"),
-				an(VARIABLE_NODE, "y")),
-			al(TIMES_LINK,
+				an(VARIABLE_NODE, "y")}),
+			al(TIMES_LINK, {
 				an(VARIABLE_NODE, "x"),
-				an(VARIABLE_NODE, "y"))
-		));
+				an(VARIABLE_NODE, "y")})
+		})});
 	Handle bind_link =
-	al(BIND_LINK,
-		al(TYPED_VARIABLE_LINK,
-			an(VARIABLE_NODE, "x"), an(TYPE_NODE, "DefinedSchemaNode")),
-		al(AND_LINK, al(PRESENT_LINK, an(VARIABLE_NODE, "x"))),
-		al(EXECUTION_OUTPUT_LINK,
+	al(BIND_LINK, {
+		al(TYPED_VARIABLE_LINK, {
+			an(VARIABLE_NODE, "x"), an(TYPE_NODE, "DefinedSchemaNode")}),
+		al(AND_LINK, {al(PRESENT_LINK, {an(VARIABLE_NODE, "x")})}),
+		al(EXECUTION_OUTPUT_LINK, {
 			an(VARIABLE_NODE, "x"),
-			al(LIST_LINK, an(NUMBER_NODE, "6"), an(NUMBER_NODE, "7"))
-		)
-	);
+			al(LIST_LINK, {an(NUMBER_NODE, "6"), an(NUMBER_NODE, "7")})
+		})
+	});
 	Instantiator inst(as.get());
 
 	ValuePtr result = inst.execute(bind_link);
 
-	TS_ASSERT_EQUALS(result, al(SET_LINK, an(NUMBER_NODE, "42")));
+	TS_ASSERT_EQUALS(result, al(SET_LINK, {an(NUMBER_NODE, "42")}));
 }
 

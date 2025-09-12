@@ -50,23 +50,22 @@ set(ATOMSPACE_smob_LIBRARY smob)
 set(ATOMSPACE_truthvalue_LIBRARY truthvalue)
 set(ATOMSPACE_value_LIBRARY value)
 
+# XXX why are these listed in reverse dependency order?
+# Doesn't the linker care about this?
 set(ATOMSPACE_LIBRARIES
 	atom_types
 	value
 	atombase
 	atomcore
 	atomflow
+	columnvec
 	truthvalue
 	clearbox
 	join
 	pattern
-	load_scm
-	persist
 	query-engine
 	execution
 	grounded
-	json
-	sexpr
 	smob
 	atomspace
 )
@@ -75,21 +74,11 @@ set(ATOMSPACE_LIBRARIES
 IF (HAVE_CYTHON)
 	set(ATOMSPACE_PythonEval_LIBRARY PythonEval)
 	SET(ATOMSPACE_LIBRARIES
+	    executioncontext
 	    ${ATOMSPACE_LIBRARIES}
 	    ${ATOMSPACE_PythonEval_LIBRARY}
 	)
 ENDIF (HAVE_CYTHON)
-
-# persist-sql is optional
-IF (persist-sql)
-	set(ATOMSPACE_persist-sql_LIBRARY persist-sql)
-	SET(ATOMSPACE_LIBRARIES
-	    ${ATOMSPACE_LIBRARIES}
-	    ${ATOMSPACE_persist-sql_LIBRARY}
-	)
-	SET(HAVE_PERSIST_SQL 1)
-	ADD_DEFINITIONS(-DHAVE_PERSIST_SQL)
-ENDIF (persist-sql)
 
 set(ATOMSPACE_DATA_DIR "@CMAKE_INSTALL_PREFIX@/share/opencog")
 set(ATOMSPACE_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include/")

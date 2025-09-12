@@ -34,21 +34,20 @@
 #include <string>
 #include <unordered_set>
 
+#if HAVE_SPARSEHASH
+#include <sparsehash/sparse_hash_set>
+#include <sparsehash/sparse_hash_map>
+#define USE_HASHABLE_WEAK_PTR 1
+#endif
+
 #if HAVE_FOLLY
 #include <folly/container/F14Set.h>
 #define USE_HASHABLE_WEAK_PTR 1
 #endif
 
-#include <opencog/util/empty_string.h>
-#include <opencog/util/sigslot.h>
 #include <opencog/atoms/base/Handle.h>
 #include <opencog/atoms/value/Value.h>
 #include <opencog/atoms/truthvalue/TruthValue.h>
-
-#define INCOMING_SHARED_LOCK std::shared_lock<std::shared_mutex> lck(_mtx);
-#define INCOMING_UNIQUE_LOCK std::unique_lock<std::shared_mutex> lck(_mtx);
-#define KVP_UNIQUE_LOCK std::unique_lock<std::shared_mutex> lck(_mtx);
-#define KVP_SHARED_LOCK std::shared_lock<std::shared_mutex> lck(_mtx);
 
 namespace opencog
 {
@@ -62,6 +61,17 @@ struct hashable_weak_ptr : public std::weak_ptr<T>
 		if (!sp) return;
 		_hash = std::hash<T*>{}(sp.get());
 	}
+
+#if HAVE_SPARSEHASH
+	// google::sparse_hash_set uses a zero-sized ctor to indicate
+	// the deleted key. So provide that, setting it to zero.
+	static std::weak_ptr<T> _dummy;
+	hashable_weak_ptr(void) :
+		std::weak_ptr<T>(_dummy)
+	{
+		_hash = 0;
+	}
+#endif
 
 	std::size_t get_hash() const noexcept { return _hash; }
 
@@ -90,11 +100,10 @@ typedef hashable_weak_ptr<Atom> WinkPtr;
 
 // See discussion in README, explaining why using a bare pointer is safe.
 //
-// Based on current measurements (March 2022, benchmark/query-loop/diary.txt)
-// there is no performance advantage to using bare pointers. In addition,
-// it appears that AtomSpaceAsyncUTest fails, probably due to "trivial"
-// reasons. Thus, there does not seem to be any advantage to enabling bare
-// pointers, and perhaps some minor disadvantages.
+// Based on recent measurements (March 2022, benchmark/query-loop/diary.txt)
+// the use of bare pointers does not affect performance. There is a
+// savings of 31 bytes per Atom, as measured against a mid-size dataset.
+// Disabled, for now, out of general paranoia.
 // #define USE_BARE_BACKPOINTER 1
 //
 #if USE_BARE_BACKPOINTER
@@ -168,12 +177,44 @@ typedef std::size_t Arity;
 //! millions of atoms.
 typedef HandleSeq IncomingSet;
 
-#if HAVE_FOLLY
+// ----------------------------------------------------
+// Games with the structures used for the Incoming set.
+// The size of Atoms, and performance depends on these.
+
+// Hard-code the flag here. This is less flexible than doing it with
+// CMakefiles, but its also less complicated and less error-prone.
+#if HAVE_SPARSEHASH
+	#define USE_SPARSE_INCOMING 1
+#endif
+
+#if USE_SPARSE_INCOMING
+typedef google::sparse_hash_set<WinkPtr> WincomingSet;
+#endif
+
+#if USE_FOLLY
 // typedef folly::F14ValueSet<WinkPtr, std::owner_hash<WinkPtr> > WincomingSet;
 typedef folly::F14ValueSet<WinkPtr> WincomingSet;
-#else
+#endif
+
+#if not (USE_SPARSE_INCOMING || USE_FOLLY)
 // typedef std::unordered_set<WinkPtr> WincomingSet;
 typedef std::set<WinkPtr, std::owner_less<WinkPtr> > WincomingSet;
+#endif
+
+// ----------------------------------------------------
+// Other maps.
+typedef std::map<Type, WincomingSet> InSetMap;
+
+#if USE_SPARSE_KVP
+typedef google::sparse_hash_map<Handle, ValuePtr> KVPMap;
+
+// USE_SPARSE_KVP works fine. However, for typical datasets, it uses
+// more memory. Why? Because almost all Atoms will have zero or one
+// Values on them. See immediately below for a detailed report.
+// Anyway, we disable, to avoid screw-ups.
+#error "USE_SPARSE_KVP is enabled! It works, but you probably did this by accident. If you meant to do this, edit the header file and try again."
+#else
+typedef std::map<const Handle, ValuePtr> KVPMap;
 #endif
 
 /**
@@ -182,20 +223,23 @@ typedef std::set<WinkPtr, std::owner_less<WinkPtr> > WincomingSet;
  * Links are specializations of Atoms, that is, they inherit all
  * properties from Atoms.
  *
- * A "typical" atom is about 500 Bytes in size. The RAM usage breakdown is as
- * follows:
+ * A "typical" atom in a small AtomSpace is about 500 Bytes in size.
+ * Large AtomSpaces (with millions of Atoms) have sizes of 750 Bytes
+ * up to 2KBytes, with about 1.3KB being "typical". The vairance is due
+ * incoming sets and attached Values.
+ *
+ * The RAM usage breakdown is as follows:
  * -- 24 Bytes std::enable_shared_from_this<Value>
- * --  8 Bytes Type _type plus 4 bool flags.
+ * --  4 Bytes Type _type plus 4 bool flags.
  * --  8 Bytes ContentHash _content_hash;
  * --  8 Bytes AtomSpace *_atom_space;
  * -- 48 Bytes std::map<const Handle, ValuePtr> _values;
- * -- 56 Bytes std::shared_mutex _mtx;
  * -- 48 Bytes std::map<Type, WincomingSet> _incoming_set;
- * Total: 200 Bytes for a base naked Atom.
+ * Total: 144 Bytes for a base naked Atom.
  *
  * Node: Additional 32 Bytes for std::string _name + sizeof(chars of string)
  * Link: Additional 24 Bytes for std::vector _outgoing + 16*(_outgoing.size());
- *       A "typical" Link of size 2 is 256 Bytes, outside of AtomSpace
+ *       A "typical" Link of size 2 is 200 Bytes, outside of AtomSpace
  *
  * Inserted into the AtomSpace: ?? per hash bucket. I guess 24 or 32
  * Per addition to incoming set: 64 per std::_Rb_tree node
@@ -207,9 +251,35 @@ typedef std::set<WinkPtr, std::owner_less<WinkPtr> > WincomingSet;
  * -- 64 std::_Rb_tree node in the Atom holding the TV
  * Total: 144 Bytes per CountTV (ouch).
  *
- * A "typical" Link of size 2, held in one other Link, in AtomSpace, holding
- *   a CountTV in it: 496 Bytes.  This is indeed what is measured in real-life
- *   large datasets.
+ * A "typical" Link of size 2, held in one other Link, in AtomSpace,
+ *   holding a CountTV in it: 344 Bytes. With a large incomnig set,
+ *   this expands to 750 Byte to 2KByte range. This is indeed what is
+ *   measured in real-life large datasets.
+ *
+ * How to use less memory:
+ * Measured on a dataset w/ 5.5 million Atoms (the sfia pairs dataset)
+ * -- Using the MutexPool shrinks Atom size by 63 bytes/atom.
+ *    It also runs slightly faster, probably a cache effect.
+ * -- std::set<Atom*> vs std::set<WinkPtr> saves 31 bytes/atom.
+ *    enable USE_BARE_BACKPOINTER to get this.
+ * -- sparse_hash_set<WinkPtr> saves 25 bytes/atom.
+ * -- sparse_hash_set<Atom*> is same size as WinkPtr so it is
+ *    actually larger than std::set<Atom*>
+ * -- Enabling USE_SPARSE_KVP makes things worse for the sfia dataset.
+ *    Why? Because half the Atoms have zero Values on them, and the
+ *    other half have only one. It's hard/impossible to improve on this.
+ *    BTW, it also runs 10% slower just to load the dataset. This is
+ *    due to a more complex init than what std::map has to do.
+ * -- Enabling USE_INCOME_INDEX provides no savings at all, and runs
+ *    slower. The original ideas was this: about half of all Atoms do
+ *    not have an incoming set. Since sizeof(InSetMap) = 48, we can
+ *    save 48 bytes by moving it out of the Atom, and to a hashtable.
+ *    The problem is that each hashtable entry takes up 24+24=48 bytes;
+ *    24 for the Handle used in the lookup, and 24 for the std::pair<>
+ *    So, half as many entries, but twice the size per entry.
+ * -- For the same reason, moving Values out-of-line won't work: the
+ *    decrease in the size of the Atom is outweighed by the increase
+ *    in the references to the out-of-line storage.
  */
 class Atom
     : public Value
@@ -222,12 +292,51 @@ class Atom
     friend class StorageNode;     // Needs to call isAbsent()
 
 protected:
-    // Each atomic_flag chews up a byte.
-    // Place this first, so that these share a word with Type.
-    mutable std::atomic_bool _absent;
-    mutable std::atomic_bool _marked_for_removal;
-    mutable std::atomic_bool _checked;
-    mutable bool _use_iset;
+
+#define USE_MUTEX_POOL 1
+#if USE_MUTEX_POOL
+    // The MutexPool saves 64 bytes per Atom, by avoiding having a
+    // a mutex in-line in the Atom. As long as the pool is 1x to 4x
+    // larger than the number of CPU's on the machine, the chances
+    // of collision will be small, and contention smaller still.
+    // The biggest stumbling block to high parallelism is not this,
+    // but the std::shared_ptr<>, which uses atomics that use
+    // CPU-dependent cache-line proprietary unpublished voodoo,
+    // with different CPU's, even from the same family, having
+    // radically different cache microarches. But I digress...
+    //
+    // CPU usage improves 3% to 6%, probably because the shrinkage
+    // fits into the cache better.
+    struct MutexPool
+    {
+        static constexpr size_t POOL_SIZE = 64;
+        mutable std::shared_mutex mutexes[POOL_SIZE];
+        inline std::shared_mutex& get_mutex(ContentHash hsh) {
+            return mutexes[hsh % POOL_SIZE];
+        }
+    };
+    static MutexPool _mutex_pool;
+
+    #define _MTX (_mutex_pool.get_mutex(_content_hash))
+    #define INCOMING_SHARED_LOCK std::shared_lock<std::shared_mutex> lck(_MTX);
+    #define INCOMING_UNIQUE_LOCK std::unique_lock<std::shared_mutex> lck(_MTX);
+    #define KVP_UNIQUE_LOCK std::unique_lock<std::shared_mutex> lck(_MTX);
+    #define KVP_SHARED_LOCK std::shared_lock<std::shared_mutex> lck(_MTX);
+#else
+    #define INCOMING_SHARED_LOCK std::shared_lock<std::shared_mutex> lck(_mtx);
+    #define INCOMING_UNIQUE_LOCK std::unique_lock<std::shared_mutex> lck(_mtx);
+    #define KVP_UNIQUE_LOCK std::unique_lock<std::shared_mutex> lck(_mtx);
+    #define KVP_SHARED_LOCK std::shared_lock<std::shared_mutex> lck(_mtx);
+#endif
+
+    // Packed flas. Single byte per atom.
+    enum AtomFlags : uint8_t {
+        ABSENT_FLAG     = 0x01,  // 0000 0001
+        MARKED_FLAG     = 0x02,  // 0000 0010
+        CHECKED_FLAG    = 0x04,  // 0000 0100
+        USE_ISET_FLAG   = 0x08   // 0000 1000
+    };
+    mutable std::atomic<uint8_t> _flags;
 
     /// Merkle-tree hash of the atom contents. Generically useful
     /// for indexing and comparison operations.
@@ -239,14 +348,16 @@ protected:
     AtomSpace *_atom_space;
 
     /// All of the values on the atom, including the TV.
-    mutable std::map<const Handle, ValuePtr> _values;
+    mutable KVPMap _values;
 
+#if not defined(USE_MUTEX_POOL) or (0 == USE_MUTEX_POOL)
     // Lock, used to serialize changes.
     // This costs 56 bytes per atom.  Tried using a single, global lock,
     // but there seemed to be too much contention for it, so instead,
     // we are using a lock-per-atom, even though this makes the atom
     // fatter.
     mutable std::shared_mutex _mtx;
+#endif // NOT USE_MUEX_POOL
 
     /**
      * Constructor for this class. Protected; no user should call this
@@ -256,22 +367,27 @@ protected:
      */
     Atom(Type t)
       : Value(t),
-        _absent(false),
-        _marked_for_removal(false),
-        _checked(false),
-        _use_iset(false),
+        _flags(0),
         _content_hash(Handle::INVALID_HASH),
         _atom_space(nullptr)
-    {}
+    {
+#if USE_SPARSE_KVP
+        _values.set_deleted_key(Handle());
+#endif
+    }
 
     Atom& operator=(const Atom& other) // copy assignment operator
         { return *this; }
     Atom& operator=(Atom&& other) // move assignment operator
         { return *this; }
 
-    // The incoming set is not tracked by the garbage collector;
-    // this is required, in order to avoid cyclic references.
-    // That is, we use weak pointers here, not strong ones.
+// If USE_INCOME_INDEX is set to true, then the incoming set is moved
+// out of line. Turns out the inline version here is smaller, better,
+// faster than the out-of-line version.
+#ifndef USE_INCOME_INDEX
+private:
+    // The incoming set cannot be tracked with smart pointers; this is
+    // to avoid cyclic references. Instead, weak pointers are used.
     // std::set<ptr> uses 48 bytes (per atom).  See the README file
     // in this directory for a slightly longer explanation for why
     // weak pointers are needed, and why bdwgc cannot be used.
@@ -282,9 +398,8 @@ protected:
         // b) excellent insert performance.
         // c) very fast lookup by type.
         // d) good remove performance.
-        // e) uniqueness, because atomspace operations can sometimes
-        //    cause an atom to get inserted multiple times.  This is
-        //    arguably a bug, though.
+        // e) uniqueness, because user code can insert and remove the
+        //    same atom, repeatedly, in different threads.
         //
         // In order to get b), we have to store atoms in buckets, each
         // bucket holding only one type.  To satisfy d), the buckets
@@ -295,9 +410,23 @@ protected:
         // contain a hundred-million atoms, so the solution has to be
         // small. This rules out using a vector to store the
         // buckets (I tried).
-        std::map<Type, WincomingSet> _iset;
+        // std::map<Type, WincomingSet> _iset;
+        InSetMap _iset;
     };
-    InSet _incoming_set;
+    InSet _local_incoming_set;
+
+protected:
+    inline bool have_inset_map(void) const { return true; }
+    inline InSetMap& get_inset_map(void) { return _local_incoming_set._iset; }
+    inline const InSetMap& get_inset_map_const(void) const { return _local_incoming_set._iset; }
+    inline void drop_inset_map(void) {}
+#else
+    bool have_inset_map(void) const;
+    InSetMap& get_inset_map(void);
+    const InSetMap& get_inset_map_const(void) const;
+    void drop_inset_map(void);
+#endif
+
     void keep_incoming_set();
     void drop_incoming_set();
 
@@ -390,8 +519,16 @@ public:
         throw RuntimeException(TRACE_INFO, "Not a link!");
     }
 
-    virtual TruthValuePtr evaluate(AtomSpace*, bool silent=false) {
+    virtual bool bevaluate(AtomSpace*, bool silent=false) {
         throw RuntimeException(TRACE_INFO, "Not evaluatable!");
+    }
+
+    // Non-crisp evaluation is deprecated. This method will be removed,
+    //  someday.
+    virtual TruthValuePtr evaluate(AtomSpace* as, bool silent=false) {
+        if (bevaluate(as, silent))
+            return TruthValue::TRUE_TV();
+        return TruthValue::FALSE_TV();
     }
     virtual bool is_evaluatable() const { return false; }
 
@@ -408,20 +545,15 @@ public:
              const_cast<Atom*>(this)->shared_from_this()));
     }
 
-    /** Returns the TruthValue object of the atom. */
-    TruthValuePtr getTruthValue() const;
-
-    //! Sets the TruthValue object of the atom.
-    void setTruthValue(const TruthValuePtr&);
-
-    /// Increment the CountTruthValue atomically.
-    /// Return the new TruthValue
-    TruthValuePtr incrementCountTV(double);
+    // ---------------------------------------------------
+    // The setValue() and getValue() methods are virtual, because
+    // ObjectNodes use them to intercept messages being sent to the
+    // object.
 
     /// Associate `value` to `key` for this atom.
-    void setValue(const Handle& key, const ValuePtr& value);
+    virtual void setValue(const Handle& key, const ValuePtr& value);
     /// Get value at `key` for this atom.
-    ValuePtr getValue(const Handle& key) const;
+    virtual ValuePtr getValue(const Handle& key) const;
     /// Atomically increment a generic FloatValue.
     ValuePtr incrementCount(const Handle& key, const std::vector<double>&);
     ValuePtr incrementCount(const Handle& key, size_t idx, double);
@@ -445,6 +577,19 @@ public:
     // storage backends, manipulating multi-AtomSpace bulk loads.
     void clearValues();
 
+    // ---------------------------------------------------
+    // Old TruthValue API. Deprcated; should be removed.
+    /** Returns the TruthValue object of the atom. */
+    TruthValuePtr getTruthValue() const;
+
+    //! Sets the TruthValue object of the atom.
+    void setTruthValue(const TruthValuePtr&);
+
+    /// Increment the CountTruthValue atomically.
+    /// Return the new TruthValue
+    TruthValuePtr incrementCountTV(double);
+
+    // ---------------------------------------------------
     //! Return true if the incoming set is empty.
     bool isIncomingSetEmpty(const AtomSpace* = nullptr) const;
 
@@ -468,6 +613,7 @@ public:
     /** Return the size of the incoming set, for the given type. */
     size_t getIncomingSetSizeByType(Type, const AtomSpace* = nullptr) const;
 
+    // ---------------------------------------------------
     /** Returns a string representation of the node. */
     virtual std::string to_string(const std::string& indent) const = 0;
     virtual std::string to_short_string(const std::string& indent) const = 0;
@@ -505,79 +651,14 @@ public:
 
     /** Ordering operator for Atoms. */
     virtual bool operator<(const Atom&) const = 0;
-
-    // ---------------------------------------------------------
-    // Deprecated calls, do not use these in new code!
-    // Some day, these will be removed.
-
-    //! Deprecated! Do not use in new code!
-    //! Place incoming set into STL container of Handles.
-    //! Example usage:
-    //!     HandleSeq hvect;
-    //!     atom->getIncomingSet(back_inserter(hvect));
-    //! The resulting vector hvect will contain only valid handles
-    //! that were actually part of the incoming set at the time of
-    //! the call to this function.
-    template <typename OutputIterator> OutputIterator
-    getIncomingIter(OutputIterator result) const
-    {
-        if (not _use_iset) return result;
-        INCOMING_SHARED_LOCK;
-        for (const auto& bucket : _incoming_set._iset)
-        {
-            for (const WinkPtr& w : bucket.second)
-                WEAKLY_DO(h, w, { *result = h; result ++; })
-        }
-        return result;
-    }
-
-    //! Deprecated! Do not use in new code!
-    //! Invoke the callback on each atom in the incoming set of
-    //! handle h, until one of them returns true, in which case
-    //! iteration stops, and true is returned. Otherwise the
-    //! callback is called on all incomings and false is returned.
-    template<class T>
-    inline bool foreach_incoming(bool (T::*cb)(const Handle&), T *data) const
-    {
-        // We make a copy of the set, so that we don't call the
-        // callback with locks held.
-        IncomingSet vh(getIncomingSet());
-
-        for (const Handle& lp : vh)
-            if ((data->*cb)(lp)) return true;
-        return false;
-    }
-
-    /**
-     * Deprecated! Do not use in new code!
-     * Return all atoms of type `type` that contain this atom.
-     * That is, return all atoms that contain this atom, and are
-     * also of the given type.
-     *
-     * @param The iterator where the set of atoms will be returned.
-     * @param The type of the parent atom.
-     */
-    template <typename OutputIterator> OutputIterator
-    getIncomingSetByType(OutputIterator result, Type type) const
-    {
-        if (not _use_iset) return result;
-        INCOMING_SHARED_LOCK;
-
-        const auto bucket = _incoming_set._iset.find(type);
-        if (bucket == _incoming_set._iset.cend()) return result;
-
-        for (const WinkPtr& w : bucket->second)
-            WEAKLY_DO(h, w, { *result = h; result ++; })
-        return result;
-    }
 };
 
 #define ATOM_PTR_DECL(CNAME)                                \
     typedef std::shared_ptr<CNAME> CNAME##Ptr;              \
     static inline CNAME##Ptr CNAME##Cast(const Handle& h)   \
         { return std::dynamic_pointer_cast<CNAME>(h); }     \
-    static inline CNAME##Ptr CNAME##Cast(const AtomPtr& a)  \
-        { return std::dynamic_pointer_cast<CNAME>(a); }
+    static inline CNAME##Ptr CNAME##Cast(const ValuePtr& v) \
+        { return std::dynamic_pointer_cast<CNAME>(v); }
 
 #define CREATE_DECL(CNAME)  std::make_shared<CNAME>
 
@@ -592,6 +673,8 @@ static inline Handle HandleCast(const ValuePtr& pa)
 
 static inline ValuePtr ValueCast(const Handle& h)
     { return std::dynamic_pointer_cast<Value>(h); }
+
+const Handle& truth_key(void);
 
 // Debugging helpers see
 // http://wiki.opencog.org/w/Development_standards#Print_OpenCog_Objects

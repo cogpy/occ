@@ -46,6 +46,8 @@
 #include "Force.h"
 #include "EvaluationLink.h"
 
+#include <cmath>
+
 using namespace opencog;
 
 EvaluationLink::EvaluationLink(const HandleSeq&& oset, Type t)
@@ -226,14 +228,33 @@ static ValuePtr exec_or_eval(AtomSpace* as,
 		}
 	}
 
-	Instantiator inst(as);
-	ValuePtr vp(inst.execute(term, silent));
+	// Nothing to do, here.
+	if (VALUE_SHIM_LINK == term->get_type())
+		return term->execute();
 
-	// If the return value is a QueueValue, we assume that this
+	// Argh. The ValueShimLink might be buried deeper in the expression.
+	// In this case, ValueShimLink::setAtomSpace() will throw a
+	// RuntimeException. Catch that. Perhaps it should be changed to
+	// a SilentException? Except that SilentExceptions are hard to
+	// debug, because they don't set a message,
+	Handle sterm;
+	try
+	{
+		sterm = scratch->add_atom(term);
+	}
+	catch (const RuntimeException& ex)
+	{
+		return term->execute();
+	}
+
+	Instantiator inst(as);
+	ValuePtr vp(inst.execute(sterm, silent));
+
+	// If the return value is a ContainerValue, we assume that this
 	// is the result of executing a MeetLink or QueryLink.
 	// In this case, unwrap it, to get the "actual value".
 	// This feels slightly hacky, but will do for just right now.
-	if (QUEUE_VALUE == vp->get_type())
+	if (vp->is_type(CONTAINER_VALUE))
 	{
 		HandleSeq hs(LinkValueCast(vp)->to_handle_seq());
 		if (1 == hs.size())
@@ -598,21 +619,44 @@ static bool crispy_maybe(AtomSpace* as,
 	if (THREAD_JOIN_LINK == t)
 	{
 		ThreadJoinLinkPtr tjlp = ThreadJoinLinkCast(evelnk);
-		return tjlp->evaluate(as, silent, scratch);
+		return tjlp->evaluate_scratch(as, silent, scratch);
 	}
 	else if (PARALLEL_LINK == t)
 	{
 		ParallelLinkPtr plp = ParallelLinkCast(evelnk);
-		plp->evaluate(as, silent, scratch);
+		plp->evaluate_scratch(as, silent, scratch);
 		return true;
 	}
 
 	if (nameserver().isA(t, CRISP_OUTPUT_LINK) and
 	    evelnk->is_evaluatable())
 	{
-		TruthValuePtr tv(evelnk->evaluate(scratch, silent));
-		if (0.5 < tv->get_mean()) return true;
-		return false;
+		return evelnk->bevaluate(scratch, silent);
+	}
+
+	// Special-case for CondLink, which normally is just executable,
+	// and not evaluatable. But if someone is trying to evaluate it,
+	// then we surmise that they really want to execute it, and then
+	// evaluate the clause that it selected. This is what is done here.
+	//
+	// The alternative design, of making the CondLink evaluatable,
+	// results in ambiguities, and breaks several unit tests, which
+	// do NOT want the cond results evaluated (even though they are
+	// evaluatable.) In particular, this is the case for knob-turning
+	// in as-moses.
+	if (COND_LINK == t)
+	{
+		ValuePtr vp = evelnk->execute(scratch, silent);
+		if (vp->is_type(TRUTH_VALUE))
+		{
+			TruthValuePtr tv(TruthValueCast(vp));
+			if (0.5 < tv->get_mean()) return true;
+			return false;
+		}
+		if (not vp->is_atom())
+			return false;
+
+		return crispy_eval_scratch(as, HandleCast(vp), scratch, silent);
 	}
 
 	// A handful of link types that should be auto-converted into
@@ -641,7 +685,7 @@ static bool crispy_eval_scratch(AtomSpace* as,
 		return tf;
 
 	throwSyntaxException(silent,
-		"Either incorrect or not implemented yet. Cannot evaluate %s",
+		"Either incorrect or not implemented yet (crisp). Cannot evaluate %s",
 		evelnk->to_string().c_str());
 
 	return false;
@@ -717,7 +761,7 @@ TruthValuePtr do_eval_with_args(AtomSpace* as,
 	{
 		GroundedProcedureNodePtr gpn = GroundedProcedureNodeCast(pn);
 		Handle args(createLink(std::move(cargs), LIST_LINK));
-		return TruthValueCast(gpn->execute(as, args, silent));
+		return TruthValueCast(gpn->execute_args(as, args, silent));
 	}
 
 	// If it's evaluatable, assume it has some free variables.

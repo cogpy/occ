@@ -7,7 +7,7 @@
 //>>built
 define("dojo/_base/json",["./kernel","../json"],function(_1,_2){
 _1.fromJson=function(js){
-return JSON.parse(js);
+return eval("("+js+")");
 };
 _1._escapeString=_2.stringify;
 _1.toJsonIndentStr="\t";

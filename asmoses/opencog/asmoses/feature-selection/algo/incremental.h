@@ -26,13 +26,14 @@
 #define _OPENCOG_FEATURE_SELECTION_INCREMENTAL_ALGO_H
 
 #include <functional>
+#include <mutex>
 
 #include <boost/range/algorithm/set_algorithm.hpp>
 #include <boost/range/algorithm/max_element.hpp>
 
 #include <opencog/util/algorithm.h>
-#include <opencog/util/functional.h>
-#include <opencog/util/lru_cache.h>
+#include <opencog/asmoses/utils/functional.h>
+#include <opencog/asmoses/utils/lru_cache.h>
 #include <opencog/util/numeric.h>
 #include <opencog/util/oc_omp.h>
 
@@ -83,8 +84,8 @@ FeatureSet incremental_selection(const FeatureSet& features,
     FeatureSet rel; // set of relevant features for a given iteration
     FeatureSet res; // set of relevant non-redundant features to return
 
-    typedef boost::shared_mutex shared_mutex;
-    typedef boost::unique_lock<shared_mutex> unique_lock;
+    typedef std::shared_mutex shared_mutex;
+    typedef std::unique_lock<shared_mutex> unique_lock;
     shared_mutex mutex;
 
 #if DEBUG

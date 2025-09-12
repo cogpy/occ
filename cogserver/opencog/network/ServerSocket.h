@@ -11,7 +11,7 @@
 
 #include <atomic>
 #include <pthread.h>
-#include <boost/asio.hpp>
+#include <asio.hpp>
 
 namespace opencog
 {
@@ -34,15 +34,15 @@ namespace opencog
  *
  * Users of this class need only implement these two methods.
  *
- * This class exists only to hide the ugliness of boost:asio.
- * Some day in the future, this should be re-written to avoid using
- * boost! But for now, it's stable debugged and it works.
+ * This class exists only to hide the ugliness of asio. Some day
+ * in the future, this should be re-written to avoid using asio!
+ * But for now, it's stable debugged and it works.
  */
 class ServerSocket
 {
 private:
     // The actual socket on which data comes & goes.
-    boost::asio::ip::tcp::socket* _socket;
+    asio::ip::tcp::socket* _socket;
     static bool _network_gone;
 
     // A count of the number of concurrent open sockets. This is used
@@ -57,10 +57,13 @@ private:
     static size_t _num_open_stalls;
 
     // Read a newline-delimited line of text from socket.
-    std::string get_telnet_line(boost::asio::streambuf&);
+    std::string get_telnet_line(asio::streambuf&);
+
+    // Read _content_length bytes
+    std::string get_http_body(asio::streambuf&);
 
     // Send an asio buffer that has data in it.
-    void Send(const boost::asio::const_buffer&);
+    void Send(const asio::const_buffer&);
 
     // WebSocket state machine; unused in the telnet interface.
     bool _got_first_line;
@@ -75,9 +78,15 @@ private:
 
 protected:
     // WebSocket stuff that users will be interested in.
-    bool _is_websocket;
+    bool _is_http_socket;
     bool _got_websock_header;
     std::string _url;
+
+    // KeepAlive connections will repeatedly send HTTP headers.
+    bool _keep_alive;
+    size_t _content_length;
+
+    bool _is_mcp_socket;
 
     /**
      * Connection callback: called whenever a new connection arrives
@@ -104,9 +113,10 @@ protected:
 public:
     ServerSocket(void);
     virtual ~ServerSocket();
-    void act_as_websocket(void) { _is_websocket = true; }
+    void act_as_http_socket(void) { _is_http_socket = true; }
+    void act_as_mcp(void) { _is_mcp_socket = true; }
 
-    void set_connection(boost::asio::ip::tcp::socket*);
+    void set_connection(asio::ip::tcp::socket*);
     void handle_connection(void);
 
     /**

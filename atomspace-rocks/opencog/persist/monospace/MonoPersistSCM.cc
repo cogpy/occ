@@ -26,8 +26,8 @@
 #include <libguile.h>
 
 #include <opencog/atomspace/AtomSpace.h>
-#include <opencog/persist/api/PersistSCM.h>
 #include <opencog/persist/api/StorageNode.h>
+#include <opencog/persist/rocks-types/atom_types.h>
 #include <opencog/guile/SchemePrimitive.h>
 
 #include "MonoStorage.h"
@@ -109,8 +109,6 @@ void MonoPersistSCM::do_open(const std::string& uri)
         throw RuntimeException(TRACE_INFO,
             "cog-mono-open: Error: Unable to connect to the database");
     }
-
-    PersistSCM::set_connection(_storage);
 }
 
 void MonoPersistSCM::do_close(void)
@@ -126,7 +124,6 @@ void MonoPersistSCM::do_close(void)
     // Only then actually call the dtor.
     _storage->close();
     _as->extract_atom(HandleCast(_storage));
-    PersistSCM::set_connection(nullptr);
     _storage = nullptr;
 }
 

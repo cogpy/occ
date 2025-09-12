@@ -57,7 +57,7 @@ bool Recognizer::do_search(PatternMatchCallback& pmc, const Handle& top)
 	}
 
 	PatternMatchEngine pme(pmc);
-	pme.set_pattern(*_vars, *_pattern);
+	pme.set_pattern(*_variables, *_pattern);
 
 	// IncomingSet iset = get_incoming_set(top);
 	IncomingSet iset = top->getIncomingSet(_as);
@@ -246,8 +246,8 @@ bool Recognizer::fuzzy_match(const Handle& npat_h, const Handle& nsoln_h)
 	return true;
 }
 
-bool Recognizer::grounding(const GroundingMap& var_soln,
-                           const GroundingMap& term_soln)
+bool Recognizer::propose_grounding(const GroundingMap& var_soln,
+                                   const GroundingMap& term_soln)
 {
 	const Handle& hroot = _root->getHandle();
 	const Handle& rule = term_soln.at(hroot);

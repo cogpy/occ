@@ -60,10 +60,10 @@ cdef extern from "opencog/atoms/value/Value.h" namespace "opencog":
     ctypedef shared_ptr[cValue] cValuePtr "opencog::ValuePtr"
 
 cdef class PtrHolder:
-    cdef shared_ptr[void] shared_ptr
+    cdef cValuePtr shared_ptr
 
     @staticmethod
-    cdef PtrHolder create(shared_ptr[void]& ptr)
+    cdef PtrHolder create(cValuePtr& ptr)
 
 cdef class Value:
     cdef PtrHolder ptr_holder
@@ -79,7 +79,7 @@ ctypedef double confidence_t
 ctypedef double strength_t
 
 cdef extern from "opencog/atoms/truthvalue/TruthValue.h" namespace "opencog":
-    ctypedef shared_ptr[const cTruthValue] tv_ptr "opencog::TruthValuePtr"
+    ctypedef shared_ptr[cTruthValue] tv_ptr "opencog::TruthValuePtr"
 
     cdef cppclass cTruthValue "const opencog::TruthValue"(cValue):
         strength_t get_mean()
@@ -89,6 +89,9 @@ cdef extern from "opencog/atoms/truthvalue/TruthValue.h" namespace "opencog":
         tv_ptr DEFAULT_TV()
         bint operator==(cTruthValue h)
         bint operator!=(cTruthValue h)
+
+    cdef tv_ptr tv_cast "TruthValueCast" (cValuePtr) except +
+    cdef cValuePtr tv_uncast "ValueCast" (tv_ptr) except +
 
 cdef extern from "opencog/atoms/truthvalue/SimpleTruthValue.h" namespace "opencog":
     cdef cppclass cSimpleTruthValue "opencog::SimpleTruthValue"(cTruthValue):
@@ -122,15 +125,17 @@ cdef extern from "opencog/atoms/base/Atom.h" namespace "opencog":
     cdef cppclass cAtom "opencog::Atom" (cValue):
         cAtom()
 
-        output_iterator getIncomingIter(output_iterator)
-
         tv_ptr getTruthValue()
         void setTruthValue(tv_ptr tvp)
         void setValue(const cHandle& key, const cValuePtr& value)
         cValuePtr getValue(const cHandle& key) const
         cpp_set[cHandle] getKeys()
 
-        output_iterator getIncomingSetByType(output_iterator, Type type)
+        vector[cHandle] getIncomingSet()
+        vector[cHandle] getIncomingSetByType(Type type)
+
+        bool is_executable()
+        cValuePtr execute() except +
 
         string to_string()
         string to_short_string()
@@ -195,8 +200,8 @@ cdef extern from "opencog/atomspace/AtomSpace.h" namespace "opencog":
         cHandle xadd_link(Type t, vector[cHandle]) except +
         cHandle add_link(Type t, vector[cHandle], tv_ptr tvn) except +
 
-        cHandle get_handle(Type t, string s)
-        cHandle get_handle(Type t, vector[cHandle])
+        cHandle xget_handle(Type t, string s)
+        cHandle xget_handle(Type t, vector[cHandle])
 
         cHandle set_value(cHandle h, cHandle key, cValuePtr value)
         cHandle set_truthvalue(cHandle h, tv_ptr tvn)
@@ -213,11 +218,10 @@ cdef extern from "opencog/atomspace/AtomSpace.h" namespace "opencog":
         bint extract_atom(cHandle h, bint recursive)
 
     cdef cValuePtr createAtomSpace(cAtomSpace *parent)
+    cdef cValuePtr as_cast "AtomSpaceCast"(cAtomSpace *) except +
 
 
-cdef AtomSpace_factory(cAtomSpace *to_wrap)
 cdef AtomSpace_factoid(cValuePtr to_wrap)
-
 
 cdef class AtomSpace(Value):
     cdef cValuePtr asp
@@ -226,6 +230,14 @@ cdef class AtomSpace(Value):
 
 
 cdef create_python_value_from_c_value(const cValuePtr& value)
+
+
+# BoolValue
+cdef extern from "opencog/atoms/value/BoolValue.h" namespace "opencog":
+    cdef cppclass cBoolValue "opencog::BoolValue":
+        cBoolValue(bool value)
+        cBoolValue(const vector[bool]& values)
+        const vector[bool]& value() const
 
 
 # FloatValue
@@ -251,4 +263,35 @@ cdef extern from "opencog/atoms/value/LinkValue.h" namespace "opencog":
         const vector[cValuePtr]& value() const
 
 
-include "value_types.pxd"
+# QueueValue
+cdef extern from "opencog/util/concurrent_queue.h" namespace "opencog::concurrent_queue":
+    cdef cppclass Canceled:
+        pass
+
+cdef extern from "opencog/atoms/value/QueueValue.h" namespace "opencog":
+    cdef cppclass cQueueValue "opencog::QueueValue":
+        cQueueValue()
+        cQueueValue(const vector[cValuePtr]& values) nogil
+        void open() nogil
+        void close() nogil
+        bint is_closed() nogil
+        void add(const cValuePtr&) nogil except +
+        cValuePtr remove() nogil except +
+        size_t size() nogil
+        void clear() nogil
+        const vector[cValuePtr]& value() nogil
+
+
+# UnisetValue
+cdef extern from "opencog/atoms/value/UnisetValue.h" namespace "opencog":
+    cdef cppclass cUnisetValue "opencog::UnisetValue":
+        cUnisetValue()
+        cUnisetValue(const vector[cValuePtr]& values) nogil
+        void open() nogil
+        void close() nogil
+        bint is_closed() nogil
+        void add(const cValuePtr&) nogil except +
+        cValuePtr remove() nogil except +
+        size_t size() nogil
+        void clear() nogil
+        const vector[cValuePtr]& value() nogil

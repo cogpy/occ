@@ -58,37 +58,19 @@ bool AtomSpace::content_compare(const AtomSpace& space_first,
                                 bool emit_diagnostics)
 {
     // Compare sizes
-    if (space_first.get_size() != space_second.get_size())
+    if (space_first.get_num_atoms_of_type(ATOM, true) !=
+        space_second.get_num_atoms_of_type(ATOM, true))
     {
         if (emit_diagnostics)
             std::cout << "compare_atomspaces - size " <<
-                    space_first.get_size() << " != size " <<
-                    space_second.get_size() << std::endl;
+                    space_first.get_num_atoms_of_type(ATOM, true) <<
+                    " != size " <<
+                    space_second.get_num_atoms_of_type(ATOM, true) <<
+                    std::endl;
         return false;
     }
 
-    // Compare node count
-    if (space_first.get_num_nodes() != space_second.get_num_nodes())
-    {
-        if (emit_diagnostics)
-            std::cout << "compare_atomspaces - node count " <<
-                    space_first.get_num_nodes() << " != node count " <<
-                    space_second.get_num_nodes() << std::endl;
-        return false;
-    }
-
-    // Compare link count
-    if (space_first.get_num_links() != space_second.get_num_links())
-    {
-        if (emit_diagnostics)
-            std::cout << "compare_atomspaces - link count " <<
-                    space_first.get_num_links() << " != link count " <<
-                    space_second.get_num_links() << std::endl;
-        return false;
-    }
-
-    // If we get this far, we need to compare each individual atom.
-
+    // Compare each individual atom.
     // Get the atoms in each atomspace.
     HandleSeq atomsInFirstSpace, atomsInSecondSpace;
     space_first.get_handles_by_type(atomsInFirstSpace, ATOM, true);
@@ -171,7 +153,7 @@ bool AtomSpace::content_compare(const AtomSpace& space_first,
             if (keys_first != keys_second)
             {
                 if (emit_diagnostics)
-                    std::cout << "compare_atomspaces - key set mistmatch for "
+                    std::cout << "compare_atomspaces - key set mismatch for "
                               << atom_first->to_short_string() << std::endl;
                 return false;
             }
@@ -271,11 +253,6 @@ Handle AtomSpace::getOutgoingAtom(Arity n) const
 {
 	if (_outgoing.size() <= n) return Handle::UNDEFINED;
 	return _outgoing[n];
-}
-
-ValuePtr AtomSpace::value_at_index(size_t idx) const
-{
-	return ValueCast(getOutgoingAtom(idx));
 }
 
 void AtomSpace::setAtomSpace(AtomSpace* as)

@@ -48,41 +48,8 @@ typedef double strength_t;
 typedef double confidence_t;
 typedef double count_t;
 
-/// Class to control the TV merging strategy
-struct MergeCtrl
-{
-	/// Styles for controlling merging two different truth value types
-	/// as described in https://github.com/opencog/opencog/issues/1295
-	///
-	/// Stronger means TV type with higher resolution. The weakest TV type
-	/// would be simple TV, and the strongest would be distributional TV
-	/// (to be (re)implemented).
-	enum class TVType
-	{
-		OLDER,
-		NEWER,
-		STRONGER,
-		WEAKER
-	};
-
-	/// Styles for controlling the formula while merging two different
-	/// truth values.
-	enum class TVFormula
-	{
-		HIGHER_CONFIDENCE,  // TV with higher confidence overwrite the other
-		PLN_BOOK_REVISION   // PLN book Section 5.10.2 revision rule
-	};
-
-	TVFormula tv_formula;
-	TVType tv_type;
-
-	MergeCtrl(TVFormula tvf=TVFormula::PLN_BOOK_REVISION,
-	          TVType tvt=TVType::OLDER)
-		: tv_formula(tvf), tv_type(tvt) {}
-};
-
 class TruthValue;
-typedef std::shared_ptr<const TruthValue> TruthValuePtr;
+typedef std::shared_ptr<TruthValue> TruthValuePtr;
 
 class TruthValue
 	: public FloatValue
@@ -100,9 +67,6 @@ class TruthValue
 
 protected:
 	TruthValue(Type t) : FloatValue(t) {}
-
-	// Merge helper method
-	TruthValuePtr higher_confidence_merge(const TruthValuePtr&) const;
 
 	static bool nearly_equal(double, double);
 
@@ -148,16 +112,6 @@ public:
 	virtual count_t get_count()  const = 0;
 
 	/**
-	 * Merge this TV object with the given TV object argument.
-	 * It always returns a new TV object with the result of the merge,
-	 * even if it is equal to one of the merged TV objects.
-	 * @param ms the merge style as described in
-	 *        https://github.com/opencog/opencog/issues/1295
-	 */
-	virtual TruthValuePtr merge(const TruthValuePtr&,
-	                            const MergeCtrl& = MergeCtrl()) const = 0;
-
-	/**
 	 * Check if this TV is equal to the default TV.
 	 * operator!= only compares pointers.
 	 */
@@ -166,19 +120,14 @@ public:
 };
 
 static inline TruthValuePtr TruthValueCast(const ValuePtr& pa)
-    { return std::dynamic_pointer_cast<const TruthValue>(pa); }
+    { return std::dynamic_pointer_cast<TruthValue>(pa); }
 
 static inline ValuePtr ValueCast(const TruthValuePtr& tv)
-{
-	// This should have worked!?
-	// return std::const_pointer_cast<Value>(tv);
+	{ return std::shared_ptr<Value>(tv, (Value*) tv.get()); }
 
-	// This, too, should have worked!?
-	// return std::shared_ptr<Value>(tv, const_cast<Value*>(tv.get()));
-
-	// This works...
-	return std::shared_ptr<Value>(tv, (Value*) tv.get());
-}
+#define CAST_TV_DECL(CNAME) \
+	static inline CNAME##Ptr CNAME##Cast(const TruthValuePtr& a) \
+	{ return std::dynamic_pointer_cast<CNAME>(a); }
 
 typedef std::vector<TruthValuePtr> TruthValueSeq;
 

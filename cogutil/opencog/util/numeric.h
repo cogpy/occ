@@ -31,9 +31,6 @@
 #include <numeric>
 #include <vector>
 
-#include <boost/range/numeric.hpp>
-
-#include <opencog/util/iostreamContainer.h>
 #include <opencog/util/oc_assert.h>
 
 /** \addtogroup grp_cogutil
@@ -363,9 +360,9 @@ Float tanimoto_distance(const Vec& a, const Vec& b)
                "Cannot compare unequal-sized vectors!  %d %d\n",
                a.size(), b.size());
 
-    Float ab = boost::inner_product(a, b, Float(0)),
-        aa = boost::inner_product(a, a, Float(0)),
-        bb = boost::inner_product(b, b, Float(0)),
+    Float ab = std::inner_product(a.begin(), a.end(), b.begin(), Float(0)),
+        aa = std::inner_product(a.begin(), a.end(), a.begin(), Float(0)),
+        bb = std::inner_product(b.begin(), b.end(), b.begin(), Float(0)),
         numerator = aa + bb - ab;
 
     if (numerator >= Float(DISTANCE_EPSILON))
@@ -400,13 +397,13 @@ Float angular_distance(const Vec& a, const Vec& b, bool pos_n_neg = true)
                a.size(), b.size());
 
     // XXX FIXME writing out the explicit loop will almost
-    // surely be faster than calling boost. Why? Because a single
+    // surely be faster. Why? Because a single
     // loop allows the compiler to insert instructions into the
     // pipeline bubbles; whereas three different loops will be more
     // than three times slower!
-    Float ab = boost::inner_product(a, b, Float(0)),
-        aa = boost::inner_product(a, a, Float(0)),
-        bb = boost::inner_product(b, b, Float(0)),
+    Float ab = std::inner_product(a.begin(), a.end(), b.begin(), Float(0)),
+        aa = std::inner_product(a.begin(), a.end(), a.begin(), Float(0)),
+        bb = std::inner_product(b.begin(), b.end(), b.begin(), Float(0)),
         numerator = sqrt(aa * bb);
 
     if (numerator >= Float(DISTANCE_EPSILON)) {

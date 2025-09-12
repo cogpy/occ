@@ -3,11 +3,10 @@ from libcpp.string cimport string
 from libcpp.set cimport set as cpp_set
 from opencog.atomspace cimport AtomSpace, Atom, TruthValue, Value
 from opencog.atomspace cimport cValuePtr, create_python_value_from_c_value
-from opencog.atomspace cimport AtomSpace_factory
+from opencog.atomspace cimport AtomSpace_factoid
 
 from contextlib import contextmanager
 from opencog.atomspace import create_child_atomspace
-from opencog.utilities cimport c_load_file
 import warnings
 
 
@@ -60,17 +59,23 @@ def tmp_atomspace():
 
 
 def add_link(Type t, outgoing, TruthValue tv=None):
-    # create temporary cpp vector
+
+    # Unwrap double-wrapped lists. The type constructors create these.
+    if 1 == len(outgoing) and isinstance(outgoing[0], list):
+        outgoing = outgoing[0]
+
+    # Use a temporary cpp vector
     cdef vector[cHandle] handle_vector
     for atom in outgoing:
         if isinstance(atom, Atom):
             handle_vector.push_back(deref((<Atom>(atom)).handle))
         else:
             raise TypeError("outgoing set should contain atoms, got {0} instead".format(type(atom)))
+
     cdef cHandle result
     result = c_add_link(t, handle_vector)
     if result == result.UNDEFINED: return None
-    atom = create_python_value_from_c_value(<cValuePtr&>result)
+    atom = create_python_value_from_c_value(<cValuePtr&>(result, result.get()))
     if tv is not None:
         atom.tv = tv
     return atom
@@ -80,11 +85,31 @@ def add_node(Type t, atom_name, TruthValue tv=None):
     """
     Add Node to the atomspace from the current context
     """
-    cdef string name = atom_name.encode('UTF-8')
+
+    # NumberNodes can take lists of numbers.
+    if type(atom_name) is list :
+        atom_name = ' '.join(map(str, atom_name))
+
+    # NumberNodes can be single numbers.
+    if type(atom_name) is int :
+        atom_name = str(atom_name)
+
+    if type(atom_name) is float :
+        atom_name = str(atom_name)
+
+    # Valid strings include those coming from e.g. iso8859-NN
+    # filenames, which break when shoved through UTF-8 because
+    # they contain bytes that cannot be converted to UTF-8 using
+    # default encoding tables. Such strings typically come from
+    # Microsoft, which had a habit of spewing screwball characters
+    # into random texts. So, rather than catching python's exception,
+    # just escape these bytes. The result is a valid UTF-8 string
+    # with the screwy byte properly encoded.
+    cdef string name = atom_name.encode('UTF-8', 'surrogateescape')
     cdef cHandle result = c_add_node(t, name)
 
     if result == result.UNDEFINED: return None
-    atom = create_python_value_from_c_value(<cValuePtr&>result)
+    atom = create_python_value_from_c_value(<cValuePtr&>(result, result.get()))
     if tv is not None:
         atom.tv = tv
     return atom
@@ -103,26 +128,19 @@ def push_default_atomspace(AtomSpace new_atomspace):
     """
     Set default atomspace for current threads
     """
-    push_context_atomspace(new_atomspace.atomspace)
+    push_context_atomspace(new_atomspace.asp)
 
 
 def get_default_atomspace():
     """
     Get default atomspace
     """
-    cdef cAtomSpace * context = get_context_atomspace()
-    if context is NULL:
-        return None
-    return AtomSpace_factory(context)
+    cdef cValuePtr context = get_context_atomspace()
+    return AtomSpace_factoid(context)
 
 
 def pop_default_atomspace():
-    return AtomSpace_factory(pop_context_atomspace())
-
-
-def load_file(path, AtomSpace atomspace):
-    cdef string p = path.encode('utf-8')
-    c_load_file(p, deref(atomspace.atomspace))
+    return AtomSpace_factoid(pop_context_atomspace())
 
 
 def is_closed(Atom atom):
@@ -137,4 +155,4 @@ def get_free_variables(Atom atom):
     Return the list of free variables in a given atom.
     """
     cdef cpp_set[cHandle] variables = c_get_free_variables(atom.get_c_handle())
-    return [create_python_value_from_c_value(<cValuePtr&> h) for h in variables]
+    return [create_python_value_from_c_value(<cValuePtr&>(h, h.get())) for h in variables]

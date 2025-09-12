@@ -8,16 +8,51 @@
 
 ; Before running this demo, copy `demo.txt` to the /tmp directory.
 ; This is a text file, it will be read and processed in this demo.
+(copy-file "demo.txt" "/tmp/demo.txt")
 
 ; --------------------------------------------------------
 ; Basic demo: Open a file for reading, at a fixed absolute location
-; in the filesystem. Executing the OpenLink will return a stream
-; value that will deliver text strings, one line at a time.
-(define txt-stream
-	(cog-execute!
-		(Open
-			(Type 'TextFileStream)
-			(SensoryNode "file:///tmp/demo.txt"))))
+; in the filesystem. Sending the (Predicate "*-read-*") message to
+; the (TextFile "file:///tmp/demo.txt") object will cause one line
+; to be read from the file, and returned as a StringValue.
+
+;; Memoize the TextFileNode in scheme. This does tow things:
+;; 1) Avoids typing, below.
+;; 2) Avoids hitting the AtomSpace repeatedly.
+(define file-node (TextFile "file:///tmp/demo.txt"))
+
+;; Reading the file will return strings. But we have a choice of what
+;; kind of strings we want: StringValue, or perhaps some kind of Node.
+;; This time, we'll try out the StringValue.
+(cog-execute!
+	(SetValue file-node (Predicate "*-open-*") (Type 'StringValue)))
+
+; Read one line of text from the file. Do this by sending the *-read-*
+; message to the file object.
+(cog-execute! (ValueOf file-node (Predicate "*-read-*")))
+
+; Do it again and again. Keep doing it to EOF is reached.
+(cog-execute! (ValueOf file-node (Predicate "*-read-*")))
+(cog-execute! (ValueOf file-node (Predicate "*-read-*")))
+(cog-execute! (ValueOf file-node (Predicate "*-read-*")))
+(cog-execute! (ValueOf file-node (Predicate "*-read-*")))
+
+; --------------------------------------------------------
+; Convert the line-by-line reder into a streaming reader. Working with
+; StreamValues simplifies processing pipelines. StreamValues will
+; deliver more data with each reference, avoiding the need to loop
+; over the *-read-* message.
+;
+; Each examination of the stream will return a line from the file,
+; in sequential order.
+
+; But first, let's rewind to the begining. And change the return type,
+; just for grins.
+(cog-execute!
+	(SetValue file-node (Predicate "*-open-*") (Type 'Concept)))
+
+; Wrap the TextFileNode with the stream reader.
+(define txt-stream (ReadStream file-node))
 
 ; Repeated references to the stream will return single lines from
 ; the file.
@@ -27,35 +62,45 @@ txt-stream
 txt-stream
 txt-stream
 
-; Eventually, this will return an empty stream. This denotes end-of-file.
+; Eventually, this will return the EOF marker.
 
 ; --------------------------------------------------------
-; Demo: Perform indirect streaming. The file-stream will be placed
+; The section above wraps the TextFileNode with a ReadStreamValue
+; "by hand"; by creating the Value in scheme. But Values cannot be
+; stored in the Atomspace, and it would be better to be able to get
+; that stream directly. This is done with the *-stream-* message.
+
+; Again, let's rewind to the begining.
+(cog-execute!
+	(SetValue file-node (Predicate "*-open-*") (Type 'Item)))
+
+(define txt-stream
+	(cog-execute! (ValueOf file-node (Predicate "*-stream-*"))))
+
+; Repeated references to the stream will return single lines from
+; the file.
+txt-stream
+txt-stream
+txt-stream
+
+; --------------------------------------------------------
+; Demo: Perform indirect streaming. The text-stream will be placed
 ; as a Value on some Atom, where it can be accessed and processed.
 ;
-; Open the file, get the stream, and place it somewhere.
-(cog-set-value! (Concept "foo") (Predicate "some place")
-	(cog-execute!
-		(Open (Type 'TextFileStream)
-			(Sensory "file:///tmp/demo.txt"))))
-
-; A better, all-Atomese version of the above. Note that the SetValueLink
-; will execute the TextFileNode, grab whatever it gets from that exec,
-; and then places it at the indicated location.
+; Anchor the text stream at "some place", where it can be found.
 (cog-execute!
 	(SetValue (Concept "foo") (Predicate "some place")
-		(Open (Type 'TextFileStream)
-			(Sensory "file:///tmp/demo.txt"))))
+		(ValueOf file-node (Predicate "*-stream-*"))))
 
-; Define an executable node that will feed the stream of text.
-; The ValueOf Atom is a kind of promise about the future: when
-; it is executed, it will return the Value, whatever it is, at
-; that time (at the time when the executiion is done).
+; The stream can be accessed by just fetching it from "some place",
+; the location it is anchored at.
 (define txt-stream-gen
 	(ValueOf (Concept "foo") (Predicate "some place")))
 
-; Access the file contents. Each time this is executed, it gets the
-; next line in the file.
+; Like all Atomese, the ValueOf is just a declaration: it doesn't
+; "do anything"; it just "sits there", passively. To actually access
+; the text stream, it needs to be executed. Each execution advances
+; the stream pointer, getting the next line in the file.
 (cog-execute! txt-stream-gen)
 (cog-execute! txt-stream-gen)
 (cog-execute! txt-stream-gen)
@@ -78,17 +123,18 @@ txt-stream
 		; a pattern to match, and the rewrite to apply. Here, the
 		; pattern match is trivial: `(Variable "$x")` matches
 		; everything, the entire body of the input, which will be
-		; a line from the text file. More pecisely, and ItemNode
+		; a line from the text file. More pecisely, a StringValue
 		; holding that line. The rewrite below is just some
 		; silliness that makes two copies of the input.
 		;
 		; The LinkSignatureLink is a constructor: it creates either
-		; a LinkValue or a Link of the specified type. In this demo,
-		; just using a plain-old List (instead of the LinkSignature)
-		; would have been OK. But if the Variable had been a Value,
-		; then using the LinkSignature would have been required.
+		; a LinkValue or a Link of the specified type. If the stream
+		; consisted of Atoms, then a plain-old List (instead of the
+		; LinkSignature) would have been OK. But since the filtered
+		; elements are Values, StringValues to be precise; they must
+		; be wrapped with a LinkSignature.
 		(Rule
-			(TypedVariable (Variable "$x") (Type 'ItemNode))
+			(TypedVariable (Variable "$x") (Type 'StringValue))
 			(Variable "$x")
 			(LinkSignature       ; Or use List here and skip next line.
 				(Type 'LinkValue)
@@ -99,12 +145,11 @@ txt-stream
 				(Item "====\n")))
 		txt-stream-gen))
 
-; The previous demo ran the input file to end-of-file; we need to
-; restart at the beginning.
+; The previous demo ran the input file to end-of-file;
+; restart at the beginning. Be sure to set the item type to
+; StringValue, because that is what the filter expects.
 (cog-execute!
-	(SetValue (Concept "foo") (Predicate "some place")
-		(Open (Type 'TextFileStream)
-			(Sensory "file:///tmp/demo.txt"))))
+	(SetValue file-node (Predicate "*-open-*") (Type 'StringValue)))
 
 ; Run the rule, once.
 (cog-execute! rule-applier)
@@ -125,9 +170,7 @@ txt-stream
 
 ; As above: rewind the stream to the beginning:
 (cog-execute!
-	(SetValue (Concept "foo") (Predicate "some place")
-		(Open (Type 'TextFileStream)
-			(Sensory "file:///tmp/demo.txt"))))
+	(SetValue file-node (Predicate "*-open-*") (Type 'StringValue)))
 
 ; Gentle reminder of how to fetch this:
 (define txt-stream-gen

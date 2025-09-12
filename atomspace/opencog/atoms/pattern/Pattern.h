@@ -73,7 +73,7 @@ struct Pattern
 	typedef std::pair<Handle, PatternTermPtr> AtomInClausePair;
 	typedef std::map<AtomInClausePair, PatternTermSeq> ConnectTermMap;
 
-	Pattern() : have_evaluatables(false) {}
+	Pattern() : group_min_size(0), group_max_size(-1), have_evaluatables(false) {}
 
 	// -------------------------------------------
 	/// The current set of clauses (beta redex context) being grounded.
@@ -94,6 +94,13 @@ struct Pattern
 	/// The always (for-all) clauses have to always be grounded the same
 	/// way. Any grounding failure at all invalidates all other groundings.
 	PatternTermSeq always;
+
+	/// The group-by (for-all-in-this-group) clauses have to always be
+	/// grounded the same way, in the grouping. All groundings in a
+	/// grouping will have *identical* groundings for the grouping.
+	PatternTermSeq grouping;
+	long group_min_size;
+	long group_max_size;
 
 	/// Evaluatable terms are those that need to be evaluated to
 	/// find out if they hold true. For example, GreaterThanLink,

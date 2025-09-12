@@ -26,11 +26,13 @@
 
 #include <vector>
 
-#include <opencog/util/digraph.h>
+#include <opencog/asmoses/utils/digraph.h>
 #include <opencog/util/oc_assert.h>
-#include <opencog/util/tree.h>
+#include <opencog/asmoses/utils/tree.h>
 
 #include "opencog/asmoses/moses/representation/field_set.h"
+
+#include <boost/bind/bind.hpp>
 
 namespace opencog {
 namespace moses {

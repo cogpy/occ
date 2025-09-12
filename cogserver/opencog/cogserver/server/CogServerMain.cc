@@ -30,46 +30,35 @@
 #include <signal.h>
 #include <string.h>
 
-#include <filesystem>
+#include <sstream>
 #include <string>
 #include <thread>
-#include <utility>
-
-#include <boost/algorithm/string.hpp>
+#include <vector>
 
 #include <opencog/util/Config.h>
 #include <opencog/util/Logger.h>
-#include <opencog/util/exceptions.h>
-#include <opencog/util/files.h>
-#include <opencog/util/misc.h>
 
 #include <opencog/cogserver/server/CogServer.h>
 
 using namespace opencog;
 
-static const char* DEFAULT_CONFIG_FILENAME = "cogserver.conf";
-static const char* DEFAULT_CONFIG_ALT_FILENAME = "opencog.conf";
-static const char* DEFAULT_CONFIG_PATHS[] =
-{
-    // Search order for the config file:
-    ".",         // First, we look in the current directory,
-    "lib",       // Next, we look in the build directory (cmake puts it here)
-    "../lib",    // Next, we look at the source directory
-    CONFDIR,     // Next, the install directory
-#ifndef WIN32
-    "/etc",      // Finally, in the standard system directory.
-#endif // !WIN32
-    NULL
-};
-
 static void usage(const char* progname)
 {
     std::cerr << "Usage: " << progname
-        << " [-p <console port>] [-w <webserver port>] [-c <config-file>] [-DOPTION=\"VALUE\"]\n\n"
-        << "If multiple config files are specified, then these are\n"
-        << "loaded sequentially, with the values in later files\n"
-        << "overwriting the earlier ones. -D Option values override\n"
-        << "the options in config files."
+        << " [-p <console port>] [-w <webserver port>] [-m <mcp port>] [-DOPTION=\"VALUE\"]\n\n"
+        << "\n"
+        << "Supported options and default values:\n"
+        << "SERVER_PORT = 17001\n"
+        << "WEB_PORT = 18080\n"
+        << "MCP_PORT = 18888\n"
+        << "LOG_FILE = /tmp/cogserver.log\n"
+        << "LOG_LEVEL = info\n"
+        << "LOG_TO_STDOUT = false\n"
+        << "ANSI_PROMPT = ^[[0;32mopencog^[[1;32m> ^[[0m\n"
+        << "PROMPT = opencog> \n"
+        << "ANSI_SCM_PROMPT = ^[[0;34mguile^[[1;34m> ^[[0m\n"
+        << "SCM_PROMPT = guile> \n"
+        << "MODULES = libbuiltinreqs.so, ...\n"
         << std::endl;
 }
 
@@ -103,44 +92,43 @@ int main(int argc, char *argv[])
 
     int console_port = 17001;
     int webserver_port = 18080;
+    int mcp_port = 18888;
 
-    static const char *optString = "cp:w:D:h";
-    int c = 0;
-    std::vector<std::string> configFiles;
+    static const char *optString = "p:w:m:D:h";
     std::vector<std::pair<std::string, std::string>> configPairs;
     std::string progname = argv[0];
 
     // parse command line
     while (true) {
-        c = getopt (argc, argv, optString);
+        int c = getopt (argc, argv, optString);
         /* Detect end of options */
         if (c == -1) {
             break;
-        } else if (c == 'c') {
-            configFiles.push_back(optarg);
         } else if (c == 'D') {
             // override all previous options, e.g.
             // -DLOG_TO_STDOUT=TRUE
             std::string text = optarg;
-            std::vector<std::string> strs;
-            boost::split(strs, text, boost::is_any_of("=:"));
-            std::string optionName = strs[0];
-            std::string value;
-            if (strs.size() > 2) {
-                // merge end tokens if more than one separator found
-                for (uint i = 1; i < strs.size(); i++)
-                    value += strs[i];
-            } else if (strs.size() == 1) {
+
+            // Find the position of '=' separator
+            size_t equalPos = text.find('=');
+
+            if (equalPos == std::string::npos) {
+                // No '=' found, option has no value
                 std::cerr << "No value given for option "
-                          << strs[0] << std::endl;
+                          << text << std::endl;
+                configPairs.push_back({text, ""});
             } else {
-                value = strs[1];
+                // Split at '=' position
+                std::string optionName = text.substr(0, equalPos);
+                std::string value = text.substr(equalPos + 1);
+                configPairs.push_back({optionName, value});
             }
-            configPairs.push_back({optionName, value});
         } else if (c == 'p') {
             console_port = atoi(optarg);
         } else if (c == 'w') {
             webserver_port = atoi(optarg);
+        } else if (c == 'm') {
+            mcp_port = atoi(optarg);
         } else {
             // unknown option (or help)
             usage(progname.c_str());
@@ -152,71 +140,29 @@ int main(int argc, char *argv[])
 
     }
 
-    // First, search for the standard config file.
-    if (configFiles.size() == 0) {
-        // search for configuration file on default locations
-        for (int i = 0; DEFAULT_CONFIG_PATHS[i] != NULL; ++i) {
-            std::filesystem::path configPath(DEFAULT_CONFIG_PATHS[i]);
-            configPath /= DEFAULT_CONFIG_FILENAME;
-            if (std::filesystem::exists(configPath)) {
-                std::cerr << "Using default config at "
-                          << configPath.string() << std::endl;
-                configFiles.push_back(configPath.string());
-
-                // Use the *first* config file found! We don't want to
-                // load both the installed system config file, and also
-                // any config file found in the build directory. We
-                // ESPECIALLY don't want to load the system config file
-                // after the development config file, thus clobbering
-                // the contents of the devel config file!
-                break;
-            }
-        }
-    }
-
-    // Next, search for alternate config file.
-    if (configFiles.size() == 0) {
-        // search for configuration file on default locations
-        for (int i = 0; DEFAULT_CONFIG_PATHS[i] != NULL; ++i) {
-            std::filesystem::path configPath(DEFAULT_CONFIG_PATHS[i]);
-            configPath /= DEFAULT_CONFIG_ALT_FILENAME;
-            if (std::filesystem::exists(configPath)) {
-                std::cerr << "Using default config at "
-                          << configPath.string() << std::endl;
-                configFiles.push_back(configPath.string());
-
-                // Use the *first* config file found! We don't want to
-                // load both the installed system config file, and also
-                // any config file found in the build directory. We
-                // ESPECIALLY don't want to load the system config file
-                // after the development config file, thus clobbering
-                // the contents of the devel config file!
-                break;
-            }
-        }
-    }
-
-    config().reset();
-    if (configFiles.size() == 0) {
-        std::cerr << "No config files could be found!" << std::endl;
-        exit(-1);
-    }
-
-    // Each config file sequentially overwrites the next
-    for (const std::string& configFile : configFiles) {
-        try {
-            config().load(configFile.c_str(), false);
-            break;
-        } catch (RuntimeException &e) {
-            std::cerr << e.get_message() << std::endl;
-            exit(1);
-        }
-    }
-
-    // Each specific option
+    // Copy command-line options to global cache.
+    // This is ... deprecated, and should be removed. Later.
     for (const auto& optionPair : configPairs) {
-        // std::cerr << optionPair.first << " = " << optionPair.second << std::endl;
-        config().set(optionPair.first, optionPair.second);
+        const std::string& opt = optionPair.first;
+        const std::string& val = optionPair.second;
+        // std::cerr << opt << " = " << val << std::endl;
+        config().set(opt, val);
+
+        if (0 == opt.compare("LOG_LEVEL"))
+            logger().set_level(val);
+        if (0 == opt.compare("LOG_FILE"))
+            logger().set_filename(val);
+        if (0 == opt.compare("LOG_TO_STDOUT"))
+        {
+            if (not ('f' == val[0] or 'F' == val[0] or '0' == val[0]))
+                logger().set_print_to_stdout_flag(true);
+        }
+        if (0 == opt.compare("SERVER_PORT"))
+            console_port = atoi(val.c_str());
+        if (0 == opt.compare("WEB_PORT"))
+            webserver_port = atoi(val.c_str());
+        if (0 == opt.compare("MCP_PORT"))
+            mcp_port = atoi(val.c_str());
     }
 
     // Start catching signals
@@ -234,10 +180,20 @@ int main(int argc, char *argv[])
     cogserve.loadModules();
 
     // Enable the network server and run the server's main loop.
-    if (0 < console_port)
-        cogserve.enableNetworkServer(console_port);
-    if (0 < webserver_port)
-        cogserve.enableWebServer(webserver_port);
+    try
+    {
+        if (0 < console_port)
+            cogserve.enableNetworkServer(console_port);
+        if (0 < webserver_port)
+            cogserve.enableWebServer(webserver_port);
+        if (0 < mcp_port)
+            cogserve.enableMCPServer(mcp_port);
+    }
+    catch (const std::exception& ex)
+    {
+        fprintf(stderr, "Error exit: %s\n", ex.what());
+        exit(-1);
+    }
     cogserve.serverLoop();
     exit(0);
 }

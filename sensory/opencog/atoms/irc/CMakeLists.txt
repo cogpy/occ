@@ -5,7 +5,7 @@ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
 
 ADD_LIBRARY (sensory-irc SHARED
 	IRC.cc
-	IRChatStream.cc
+	IRChatNode.cc
 )
 
 # Without this, parallel make will race and crap up the generated files.
@@ -23,6 +23,6 @@ INSTALL (TARGETS sensory-irc EXPORT AtomSpaceTargets
 )
 
 INSTALL (FILES
-	IRChatStream.h
+	IRChatNode.h
 	DESTINATION "include/opencog/atoms/sensory"
 )

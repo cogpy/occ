@@ -30,9 +30,6 @@
 #include <stdio.h>
 
 #include <opencog/atoms/truthvalue/CountTruthValue.h>
-#include <opencog/atoms/truthvalue/FuzzyTruthValue.h>
-#include <opencog/atoms/truthvalue/IndefiniteTruthValue.h>
-#include <opencog/atoms/truthvalue/ProbabilisticTruthValue.h>
 #include <opencog/atoms/truthvalue/SimpleTruthValue.h>
 #include <opencog/atoms/truthvalue/TruthValue.h>
 
@@ -150,15 +147,6 @@ bool TruthValue::nearly_equal(double a, double b)
 	return diff / fmin (absa+absb, DBL_MAX) < ACCEPTABLE_ERROR;
 }
 
-TruthValuePtr
-TruthValue::higher_confidence_merge(const TruthValuePtr& other) const
-{
-	if (other->get_confidence() > get_confidence()) {
-		return other;
-	}
-	return std::dynamic_pointer_cast<const TruthValue>(shared_from_this());
-}
-
 TruthValuePtr TruthValue::factory(Type t, const std::vector<double>& v)
 {
 	ValuePtr pap = createFloatValue(t,v);
@@ -169,15 +157,9 @@ TruthValuePtr TruthValue::factory(const ValuePtr& pap)
 {
 	Type t = pap->get_type();
 	if (SIMPLE_TRUTH_VALUE == t)
-		return SimpleTruthValue::createTV(pap);
+		return createSimpleTruthValue(pap);
 	if (COUNT_TRUTH_VALUE == t)
-		return CountTruthValue::createTV(pap);
-	if (FUZZY_TRUTH_VALUE == t)
-		return FuzzyTruthValue::createTV(pap);
-	if (INDEFINITE_TRUTH_VALUE == t)
-		return IndefiniteTruthValue::createTV(pap);
-	if (PROBABILISTIC_TRUTH_VALUE == t)
-		return ProbabilisticTruthValue::createTV(pap);
+		return createCountTruthValue(pap);
 
 	throw RuntimeException(TRACE_INFO,
 		"Unknown TruthValue type %d", t);

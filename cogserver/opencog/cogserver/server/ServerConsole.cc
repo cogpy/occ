@@ -22,7 +22,8 @@ using namespace opencog;
 
 std::string ServerConsole::_prompt;
 
-ServerConsole::ServerConsole(void)
+ServerConsole::ServerConsole(CogServer& cs) :
+	_cserver(cs)
 {
     if (nullptr == &config()) {
         _prompt = "[0;32mopencog[1;32m> [0m";
@@ -317,7 +318,7 @@ void ServerConsole::OnLine(const std::string& line)
 
     // If the cogserver has stopped, then the command processor is gone,
     // and we just ... can't handle commands any longer. Self-destruct.
-    CogServer& cs = cogserver();
+    CogServer& cs = _cserver;
     if (not cs.running())
     {
         Exit();
@@ -341,6 +342,20 @@ void ServerConsole::OnLine(const std::string& line)
 
         // Re-issue the command, but only if we sucessfully got a shell.
         // (We might not get a shell if scheme is not installed.)
+        if (_shell) {
+            OnLine(line);
+            return;
+        }
+    }
+
+    // If the command starts with an open-brace, assume
+    // its a json command. Pop into the json shell, and try again.
+    else if (line[0] == '{')
+    {
+        OnLine("json");
+
+        // Re-issue the command, but only if we sucessfully got a shell.
+        // (We might not get a shell if json is screwed up.)
         if (_shell) {
             OnLine(line);
             return;

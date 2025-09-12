@@ -28,11 +28,16 @@
 #include <opencog/atoms/base/Node.h>
 #include <opencog/atoms/core/FindUtils.h>
 #include <opencog/atoms/core/FreeLink.h>
+#include <opencog/atoms/core/NumberNode.h>
+#include <opencog/atoms/value/UnisetValue.h>
+#include <opencog/atomspace/AtomSpace.h>
 
 #include "BindLink.h"
 #include "DualLink.h"
 #include "PatternLink.h"
 #include "PatternUtils.h"
+
+#include <cmath>
 
 using namespace opencog;
 
@@ -41,6 +46,7 @@ void PatternLink::common_init(void)
 	locate_defines(_pat.pmandatory);
 	locate_defines(_pat.absents);
 	locate_defines(_pat.always);
+	locate_defines(_pat.grouping);
 
 	// If there are any defines in the pattern, then all bets are off
 	// as to whether it is connected or not, what's virtual, what isn't.
@@ -99,11 +105,13 @@ void PatternLink::common_init(void)
 	clauses_get_variables(_pat.pmandatory);
 	clauses_get_variables(_pat.absents);
 	clauses_get_variables(_pat.always);
+	clauses_get_variables(_pat.grouping);
 
 	// Find prunable terms.
 	locate_cacheable(_pat.pmandatory);
 	locate_cacheable(_pat.absents);
 	locate_cacheable(_pat.always);
+	locate_cacheable(_pat.grouping);
 }
 
 
@@ -151,12 +159,13 @@ void PatternLink::disjointed_init(void)
 		// Unfortunately, unbundle_clauses sets all sorts of other
 		// stuff that we don't need/want, so we have to clobber that
 		// every time through the loop.
-		// BTW, any `absents` and `always` are probably handled
-		// incorrectly, so that's a bug that needs fixing.
+		// BTW, any `absents`, `always` and `grouping` are probably
+		// handled incorrectly, so that's a bug that needs fixing.
 		unbundle_clauses(h);
 
 		// Each component consists of the assorted parts.
-		// XXX FIXME, this handles `absents` and `always` incorrectly.
+		// XXX FIXME, this handles `absents`, `always` and `grouping`
+		// incorrectly.
 		HandleSeq clseq;
 		for (const PatternTermPtr& ptm: _pat.pmandatory)
 			clseq.push_back(ptm->getHandle());
@@ -216,6 +225,10 @@ void PatternLink::init(void)
 	// I'm not convinced its a valid use of Quoting. It seems
 	// like a bug. But whatever. System crashes if the body is
 	// not set.
+	// The root cause is that Nil used PatternLink instead of
+	// RuleLink in URE, which made his code run slow and introduced
+	// crazy-making into the patterns. We should ditch this, given
+	// that teh URE is dead meat anyway.
 	if (nullptr == _body) return;
 
 	if (2 < _outgoing.size() or
@@ -232,6 +245,71 @@ void PatternLink::init(void)
 	debug_log("PatternLink::init()");
 	// logger().fine("Pattern: %s", to_long_string("").c_str());
 #endif
+}
+
+/* ================================================================= */
+
+void PatternLink::setAtomSpace(AtomSpace* as)
+{
+	RuleLink::setAtomSpace(as);
+
+	// Can be called with null pointer during destruction.
+	if (nullptr == as) return;
+
+	// All patterns will record results into thread-safe queues or to
+	// thread-safe deduplicated sets. Use a set by default. User can
+	// over-ride later, as desired.
+	// Start in closed state, otherwise it will hang in update()
+	// when printing.
+	UnisetValuePtr svp(createUnisetValue());
+	svp->close();
+
+	const Handle& self(get_handle());
+	as->set_value(self, self, svp);
+
+	// If there are multiple rewrites given, then create a distinct
+	// set for each. Otherwise, one is enough.
+	if (_implicand.size() == 1)
+	{
+		as->set_value(self, _implicand[0], svp);
+	}
+	else
+	{
+		for (const Handle& hi : _implicand)
+		{
+			UnisetValuePtr svp(createUnisetValue());
+			svp->close();
+			as->set_value(self, hi, svp);
+		}
+	}
+
+	// Marginals will likewise be sets. There will be one marginal for
+	// each variable, associated with the variable declaration. The
+	// marginals will contain all groundings seen for that particular
+	// variable. For ease of use, we'll put exactly the same marginal
+	// in *two* places: the raw variable name, and the type declaration
+	// for that variable. Some users will find one easier to use than
+	// the other, and it costs nothing in performance/efficiency to
+	// provide both.
+	for (const auto& tyvar : _variables._typemap)
+	{
+		UnisetValuePtr svp(createUnisetValue());
+		svp->close();
+		as->set_value(self, tyvar.first, svp);
+		as->set_value(self, HandleCast(tyvar.second), svp);
+	}
+
+	// Some variables are untyped. Grab those, too.
+	for (const Handle& untyvar : _variables.varseq)
+	{
+		// Skip, if its typed already.
+		// if (_variables._typemap.contains(untyvar)) continue;
+		if (_variables._typemap.end() != _variables._typemap.find(untyvar))
+			continue;
+		UnisetValuePtr svp(createUnisetValue());
+		svp->close();
+		as->set_value(self, untyvar, svp);
+	}
 }
 
 /* ================================================================= */
@@ -488,6 +566,49 @@ bool PatternLink::record_literal(const PatternTermPtr& clause, bool reverse)
 			pin_term(term);
 			term->markAlways();
 			_pat.always.push_back(term);
+		}
+		return true;
+	}
+
+	// Pull clauses out of a GroupLink
+	// GroupLinks will have terms that are the groundings that should be
+	// grouped together, and also an optional IntervalLink to specify
+	// min/max grouping sizes.
+	if (not reverse and GROUP_LINK == typ)
+	{
+		for (PatternTermPtr term: clause->getOutgoingSet())
+		{
+			const Handle& ah = term->getQuote();
+
+			// In the current code base, there shouldn't be any constants
+			// so this check should not be needed.
+			if (is_constant(_variables.varset, ah)) continue;
+			pin_term(term);
+			term->markGrouping();
+			_pat.grouping.push_back(term);
+		}
+
+		// Look for IntervalLinks. They've been scrubbed from the
+		// Pattern term because they're constants; we have to look
+		// at the GrouplLink itself to find them.
+		long glo = LONG_MAX;
+		long ghi = 0;
+		for (const Handle& ah: h->getOutgoingSet())
+		{
+			if (INTERVAL_LINK != ah->get_type())
+				continue;
+			NumberNodePtr nlo(NumberNodeCast(ah->getOutgoingAtom(0)));
+			NumberNodePtr nhi(NumberNodeCast(ah->getOutgoingAtom(1)));
+			long ilo = (long) std::round(nlo->get_value());
+			long ihi = (long) std::round(nhi->get_value());
+			if (glo > ilo) glo = ilo;
+			if (ghi < ihi) ghi = ihi;
+			if (ihi < 0) ghi = LONG_MAX;
+		}
+		if (0 != ghi)
+		{
+			_pat.group_min_size = glo;
+			_pat.group_max_size = ghi;
 		}
 		return true;
 	}
@@ -833,6 +954,7 @@ bool PatternLink::add_unaries(const PatternTermPtr& ptm)
 	// not even called for any of these cases.
 	Type t = h->get_type();
 	if (CHOICE_LINK == t or ALWAYS_LINK == t) return false;
+	if (GROUP_LINK == t) return false;
 	if (ABSENT_LINK == t or PRESENT_LINK == t) return false;
 	if (SEQUENTIAL_AND_LINK == t or SEQUENTIAL_OR_LINK == t) return false;
 
@@ -1161,8 +1283,8 @@ void PatternLink::make_term_tree_recursive(const PatternTermPtr& root,
 		// because they involve variables that are bound to some other
 		// scope up above. Those are NOT actually const. This is not
 		// particularly well-thought out. Might be buggy...
-		bool chk_const =
-			(PRESENT_LINK == t or ABSENT_LINK == t or ALWAYS_LINK == t);
+		bool chk_const = (PRESENT_LINK == t or ABSENT_LINK == t);
+		chk_const = chk_const or ALWAYS_LINK == t or GROUP_LINK == t;
 		chk_const = chk_const and not parent->hasAnyEvaluatable();
 		chk_const = chk_const and not ptm->isQuoted();
 
@@ -1281,6 +1403,7 @@ void PatternLink::debug_log(std::string msg) const
 	logger().fine("%lu mandatory terms", _pat.pmandatory.size());
 	logger().fine("%lu absent clauses", _pat.absents.size());
 	logger().fine("%lu always clauses", _pat.always.size());
+	logger().fine("%lu grouping clauses", _pat.grouping.size());
 	logger().fine("%lu fixed clauses", _fixed.size());
 	logger().fine("%lu virtual clauses", _num_virts);
 	logger().fine("%lu components", _num_comps);
@@ -1307,6 +1430,15 @@ void PatternLink::debug_log(std::string msg) const
 	for (const PatternTermPtr& ptm : _pat.always)
 	{
 		str += "================ Always clause " + std::to_string(num) + ":";
+		if (ptm->hasAnyEvaluatable()) str += " (evaluatable)";
+		str += "\n";
+		str += ptm->to_full_string() + "\n\n";
+		num++;
+	}
+
+	for (const PatternTermPtr& ptm : _pat.grouping)
+	{
+		str += "================ Grouping clause " + std::to_string(num) + ":";
 		if (ptm->hasAnyEvaluatable()) str += " (evaluatable)";
 		str += "\n";
 		str += ptm->to_full_string() + "\n\n";

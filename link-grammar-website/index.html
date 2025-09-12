@@ -9,10 +9,8 @@
 
 <h3>News</h3>
 
-<p>31 May, 2024: <a href="#download">link-grammar 5.12.5 released!</a>
-<i>This release fixes MS Windows build issues; removes
-<tt>.lg_history</tt> litter, and fixes memory consumption issues
-related to large machine-learned dictionaries.</i>
+<p>29 August 2025: <a href="#download">link-grammar 5.12.6 released!</a>
+<i>This release fixes a build break due to a missing header file.</i>
 See ChangeLog at bottom for a description of other changes in this release.
 </p>
 
@@ -355,8 +353,8 @@ directory</a> in the
 <h3>Downloading Link Grammar</h3>
 <p>The source code to the system can be downloaded as a tarball. The
    current stable version is
-   <a href="https://www.gnucash.org/link-grammar/downloads/5.12.5/link-grammar-5.12.5.tar.gz">Link
-   Grammar 5.12.5</a> (May 2024). Older versions are available
+   <a href="https://www.gnucash.org/link-grammar/downloads/5.12.6/link-grammar-5.12.6.tar.gz">Link
+   Grammar 5.12.6</a> (August 2025). Older versions are available
    <a href="https://www.gnucash.org/downloads/link-grammar/">here</a>.
    </p>
 <p>GitHub hosts <a href="https://github.com/opencog/link-grammar">the
@@ -594,6 +592,12 @@ of time, published on websites that no longer exist.
 <p>Version 5.12.5 (31 May 2024)</p>
 <p>
 <ul>
+<li>Fix build break due to missing header file.
+</ul>
+
+<p>Version 5.12.5 (31 May 2024)</p>
+<p>
+<ul>
 <li>Bugfix tracon table size management. #1486
 <li>Bugfix connector hashing for fewer hash collisions. #1487, #1528
 <li>Bugfix python unit test for Thai on Apple. #1530
@@ -635,7 +639,7 @@ not just usable, but also fast.
 <li>Assorted enhancements and fixes for the AtomSpace dictionary. #1362
 <li>Fix missing HAVE_THREADS_H, affects Apple Homebrew. #1363
 <li>Fix regex thread-safety issue. #1370
-<li>Disable aspell; it leaks memory. #1373
+<li>Print warning about aspell; it leaks memory. #1373, #1376, #1493
 <li>Deduplicate linkages when overflow forces random selection. #1378 #1396
 <li>Fix direct dialect settings on connectors. #1382
 <li>Cleanup dictionary backends. #1391 thru #1395

@@ -29,7 +29,7 @@ std::string ServerSocket::get_websocket_line()
 	// If we are here, then we are expecting a frame header.
 	// Get frame and opcode
 	unsigned char fop;
-	boost::asio::read(*_socket, boost::asio::buffer(&fop, 1));
+	asio::read(*_socket, asio::buffer(&fop, 1));
 
 	// bool finbit = fop & 0x80;
 	unsigned char opcode = fop & 0xf;
@@ -46,13 +46,13 @@ std::string ServerSocket::get_websocket_line()
 			char header[2];
 			header[0] = 0x8a;
 			header[1] = (char) paylen;
-			Send(boost::asio::const_buffer(header, 2));
+			Send(asio::const_buffer(header, 2));
 			if (0 < paylen)
-				Send(boost::asio::const_buffer(pingd.data(), paylen));
+				Send(asio::const_buffer(pingd.data(), paylen));
 		}
 
 		// And wait for the next frame...
-		boost::asio::read(*_socket, boost::asio::buffer(&fop, 1));
+		asio::read(*_socket, asio::buffer(&fop, 1));
 		// finbit = fop & 0x80;
 		opcode = fop & 0xf;
 	}
@@ -83,7 +83,7 @@ std::string ServerSocket::get_websocket_data(void)
 {
 	// Mask and payload length
 	unsigned char mpay;
-	boost::asio::read(*_socket, boost::asio::buffer(&mpay, 1));
+	asio::read(*_socket, asio::buffer(&mpay, 1));
 	bool maskbit = mpay & 0x80;
 	int8_t paybyte = mpay & 0x7f;
 	int64_t paylen = paybyte;
@@ -91,14 +91,14 @@ std::string ServerSocket::get_websocket_data(void)
 	if (126 == paybyte)
 	{
 		uint16_t shore;
-		boost::asio::read(*_socket, boost::asio::buffer(&shore, 2));
+		asio::read(*_socket, asio::buffer(&shore, 2));
 		paylen = ntohs(shore);
 	}
 	else if (127 == paybyte)
 	{
 		uint32_t lunglo, lunghi;
-		boost::asio::read(*_socket, boost::asio::buffer(&lunghi, 4));
-		boost::asio::read(*_socket, boost::asio::buffer(&lunglo, 4));
+		asio::read(*_socket, asio::buffer(&lunghi, 4));
+		asio::read(*_socket, asio::buffer(&lunglo, 4));
 		uint64_t lung = ntohl(lunghi);
 		lung = lung << 32 | ntohl(lunglo);
 		if ((1UL << 40) < lung)
@@ -117,13 +117,13 @@ std::string ServerSocket::get_websocket_data(void)
 	}
 
 	uint32_t mask;
-	boost::asio::read(*_socket, boost::asio::buffer(&mask, 4));
+	asio::read(*_socket, asio::buffer(&mask, 4));
 
 	// Use malloc inside of std::string to get a buffer.
 	std::string blob;
 	blob.resize(paylen);
 	char* data = blob.data();
-	boost::asio::read(*_socket, boost::asio::buffer(data, paylen));
+	asio::read(*_socket, asio::buffer(data, paylen));
 
 	// Bulk unmask the data, using XOR.
 	uint32_t *dp = (uint32_t *) data;
@@ -152,7 +152,7 @@ void ServerSocket::send_websocket_pong()
 	char header[2];
 	header[0] = 0x8a;
 	header[1] = 0;
-	Send(boost::asio::const_buffer(header, 2));
+	Send(asio::const_buffer(header, 2));
 }
 
 /// Send string via websocket, performing framing.
@@ -165,14 +165,14 @@ void ServerSocket::send_websocket(const std::string& cmd)
     if (paylen < 126)
     {
         header[1] = (char) paylen;
-        Send(boost::asio::const_buffer(header, 2));
+        Send(asio::const_buffer(header, 2));
     }
     else if (paylen < 65536)
     {
         header[1] = 126;
         header[2] = (paylen >> 8) & 0xff;
         header[3] = paylen & 0xff;
-        Send(boost::asio::const_buffer(header, 4));
+        Send(asio::const_buffer(header, 4));
     }
     else
     {
@@ -185,11 +185,11 @@ void ServerSocket::send_websocket(const std::string& cmd)
         header[7] = (paylen >> 16) & 0xff;
         header[8] = (paylen >> 8) & 0xff;
         header[9] = paylen & 0xff;
-        Send(boost::asio::const_buffer(header, 10));
+        Send(asio::const_buffer(header, 10));
     }
 
     // Send the actual data.
-    Send(boost::asio::const_buffer(cmd.c_str(), paylen));
+    Send(asio::const_buffer(cmd.c_str(), paylen));
 }
 
 // ==================================================================
@@ -219,10 +219,14 @@ static std::string base64_encode(unsigned char* buf, int len)
 	return out;
 }
 
-/// Perform the websockets handshake. That is, listen for the HTTP
-/// header, verify that it has an `Upgrade: websocket` line in it,
-/// and then do the magic-key exchange, etc. Upon compltion, the
-/// socket is ready to send and receive websocket frames.
+/// Process the HTTP header and optionally perform the websockets
+/// handshake. That is, listen for the HTTP header, and pick through
+/// the various fields in it. If it has an `Upgrade: websocket` line in
+/// it, then upgrade to websockets i.e. perform the magic-key exchange,
+/// etc. Upon upgrade, the socket is ready to send and receive websocket
+/// frames. Otherwise, treat the socket as an ordinary telnet-like
+/// socket, with keep-alive set. In either case, the remaining I/O gets
+/// routed to some shell handler, depending on the URL.
 void ServerSocket::HandshakeLine(const std::string& line)
 {
 	// The very first HTTP line.
@@ -230,14 +234,21 @@ void ServerSocket::HandshakeLine(const std::string& line)
 	{
 		_got_first_line = true;
 
-		if (0 != line.compare(0, 4, "GET "))
+		if (0 == line.compare(0, 4, "GET "))
+		{
+			_url = line.substr(4, line.find(" ", 4) - 4);
+		}
+		else if (0 == line.compare(0, 5, "POST "))
+		{
+			_url = line.substr(5, line.find(" ", 5) - 5);
+		}
+		else
 		{
 			Send("HTTP/1.1 501 Not Implemented\r\n"
 				"Server: CogServer\r\n"
 				"\r\n");
 			throw SilentException();
 		}
-		_url = line.substr(4, line.find(" ", 4) - 4);
 		return;
 	}
 
@@ -251,6 +262,18 @@ void ServerSocket::HandshakeLine(const std::string& line)
 	// Extract stuff from the header the client is sending us.
 	if (not _got_http_header)
 	{
+		static const char* CLen = "Content-Length: ";
+		if (0 == line.compare(0, strlen(CLen), CLen))
+			{ _content_length = std::stoi(line.substr(strlen(CLen))); return; }
+
+		static const char* clen = "content-length: ";
+		if (0 == line.compare(0, strlen(clen), clen))
+			{ _content_length = std::stoi(line.substr(strlen(clen))); return; }
+
+		static const char* kpal = "connection: keep-alive";
+		if (0 == line.compare(0, strlen(kpal), kpal))
+			{ _keep_alive = true; return; }
+
 		static const char* upg = "Upgrade: websocket";
 		if (0 == line.compare(0, strlen(upg), upg))
 			{ _got_websock_header = true; return; }
@@ -264,19 +287,20 @@ void ServerSocket::HandshakeLine(const std::string& line)
 
 	// If we are here, then the full HTTP header was received. This
 	// is enough to get started: call the user's OnConnection()
-	// method. The user is supposed to check two things:
+	// method. The user is supposed to handle the rest:
 	// (a) Do they like the URL in the header? If not, they
 	//     should send some response e.g. 404 Not Found
 	//     and then `throw SilentException()` to close the sock.
-	// (b) Was an actual WebSocket negotiated? If not, then the
-	//     user should send some response, e.g. 200 OK and some
-	//     HTML, and then `throw SilentException()` to close the
-	//     sock.
+	// (b) If the URL is reasonable, the socket should be piped to
+	//     the correspondng shell to handle the remaining traffic.
+	//     By default, the socket should be kept open; it can be
+	//     closed at any time with `throw SilentException()` to
+	//     close the sock.
 	OnConnection();
 
-	// In case the user blew it above, we close the sock.
+	// A websocket upgrade will not be performed. We are done.
 	if (not _got_websock_header)
-		throw SilentException();
+		return;
 
 	// If we are here, we've received an HTTP header, and it
 	// as a WebSocket header. Do the websocket reply.

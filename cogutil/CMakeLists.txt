@@ -52,8 +52,6 @@ SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 # NOTE: This is the official semantic-version, as it is derived from
 # a version-control independent means of declaring versioning.
 #
-# TODO: Once CMAKE_MINIMUM_REQUIRED >= 3.0.2 check use of policy CMP0048.
-#
 FILE(READ "${CMAKE_SOURCE_DIR}/opencog/util/cogutil.h" _CU_H_CONTENTS)
 STRING(REGEX MATCH
 	"#define COGUTIL_VERSION_STRING \"([0-9]+[.0-9]+[.0-9]+)\""
@@ -64,7 +62,23 @@ include(cmake/OpenCogGccOptions.cmake)
 
 # ------------------------------------------------------
 IF (WIN32) # Windows host but not cygwin
-	MESSAGE(FATAL_ERROR "You must use Cygwin if compiling under Windows.")
+	OPTION(WINDOWS_NATIVE "Build natively on Windows using MSVC" ON)
+	IF (NOT WINDOWS_NATIVE)
+		MESSAGE(FATAL_ERROR "You must use Cygwin if compiling under Windows, or enable WINDOWS_NATIVE option.")
+	ENDIF()
+
+	ADD_DEFINITIONS(-DWIN32)
+	ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
+
+	IF (WINDOWS_NATIVE)
+		MESSAGE(STATUS "Building natively on Windows with MSVC")
+		ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN)
+		ADD_DEFINITIONS(-DNOMINMAX)
+		ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
+		ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
+		ADD_DEFINITIONS(-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
+		SET(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+	ENDIF()
 
 	# Previous definitions used for win32 (non cygwin) compilation.
 	# For reference only
@@ -73,7 +87,6 @@ IF (WIN32) # Windows host but not cygwin
 	# FIND_PACKAGE(PThreads REQUIRED)
 	# FIND_PACKAGE(STLPort REQUIRED)
 	# INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/include/win32" ${PTHREADS_INCLUDE_DIR} ${STLPORT_INCLUDE_DIR})
-	# LINK_LIBRARIES(${PTHREADS_LIBRARY} ${STLPORT_LIBRARIES})
 	# ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
 ENDIF (WIN32)
 
@@ -81,36 +94,16 @@ ENDIF (WIN32)
 IF (CYGWIN)
 	ADD_DEFINITIONS(-DCYGWIN)
 	LINK_LIBRARIES(pthread)
+ELSEIF (WINDOWS_NATIVE)
+	# Use Windows native threading
+	ADD_DEFINITIONS(-DWIN32_THREADS)
+	# Windows SDK provides threading support
+	# No need for explicit pthread linkage
 ENDIF (CYGWIN)
 
 # ===================================================================
 # Check for existence of various required, optional packages.
 
-# Check for boost. We need dynamic-linked, threaded libs by default.
-SET(Boost_USE_STATIC_LIBS OFF)
-SET(Boost_USE_MULTITHREADED ON)
-# The minimum boost version required for building.
-SET(MIN_BOOST 1.60)
-
-# Required boost packages
-# 1.60 is minimum for required filesystem support
-FIND_PACKAGE(Boost ${MIN_BOOST} COMPONENTS filesystem program_options system thread REQUIRED)
-
-IF (Boost_FOUND)
-	SET(Boost_FOUND_SAVE 1)
-ELSE(Boost_FOUND)
-	MESSAGE(FATAL_ERROR "Boost ${MIN_BOOST} or newer (package libboost-all-dev if using Ubuntu) is needed to build!")
-ENDIF (Boost_FOUND)
-
-# Optional boost packages; can build without these. (?? what needs this ??)
-FIND_PACKAGE(Boost ${MIN_BOOST} COMPONENTS math_c99 QUIET)
-
-# Arghhh. Except cmake is treating above as required, not optional. #$%**&
-IF (Boost_FOUND_SAVE)
-	SET(Boost_FOUND 1)
-ENDIF (Boost_FOUND_SAVE)
-
-# -------------------------------------------------------------
 FIND_PACKAGE(Cxxtest)
 IF (NOT CXXTEST_FOUND)
 	MESSAGE(STATUS "CxxTest missing: needed for unit tests.")
@@ -159,21 +152,25 @@ ENDIF (PARALLEL_STL_FOUND)
 # Include configuration.
 
 # Set default include paths.
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})
 
 # -------------------------------------------------
 # Library configuration
 # Small hack to handle unixes that use "/usr/lib64" instead of
 # "/usr/lib" as the default lib path on 64 bit archs.
 IF (NOT DEFINED LIB_DIR_SUFFIX)
-	EXECUTE_PROCESS(COMMAND ${CMAKE_CXX_COMPILER} -print-search-dirs OUTPUT_VARIABLE PRINT_SEARCH_DIRS_OUTPUT)
-	STRING(REGEX MATCH "\r?\nlibraries:.*\r?\n" COMPILER_LIB_SEARCH_DIRS ${PRINT_SEARCH_DIRS_OUTPUT})
-	IF (NOT ${COMPILER_LIB_SEARCH_DIRS} STREQUAL "")
-		STRING(REGEX MATCH "/lib64/:|/lib64:|/lib64\n" HAS_LIB64 ${COMPILER_LIB_SEARCH_DIRS})
-		IF (NOT ${HAS_LIB64} STREQUAL "")
-			SET(LIB_DIR_SUFFIX "64")
-		ENDIF (NOT ${HAS_LIB64} STREQUAL "")
-	ENDIF (NOT ${COMPILER_LIB_SEARCH_DIRS} STREQUAL "")
+	IF (WIN32)
+		# On Windows with MSVC, we don't need this check
+	ELSE (WIN32)
+		EXECUTE_PROCESS(COMMAND ${CMAKE_CXX_COMPILER} -print-search-dirs OUTPUT_VARIABLE PRINT_SEARCH_DIRS_OUTPUT)
+		STRING(REGEX MATCH "\r?\nlibraries:.*\r?\n" COMPILER_LIB_SEARCH_DIRS ${PRINT_SEARCH_DIRS_OUTPUT})
+		IF (NOT ${COMPILER_LIB_SEARCH_DIRS} STREQUAL "")
+			STRING(REGEX MATCH "/lib64/:|/lib64:|/lib64\n" HAS_LIB64 ${COMPILER_LIB_SEARCH_DIRS})
+			IF (NOT ${HAS_LIB64} STREQUAL "")
+				SET(LIB_DIR_SUFFIX "64")
+			ENDIF (NOT ${HAS_LIB64} STREQUAL "")
+		ENDIF (NOT ${COMPILER_LIB_SEARCH_DIRS} STREQUAL "")
+	ENDIF (WIN32)
 ENDIF (NOT DEFINED LIB_DIR_SUFFIX)
 
 # RPATH handling (see https://cmake.org/Wiki/CMake_RPATH_handling)
@@ -210,12 +207,11 @@ SET (MAN_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/share/man")
 # ===================================================================
 # Decide what to build, based on the packages found.
 
-IF (Boost_FOUND)
-	SET(HAVE_UTIL 1)
-ENDIF (Boost_FOUND)
+SET(HAVE_UTIL 1)
 
 ADD_SUBDIRECTORY(cmake)
 ADD_SUBDIRECTORY(etc)
+ADD_SUBDIRECTORY(lib)
 ADD_SUBDIRECTORY(opencog)
 
 IF (CXXTEST_FOUND)
@@ -285,11 +281,6 @@ SET(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local")
 
 ## Debian specific configurations
 SET(DEPENDENCY_LIST
-	"libboost-filesystem-dev (>= ${MIN_BOOST})"
-	"libboost-math-dev (>= ${MIN_BOOST})"
-	"libboost-program-options-dev (>= ${MIN_BOOST})"
-	"libboost-thread-dev (>= ${MIN_BOOST})"
-	"libboost-system-dev (>= ${MIN_BOOST})"
 	"libstdc++6 (>= 4.7)"
 	"binutils-dev"
 	"libiberty-dev"

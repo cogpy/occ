@@ -70,20 +70,32 @@ void GroundedPredicateNode::init()
 	// At this point, we only run scheme and python schemas.
 	if (0 == schema.compare(0, 4, "scm:", 4))
 	{
+#ifdef HAVE_GUILE
 		// Be friendly, and strip leading white-space, if any.
 		size_t pos = 4;
 		while (' ' == schema[pos]) pos++;
 		_runner = new SCMRunner(schema.substr(pos));
+#else
+		throw RuntimeException(TRACE_INFO,
+			"This binary does not have guile support in it; "
+			"Cannot evaluate scheme GroundedPredicateNode!");
+#endif /* HAVE_GUILE */
 		return;
 	}
 
 	if (0 == schema.compare(0, 10, "scm-eager:", 10))
 	{
+#ifdef HAVE_GUILE
 		// Be friendly, and strip leading white-space, if any.
 		size_t pos = 10;
 		_eager = true;
 		while (' ' == schema[pos]) pos++;
 		_runner = new SCMRunner(schema.substr(pos));
+#else
+		throw RuntimeException(TRACE_INFO,
+			"This binary does not have guile support in it; "
+			"Cannot evaluate scheme GroundedPredicateNode!");
+#endif /* HAVE_GUILE */
 		return;
 	}
 
@@ -111,15 +123,15 @@ void GroundedPredicateNode::init()
 
 // ----------------------------------------------------------
 
-/// `execute()` -- evaluate a GroundedPredicateNode with arguments.
+/// `execute_args()` -- evaluate a GroundedPredicateNode with arguments.
 ///
 /// Expects "args" to be a ListLink. These arguments will be
 /// substituted into the predicate. Then the predicate as a whole
 /// will be evaluated.
 ///
-ValuePtr GroundedPredicateNode::execute(AtomSpace* as,
-                                        const ValuePtr& cargs,
-                                        bool silent)
+ValuePtr GroundedPredicateNode::execute_args(AtomSpace* as,
+                                             const ValuePtr& cargs,
+                                             bool silent)
 {
 	// Perform "eager evaluation" instead of "lazy evaluation".
 	if (_eager and _runner)

@@ -27,11 +27,15 @@
 (use-modules (opencog) (opencog persist))
 (use-modules (opencog persist-rocks))
 
+; Define the write buffer.
+(cog-set-value!
+	(WriteBufferProxy "write buffer") (*-proxy-parts-*)
+	(RocksStorageNode "rocks:///tmp/foo.rdb"))
+
 ; The default write buffer size is 60 seconds; change it to 42. This
 ; parameter is optional, and can be skipped.
-(ProxyParameters
-	(WriteBufferProxy "write buffer")
-	(RocksStorageNode "rocks:///tmp/foo.rdb")
+(cog-set-value!
+	(WriteBufferProxy "write buffer") (*-decay-const-*)
 	(Number 42))
 
 (cog-open (WriteBufferProxy "write buffer"))
@@ -50,10 +54,12 @@
 ; View performance stats. (But these will be zero, because 42 seconds
 ; haven't passed by yet. The average rate is also rounded to the nearest
 ; integer, and so will round down to zero.)
-(display (monitor-storage (WriteBufferProxy "write buffer")))
+(define (show-stats STORG)
+	(display (cog-value-ref STORG (*-monitor-*) 0)))
+(show-stats (WriteBufferProxy "write buffer"))
 
 ; There are also perf stats for the base server:
-(display (monitor-storage (RocksStorageNode "rocks:///tmp/foo.rdb")))
+(show-stats (RocksStorageNode "rocks:///tmp/foo.rdb"))
 
 ; Store the whole Atom, repeatedly.
 (for-each
@@ -73,8 +79,9 @@
 ; for by using the ReadWriteProxy, to gang together one reader and
 ; one writer.
 
-(ProxyParameters
+(cog-set-value!
 	(ReadWriteProxy "read w/write buffer")
+	(*-proxy-parts-*)
 	(List
 		(RocksStorageNode "rocks:///tmp/foo.rdb")   ;; target for reads
 		(WriteBufferProxy "write buffer")))         ;; target for writes
@@ -91,12 +98,12 @@
 ; AtomSpace. The can be ganged up with the write-buffer, to offer
 ; caching both ways.
 
-(ProxyParameters
-	(CachingProxy "read cache")
+(cog-set-value!
+	(CachingProxy "read cache") (*-proxy-parts-*)
 	(RocksStorageNode "rocks:///tmp/foo.rdb"))
 
-(ProxyParameters
-	(ReadWriteProxy "full cache")
+(cog-set-value!
+	(ReadWriteProxy "full cache") (*-proxy-parts-*)
 	(List
 		(CachingProxy "read cache")           ;; target for reads
 		(WriteBufferProxy "write buffer")))   ;; target for writes
@@ -107,7 +114,7 @@
 (store-atom (Concept "foo"))
 
 ; Look at the cache statistics:
-(display (monitor-storage (ReadWriteProxy "full cache")))
+(show-stats (ReadWriteProxy "full cache"))
 
 (cog-close (ReadWriteProxy "full cache"))
 

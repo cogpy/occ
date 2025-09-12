@@ -275,8 +275,23 @@ class PatternMatchCallback
 		 * the same result.  This can happen, for example, if there are
 		 * multiple ways for the pattern to match up to the result.
 		 */
-		virtual bool grounding(const GroundingMap &var_soln,
-		                       const GroundingMap &term_soln) = 0;
+		virtual bool propose_grounding(const GroundingMap &var_soln,
+		                               const GroundingMap &term_soln) = 0;
+
+		/**
+		 * Same as above, but called when there is a non-empty GroupLink
+		 * in the pattern. In this case, the grounding is assigned to a
+		 * grouping. That grouping is passed as the third argument.
+		 *
+		 * All groundings within a grouping form a connected graph.
+		 * All groudnings with distinct groupings are disjoint from one-another.
+		 */
+		virtual bool propose_grouping(const GroundingMap &var_soln,
+		                              const GroundingMap &term_soln,
+		                              const GroundingMap &grouping)
+		{
+			return propose_grounding(var_soln, term_soln);
+		}
 
 		/**
 		 * Called whenever the incoming set of an atom is to be explored.
@@ -381,8 +396,14 @@ class PatternMatchCallback
 		 * that will be searched for, and the variables to be grounded
 		 * during the search.
 		 */
+		const Variables* _variables = nullptr;
+		const Pattern* _pattern = nullptr;
 		virtual void set_pattern(const Variables& vars,
-		                         const Pattern& pat) = 0;
+		                         const Pattern& pat)
+		{
+			_variables = &vars;
+			_pattern = &pat;
+		}
 
 		/**
 		 * You get to call this, to perform the actual search.

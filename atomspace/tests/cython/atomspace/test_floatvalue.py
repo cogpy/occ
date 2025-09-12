@@ -1,13 +1,13 @@
 import unittest
 
 from opencog.type_constructors import *
-from opencog.utilities import initialize_opencog, finalize_opencog
+from opencog.utilities import set_default_atomspace, finalize_opencog
 
 class FloatValueTest(unittest.TestCase):
-    
+
     def setUp(self):
         self.space = AtomSpace()
-        initialize_opencog(self.space)
+        set_default_atomspace(self.space)
 
     def tearDown(self):
         finalize_opencog()
@@ -20,14 +20,14 @@ class FloatValueTest(unittest.TestCase):
     def test_create_list_value(self):
         value = FloatValue([3.21, 2.1, 1])
         self.assertTrue(value is not None)
-    
+
     def test_value_equals(self):
         self.assertEqual(FloatValue(1.234), FloatValue([1.234]))
         self.assertEqual(FloatValue([1.0, 2.0, 3.0]),
                          FloatValue([1.0, 2.0 ,3.0]))
         self.assertNotEqual(FloatValue(1.0), FloatValue(2.0))
         self.assertNotEqual(FloatValue(1), FloatValue(2))
-        self.assertNotEqual(FloatValue([1.0, 2.0, 3.0]), 
+        self.assertNotEqual(FloatValue([1.0, 2.0, 3.0]),
                             FloatValue([3.0, 2.0, 1.0]))
 
     def test_add_value_to_atom(self):

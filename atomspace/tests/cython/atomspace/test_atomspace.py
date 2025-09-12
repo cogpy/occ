@@ -5,7 +5,7 @@ from opencog.atomspace import Atom
 from opencog.atomspace import types, is_a, get_type, get_type_name, create_child_atomspace
 
 from opencog.type_constructors import *
-from opencog.utilities import initialize_opencog, finalize_opencog, tmp_atomspace
+from opencog.utilities import set_default_atomspace, finalize_opencog, tmp_atomspace
 
 from time import sleep
 
@@ -13,11 +13,25 @@ class AtomSpaceTest(TestCase):
 
     def setUp(self):
         self.space = AtomSpace()
-        initialize_opencog(self.space)
+        set_default_atomspace(self.space)
 
     def tearDown(self):
         finalize_opencog()
         del self.space
+
+    def test_bare(self):
+
+        # Test dereferencing self as Value
+        self.space
+        self.space.type
+        self.space.long_string()
+        self.space.short_string()
+        self.space.is_atom()
+        self.space.is_node()
+        self.space.is_link()
+        list(self.space)
+        str(self.space)
+        len(self.space)
 
     def test_add_node(self):
 
@@ -38,7 +52,7 @@ class AtomSpaceTest(TestCase):
         self.assertTrue(a1)
         # duplicates resolve to same atom
         a2 = Node("test")
-        self.assertEquals(a1, a2)
+        self.assertEqual(a1, a2)
 
         # Should fail when intentionally adding bad type
         caught = False
@@ -46,15 +60,15 @@ class AtomSpaceTest(TestCase):
             self.space.add_node(types.Link, "test")
         except RuntimeError:
             caught = True
-        self.assertEquals(caught, True)
+        self.assertEqual(caught, True)
 
         # Test adding with a truthvalue
         a3 = Node("test_w_tv").truth_value(0.5, 0.8)
-        self.assertEquals(self.space.size(), 3)
+        self.assertEqual(self.space.size(), 3)
 
         # Test alternative way of adding with a truthvalue
         a4 = Node("test_w_tv_alt", tv=TruthValue(0.5, 0.8))
-        self.assertEquals(self.space.size(), 4)
+        self.assertEqual(self.space.size(), 4)
 
     def test_add_link(self):
         n1 = Node("test1")
@@ -79,7 +93,7 @@ class AtomSpaceTest(TestCase):
             l1 = self.space.add_link(types.Node, [n1, n3])
         except RuntimeError:
             caught = True
-        self.assertEquals(caught, True)
+        self.assertEqual(caught, True)
 
     def test_is_valid(self):
         a1 = Node("test1")
@@ -155,19 +169,6 @@ class AtomSpaceTest(TestCase):
         result = a3.incoming_by_type(types.InheritanceLink)
         self.assertTrue(l1 not in result)
 
-    def test_include_incoming_outgoing(self):
-        frog = ConceptNode("Frog")
-        thing = ConceptNode("Thing")
-        animal = ConceptNode("Animal")
-        ConceptNode("SeparateThing")
-        InheritanceLink(frog, animal)
-        InheritanceLink(animal, thing)
-
-        assert len(self.space.include_incoming([ConceptNode("Frog")])) == 2
-        assert len(self.space.include_outgoing(self.space.include_incoming([ConceptNode("Frog")]))) == 3
-        assert len(self.space.include_incoming(self.space.get_atoms_by_type(types.ConceptNode))) == 6
-        assert len(self.space.include_outgoing(self.space.get_atoms_by_type(types.InheritanceLink))) == 5
-
     def test_remove(self):
         a1 = Node("test1")
         a2 = ConceptNode("test2")
@@ -192,11 +193,11 @@ class AtomSpaceTest(TestCase):
         a2 = ConceptNode("test2")
         a3 = PredicateNode("test3")
         self.space.clear()
-        self.assertEquals(self.space.size(), 0)
-        self.assertEquals(len(self.space), 0)
+        self.assertEqual(self.space.size(), 0)
+        self.assertEqual(len(self.space), 0)
 
     def test_container_methods(self):
-        self.assertEquals(len(self.space), 0)
+        self.assertEqual(len(self.space), 0)
         a1 = Node("test1")
         a2 = ConceptNode("test2")
         a3 = PredicateNode("test3")
@@ -205,7 +206,7 @@ class AtomSpaceTest(TestCase):
         self.assertTrue(a2 in self.space)
         self.assertTrue(a3 in self.space)
 
-        self.assertEquals(len(self.space), 3)
+        self.assertEqual(len(self.space), 3)
 
     def test_context_mgr_tmp(self):
         a = ConceptNode('a')
@@ -223,7 +224,7 @@ class AtomTest(TestCase):
 
     def setUp(self):
         self.space = AtomSpace()
-        initialize_opencog(self.space)
+        set_default_atomspace(self.space)
 
     def tearDown(self):
         finalize_opencog()

@@ -25,12 +25,8 @@
 #include <memory>
 #include <libguile.h>
 
-#include <opencog/atoms/truthvalue/FuzzyTruthValue.h>
-#include <opencog/atoms/truthvalue/ProbabilisticTruthValue.h>
 #include <opencog/atoms/truthvalue/CountTruthValue.h>
-#include <opencog/atoms/truthvalue/IndefiniteTruthValue.h>
 #include <opencog/atoms/truthvalue/SimpleTruthValue.h>
-#include <opencog/atoms/truthvalue/EvidenceCountTruthValue.h>
 #include <opencog/guile/SchemeSmob.h>
 
 using namespace opencog;
@@ -108,25 +104,6 @@ SCM SchemeSmob::ss_tv_get_count(SCM s)
 {
 	TruthValuePtr tv = verify_tv(s, "cog-tv-count");
 	return scm_from_double(tv->get_count());
-}
-
-#define tv_to_scm(TV) protom_to_scm(ValueCast(TV))
-
-SCM SchemeSmob::ss_tv_merge (SCM sta, SCM stb)
-{
-	TruthValuePtr tva = verify_tv(sta, "cog-tv-merge", 1);
-	TruthValuePtr tvb = verify_tv(stb, "cog-tv-merge", 2);
-
-	return tv_to_scm(tva->merge(tvb));
-}
-
-SCM SchemeSmob::ss_tv_merge_hi_conf (SCM sta, SCM stb)
-{
-	TruthValuePtr tva = verify_tv(sta, "cog-tv-merge-hi-conf", 1);
-	TruthValuePtr tvb = verify_tv(stb, "cog-tv-merge-hi-conf", 2);
-
-	return tv_to_scm(tva->merge(tvb,
-		MergeCtrl(MergeCtrl::TVFormula::HIGHER_CONFIDENCE)));
 }
 
 /* ===================== END OF FILE ============================ */
