@@ -36,6 +36,7 @@
 
 static int unistd_close(int fd) { return close(fd); }
 
+#include <opencog/persist/cog-types/atom_types.h>
 #include "CogSimpleStorage.h"
 
 using namespace opencog;
@@ -85,7 +86,7 @@ void CogSimpleStorage::init(const char * uri)
 
 CogSimpleStorage::CogSimpleStorage(std::string uri) :
 	StorageNode(COG_SIMPLE_STORAGE_NODE, std::move(uri)),
-	_sockfd(-1)
+	_sockfd(-1), _multi_space(false)
 {
 	init(_name.c_str());
 }

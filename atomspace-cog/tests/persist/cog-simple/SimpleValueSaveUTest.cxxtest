@@ -1,5 +1,5 @@
 /*
- * tests/persist/cog-simple/ValueSaveUTest.cxxtest
+ * tests/persist/cog-simple/SimpleValueSaveUTest.cxxtest
  *
  * Test of save and restore of generic values.
  * Ported from tests/persist/sql/multi-driver/ValueSaveUTest.cxxtest
@@ -30,12 +30,12 @@
 #include <opencog/atoms/base/Link.h>
 #include <opencog/atoms/base/Node.h>
 #include <opencog/atoms/atom_types/atom_types.h>
+#include <opencog/persist/cog-types/atom_types.h>
 #include <opencog/atomspace/AtomSpace.h>
 
 #include <opencog/atoms/value/FloatValue.h>
 #include <opencog/atoms/value/LinkValue.h>
 #include <opencog/atoms/value/StringValue.h>
-#include <opencog/atoms/base/Valuation.h>
 #include <opencog/atoms/truthvalue/SimpleTruthValue.h>
 #include <opencog/cogserver/server/CogServer.h>
 
@@ -303,7 +303,7 @@ void SimpleValueSaveUTest::test_load_by_type()
 		                     3.2109876543210987e-250}));
 	af->setValue(key, pvf);
 
-	TruthValuePtr tf(SimpleTruthValue::createTV(0.11, 100));
+	TruthValuePtr tf(createSimpleTruthValue(0.11, 100));
 	af->setTruthValue(tf);
 
 	// --------------------
@@ -311,7 +311,7 @@ void SimpleValueSaveUTest::test_load_by_type()
 		std::vector<std::string>({"aaa", "bb bb bb", "ccc ccc ccc"}));
 	at->setValue(key, pvt);
 
-	TruthValuePtr tt(SimpleTruthValue::createTV(0.22, 200));
+	TruthValuePtr tt(createSimpleTruthValue(0.22, 200));
 	at->setTruthValue(tt);
 
 	// --------------------
@@ -319,7 +319,7 @@ void SimpleValueSaveUTest::test_load_by_type()
 		std::vector<ValuePtr>({pvf, pvt}));
 	al->setValue(key, pvl);
 
-	TruthValuePtr tl(SimpleTruthValue::createTV(0.33, 300));
+	TruthValuePtr tl(createSimpleTruthValue(0.33, 300));
 	al->setTruthValue(tl);
 
 	// --------------------
@@ -327,7 +327,7 @@ void SimpleValueSaveUTest::test_load_by_type()
 		std::vector<ValuePtr>({pvl, pvl, pvf, pvt}));
 	av->setValue(key, pvv);
 
-	TruthValuePtr tv(SimpleTruthValue::createTV(0.44, 400));
+	TruthValuePtr tv(createSimpleTruthValue(0.44, 400));
 	av->setTruthValue(tv);
 
 	// --------------------
@@ -446,7 +446,7 @@ void SimpleValueSaveUTest::test_link_by_type()
 	bf->setValue(key, pvf);
 	cf->setValue(key, pvf);
 
-	TruthValuePtr tf(SimpleTruthValue::createTV(0.11, 100));
+	TruthValuePtr tf(createSimpleTruthValue(0.11, 100));
 	af->setTruthValue(tf);
 	bf->setTruthValue(tf);
 	cf->setTruthValue(tf);
@@ -458,7 +458,7 @@ void SimpleValueSaveUTest::test_link_by_type()
 	bt->setValue(key, pvt);
 	ct->setValue(key, pvt);
 
-	TruthValuePtr tt(SimpleTruthValue::createTV(0.22, 200));
+	TruthValuePtr tt(createSimpleTruthValue(0.22, 200));
 	at->setTruthValue(tt);
 	bt->setTruthValue(tt);
 	ct->setTruthValue(tt);
@@ -470,7 +470,7 @@ void SimpleValueSaveUTest::test_link_by_type()
 	bl->setValue(key, pvl);
 	cl->setValue(key, pvl);
 
-	TruthValuePtr tl(SimpleTruthValue::createTV(0.33, 300));
+	TruthValuePtr tl(createSimpleTruthValue(0.33, 300));
 	al->setTruthValue(tl);
 	bl->setTruthValue(tl);
 	cl->setTruthValue(tl);
@@ -482,7 +482,7 @@ void SimpleValueSaveUTest::test_link_by_type()
 	bv->setValue(key, pvv);
 	cv->setValue(key, pvv);
 
-	TruthValuePtr tv(SimpleTruthValue::createTV(0.44, 400));
+	TruthValuePtr tv(createSimpleTruthValue(0.44, 400));
 	av->setTruthValue(tv);
 	bv->setTruthValue(tv);
 	cv->setTruthValue(tv);
@@ -623,6 +623,14 @@ void SimpleValueSaveUTest::test_link_by_type()
 
 // Same as test_link_by_type() except that the StringValue
 // has some nasties intended to confuse parsing.
+//
+// XXX FIXME. This unit test is currently failing due to broken
+// fame support in CogSimpleIO.cc ... Somehow, an earlier unit
+// test accidentally sets the _multi_space flag to true, I don't
+// know why, and then things fall apart because multispace support
+// is incomplete in sexpr and here in CogSimple. So, basically,
+// shit is broken. I don't wnat to fix this now. It's low priority.
+// brute force is to force disable multi-space support.
 void SimpleValueSaveUTest::test_link_by_type_quoted()
 {
 	logger().info("BEGIN TEST: %s", __FUNCTION__);
@@ -658,7 +666,7 @@ void SimpleValueSaveUTest::test_link_by_type_quoted()
 	bf->setValue(key, pvf);
 	cf->setValue(key, pvf);
 
-	TruthValuePtr tf(SimpleTruthValue::createTV(0.11, 100));
+	TruthValuePtr tf(createSimpleTruthValue(0.11, 100));
 	af->setTruthValue(tf);
 	bf->setTruthValue(tf);
 	cf->setTruthValue(tf);
@@ -670,7 +678,7 @@ void SimpleValueSaveUTest::test_link_by_type_quoted()
 	bt->setValue(key, pvt);
 	ct->setValue(key, pvt);
 
-	TruthValuePtr tt(SimpleTruthValue::createTV(0.22, 200));
+	TruthValuePtr tt(createSimpleTruthValue(0.22, 200));
 	at->setTruthValue(tt);
 	bt->setTruthValue(tt);
 	ct->setTruthValue(tt);
@@ -682,7 +690,7 @@ void SimpleValueSaveUTest::test_link_by_type_quoted()
 	bl->setValue(key, pvl);
 	cl->setValue(key, pvl);
 
-	TruthValuePtr tl(SimpleTruthValue::createTV(0.33, 300));
+	TruthValuePtr tl(createSimpleTruthValue(0.33, 300));
 	al->setTruthValue(tl);
 	bl->setTruthValue(tl);
 	cl->setTruthValue(tl);
@@ -694,7 +702,7 @@ void SimpleValueSaveUTest::test_link_by_type_quoted()
 	bv->setValue(key, pvv);
 	cv->setValue(key, pvv);
 
-	TruthValuePtr tv(SimpleTruthValue::createTV(0.44, 400));
+	TruthValuePtr tv(createSimpleTruthValue(0.44, 400));
 	av->setTruthValue(tv);
 	bv->setTruthValue(tv);
 	cv->setTruthValue(tv);
@@ -819,6 +827,11 @@ void SimpleValueSaveUTest::test_link_by_type_quoted()
 	gpl = gcl->getValue(gkey);
 	gpv = gcv->getValue(gkey);
 
+	TS_ASSERT(gpf != nullptr);
+	if (nullptr == gpf)
+		printf("Will now seg fault! Whoopieee!\n");
+	fflush(stdout);
+
 	TS_ASSERT(*gpf == *pvf);
 	TS_ASSERT(*gpt == *pvt);
 	TS_ASSERT(*gpl == *pvl);
@@ -870,7 +883,7 @@ void SimpleValueSaveUTest::test_incoming()
 	bf->setValue(key, pvf);
 	cf->setValue(key, pvf);
 
-	TruthValuePtr tf(SimpleTruthValue::createTV(0.11, 100));
+	TruthValuePtr tf(createSimpleTruthValue(0.11, 100));
 	af->setTruthValue(tf);
 	bf->setTruthValue(tf);
 	cf->setTruthValue(tf);
@@ -882,7 +895,7 @@ void SimpleValueSaveUTest::test_incoming()
 	bt->setValue(key, pvt);
 	ct->setValue(key, pvt);
 
-	TruthValuePtr tt(SimpleTruthValue::createTV(0.22, 200));
+	TruthValuePtr tt(createSimpleTruthValue(0.22, 200));
 	at->setTruthValue(tt);
 	bt->setTruthValue(tt);
 	ct->setTruthValue(tt);
@@ -894,7 +907,7 @@ void SimpleValueSaveUTest::test_incoming()
 	bl->setValue(key, pvl);
 	cl->setValue(key, pvl);
 
-	TruthValuePtr tl(SimpleTruthValue::createTV(0.33, 300));
+	TruthValuePtr tl(createSimpleTruthValue(0.33, 300));
 	al->setTruthValue(tl);
 	bl->setTruthValue(tl);
 	cl->setTruthValue(tl);
@@ -906,7 +919,7 @@ void SimpleValueSaveUTest::test_incoming()
 	bv->setValue(key, pvv);
 	cv->setValue(key, pvv);
 
-	TruthValuePtr tv(SimpleTruthValue::createTV(0.44, 400));
+	TruthValuePtr tv(createSimpleTruthValue(0.44, 400));
 	av->setTruthValue(tv);
 	bv->setTruthValue(tv);
 	cv->setTruthValue(tv);
@@ -949,6 +962,7 @@ void SimpleValueSaveUTest::test_incoming()
 	store->fetch_incoming_set(gat, false);
 	store->fetch_incoming_set(gal, false);
 	store->fetch_incoming_set(gav, false);
+	printf ("AtomSpace now contains %lu atoms, expecting 15\n", as->get_size());
 	TSM_ASSERT("Wrong number of Atoms fetched!", as->get_size() == 15);
 
 	Handle gbf = as->add_node(CONCEPT_NODE, "b float node");
@@ -1028,6 +1042,10 @@ void SimpleValueSaveUTest::test_incoming()
 	gpl = gcl->getValue(gkey);
 	gpv = gcv->getValue(gkey);
 
+	TS_ASSERT(gpf != nullptr);
+	if (nullptr == gpf)
+		printf("Oh No!!! Will now seg fault! Whoopsy-daisy!\n");
+	fflush(stdout);
 	TS_ASSERT(*gpf == *pvf);
 	TS_ASSERT(*gpt == *pvt);
 	TS_ASSERT(*gpl == *pvl);
