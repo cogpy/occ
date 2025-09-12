@@ -57,7 +57,7 @@ void AtomSpace::init(void)
     // Connect signal to find out about type additions
     addedTypeConnection =
         _nameserver.typeAddedSignal().connect(
-            std::bind(&AtomSpace::typeAdded, this, std::placeholders::_1));
+            &AtomSpace::typeAdded, this);
 }
 
 /**
@@ -69,7 +69,8 @@ AtomSpace::AtomSpace(AtomSpace* parent, bool transient) :
     _read_only(false),
     _copy_on_write(transient),
     _transient(transient),
-    _nameserver(nameserver())
+    _nameserver(nameserver()),
+    addedTypeConnection(0)
 {
     if (parent) {
         // Set the COW flag by default, for any Atomspace that sits on
@@ -87,7 +88,8 @@ AtomSpace::AtomSpace(AtomSpacePtr& parent) :
     _read_only(false),
     _copy_on_write(false),
     _transient(false),
-    _nameserver(nameserver())
+    _nameserver(nameserver()),
+    addedTypeConnection(0)
 {
     if (nullptr != parent) {
         // Set the COW flag by default; it seems like a simpler
@@ -105,7 +107,8 @@ AtomSpace::AtomSpace(const HandleSeq& bases) :
     _read_only(false),
     _copy_on_write(false),
     _transient(false),
-    _nameserver(nameserver())
+    _nameserver(nameserver()),
+    addedTypeConnection(0)
 {
     for (const Handle& base : bases)
     {
@@ -155,6 +158,9 @@ void AtomSpace::clear_transient()
 
 void AtomSpace::clear_all_atoms()
 {
+#if USE_INCOME_INDEX
+    incomeIndex.clear();
+#endif
     typeIndex.clear();
 }
 
@@ -403,6 +409,15 @@ Handle AtomSpace::add(const Handle& orig, bool force,
     const Handle& oldh(typeIndex.insertAtom(atom));
     if (oldh)
     {
+#if USE_INCOME_INDEX
+        // Due to racing with other threads, this Atom might not
+        // only be in the AtomSpace already, but it might even have
+        // a non-trivial incoming set. In this case, we need to
+        // transfer the inset from `atom` to `oldh`. (NB from swap
+        // point of view, oldh is the newh.)
+        incomeIndex.swapInset(atom, oldh);
+#endif
+
         // If it was already in the index, then undo the install above.
         atom->setAtomSpace(nullptr);
         atom->remove();
@@ -418,16 +433,6 @@ void AtomSpace::barrier()
 size_t AtomSpace::get_size() const
 {
     return get_num_atoms_of_type(ATOM, true);
-}
-
-size_t AtomSpace::get_num_nodes() const
-{
-    return get_num_atoms_of_type(NODE, true);
-}
-
-size_t AtomSpace::get_num_links() const
-{
-    return get_num_atoms_of_type(LINK, true);
 }
 
 size_t AtomSpace::get_num_atoms_of_type(Type type, bool subclass) const
@@ -580,8 +585,7 @@ bool AtomSpace::extract_atom(const Handle& h, bool recursive)
 
     // Remove handle from other incoming sets.
     handle->remove();
-    handle->setAtomSpace(nullptr);
-
+    handle->drop_incoming_set();
     return true;
 }
 
@@ -604,6 +608,12 @@ void AtomSpace::get_handles_by_type(HandleSeq& hseq,
                                     bool parent,
                                     const AtomSpace* cas) const
 {
+    // Its a user error to ask for the handles of any type
+    // that is not an Atom. We could throw an error and irritate
+    // the user, or we could just silently ignore a plausible
+    // request. Lets just silently ignore.
+    if (not subclass and type < ATOM) return;
+
     if (nullptr == cas) cas = this;
 
     // If this is a copy-on-write space, then deduplicate the Atoms,
@@ -681,6 +691,8 @@ void AtomSpace::shadow_by_type(UnorderedHandleSet& hset,
                                bool parent,
                                const AtomSpace* cas) const
 {
+    if (not subclass and type < ATOM) return;
+
     // See the vector version of this code for documentation.
     if (STATE_LINK == type)
     {
@@ -722,6 +734,8 @@ void AtomSpace::get_handles_by_type(UnorderedHandleSet& hset,
                                     bool parent,
                                     const AtomSpace* cas) const
 {
+    if (not subclass and type < ATOM) return;
+
     // If this is a copy-on-write space, then deduplicate the Atoms,
     // returning the shallowest version of each Atom.
     if (_copy_on_write)
@@ -752,6 +766,8 @@ void AtomSpace::get_root_set_by_type(HandleSeq& hseq,
                                      bool parent,
                                      const AtomSpace* cas) const
 {
+    if (not subclass and type < ATOM) return;
+
     // cut-n-paste of above.
     if (nullptr == cas) cas = this;
 
@@ -814,3 +830,5 @@ void AtomSpace::get_atoms_in_frame(HandleSeq& hseq) const
 {
     typeIndex.get_handles_by_type(hseq, ATOM, true);
 }
+
+// ======================= END OF FILE =================

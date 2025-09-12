@@ -54,6 +54,7 @@ first).
 * [`flows.scm`](flows.scm)                   -- Flowing Values around.
 * [`flow-formulas.scm`](flow-formulas.scm)   -- Dynamically updating TruthValues.
 * [`flow-futures.scm`](flow-futures.scm)     -- Dynamically updating FloatValues.
+* [`flow-string.scm`](flow-string.scm)       -- Flowing strings in and out.
 * [`table.scm`](table.scm)                   -- Fetching Values from a CSV/TSV table.
 * [`multi-space.scm`](multi-space.scm)       -- Using multiple AtomSpaces at once.
 * [`episodic-space.scm`](episodic-space.scm) -- Managing multiple AtomSpaces.
@@ -68,7 +69,8 @@ Advanced Demos
 System programmers will need to know the following examples in order to
 be effective.
 
-* [`recursive-loop.scm`](recursive-loop.scm)  -- Writing tail-recursive loops.
+* [`tail-loop.scm`](tail-loop.scm)            -- Writing tail-recursive loops.
+* [`tail-procedure.scm`](tail-procedure.scm)  -- General tail-call loop.
 * [`random-choice.scm`](random-choice.scm)    -- Numerical programming, including loops.
 * [`factorial.scm`](factorial.scm)            -- Recursive numerical programming.
 * [`logging.scm`](logging.scm)                -- Using the cogutils logger.

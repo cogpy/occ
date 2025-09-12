@@ -27,9 +27,6 @@
 
 #include <opencog/util/async_method_caller.h>
 #include <opencog/util/exceptions.h>
-#include <opencog/util/oc_omp.h>
-#include <opencog/util/RandGen.h>
-#include <opencog/util/sigslot.h>
 
 #include <opencog/atoms/atom_types/NameServer.h>
 #include <opencog/atoms/base/Atom.h>
@@ -74,6 +71,21 @@ class AtomSpace : public Frame
     // --------------------------------------------------
     //! Index of atoms.
     TypeIndex typeIndex;
+
+#if USE_INCOME_INDEX
+    // This is never used, and remains here for historical reference.
+    // See IncomeIndex.h for an explanation.
+    IncomeIndex incomeIndex;
+
+public:
+    bool have_inset_map(const Handle& h) const {
+        return incomeIndex.haveInset(h); }
+    InSetMap& get_inset_map(const Handle& h) {
+        return incomeIndex.getInset(h); }
+    void drop_inset_map(const Handle& h) {
+        return incomeIndex.removeInset(h); }
+private:
+#endif
 
     UUID _uuid;
     bool _read_only;
@@ -204,7 +216,6 @@ public:
     virtual size_t size() const { return get_arity(); }
     virtual const HandleSeq& getOutgoingSet() const { return _outgoing; }
     virtual Handle getOutgoingAtom(Arity) const;
-    virtual ValuePtr value_at_index(size_t idx) const;
     virtual void setAtomSpace(AtomSpace *);
 
     const std::vector<AtomSpacePtr>& getEnviron() const { return _environ; }
@@ -236,8 +247,6 @@ public:
      * Return the number of atoms contained in the space.
      */
     size_t get_size() const;
-    size_t get_num_nodes() const;
-    size_t get_num_links() const;
     size_t get_num_atoms_of_type(Type type, bool subclass=false) const;
 
     //! Clear the atomspace, extract all atoms.
@@ -399,7 +408,7 @@ public:
     Handle set_truthvalue(const Handle&, const TruthValuePtr&);
 
     /**
-     * Increment the count on a CountTrutheValue, or increment the count
+     * Increment the count on a CountTruthValue, or increment the count
      * on a general Value. The increment is performed atomically, so that
      * there are no races in the update. Atomspaces that are read-only, COW,
      * or frames are handled as described above, for `set_value()`.
@@ -426,6 +435,9 @@ public:
      * @param str   Name of the node
      */
     Handle get_node(Type, std::string&&) const;
+    inline Handle xget_handle(Type t, std::string str) const {
+        return get_node(t, std::move(str));
+    }
     inline Handle get_handle(Type t, std::string str) const {
         return get_node(t, std::move(str));
     }
@@ -441,30 +453,17 @@ public:
      *        the outgoing set of the link.
      */
     Handle get_link(Type, HandleSeq&&) const;
-    inline Handle get_link(Type t, const Handle& ha) const {
-        return get_link(t, HandleSeq({ha}));
-    }
-    Handle get_link(Type t, const Handle& ha, const Handle& hb) const {
-        return get_link(t, {ha, hb});
-    }
-    Handle get_link(Type t, const Handle& ha, const Handle& hb,
-                    const Handle& hc) const
-    {
-        return get_link(t, {ha, hb, hc});
-    }
-    Handle get_link(Type t, const Handle& ha, const Handle& hb,
-                    const Handle& hc, const Handle& hd) const
-    {
-        return get_link(t, {ha, hb, hc, hd});
-    }
-    Handle get_handle(Type t, HandleSeq outgoing) const {
+    inline Handle xget_handle(Type t, HandleSeq outgoing) const {
         return get_link(t, std::move(outgoing));
     }
-    Handle get_handle(Type t, const Handle& ha) const {
-	    return get_handle(t, HandleSeq({ha}));
+    inline Handle get_handle(Type t, HandleSeq outgoing) const {
+        return get_link(t, std::move(outgoing));
     }
-    Handle get_handle(Type t, const Handle& ha, const Handle& hb) const {
-	    return get_handle(t, HandleSeq({ha, hb}));
+
+    /* Currently used by link-grammar, and best leave this here
+     * until that gets revised. */
+    inline Handle get_link(Type t, const Handle& ha, const Handle& hb) const {
+        return get_link(t, {ha, hb});
     }
 
     /**
@@ -551,7 +550,13 @@ AtomSpacePtr createAtomSpace( Args&&... args )
 	// Unfortunately, Frame::install() cannot be called in the ctor
 	// because shared_from_this() cannot be called in the ctor.
 	// So we do this after the ctor has finished.
+
+	// XXX FIXME. I think this is installing into the wrong AtomSpace.
+	// But no unit test seems to fail as a result of this, so I dunno.
+	// But this can't be right, as written.
+	asp->setAtomSpace(asp.get());
 	asp->install();
+	asp->setAtomSpace(nullptr);
 	return asp;
 }
 

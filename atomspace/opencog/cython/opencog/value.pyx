@@ -1,5 +1,5 @@
 from cpython.object cimport Py_EQ, Py_NE
-from cython.operator cimport dereference as deref
+from cython.operator cimport dereference as deref, preincrement as inc
 
 
 cdef class PtrHolder:
@@ -10,7 +10,7 @@ cdef class PtrHolder:
     http://docs.cython.org/en/latest/src/userguide/extension_types.html#instantiation-from-existing-c-c-pointers)."""
 
     @staticmethod
-    cdef PtrHolder create(shared_ptr[void]& ptr):
+    cdef PtrHolder create(shared_ptr[cValue]& ptr):
         """Factory method to construct PtrHolder from C++ shared_ptr"""
         cdef PtrHolder ptr_holder = PtrHolder.__new__(PtrHolder)
         ptr_holder.shared_ptr = ptr
@@ -22,7 +22,7 @@ cdef class Value:
     cdef Value create(cValuePtr& ptr):
         """Factory method to construct Value from C++ cValuePtr using
         PtrHolder instance."""
-        return Value(PtrHolder.create(<shared_ptr[void]&>ptr))
+        return Value(PtrHolder.create(<shared_ptr[cValue]&>ptr))
 
     def __init__(self, ptr_holder):
         if (<PtrHolder>ptr_holder).shared_ptr.get() == NULL:
@@ -31,7 +31,12 @@ cdef class Value:
 
     cdef cValuePtr get_c_value_ptr(self):
         """Return C++ shared_ptr from PtrHolder instance"""
-        return <cValuePtr&>(self.ptr_holder.shared_ptr)
+        if self.ptr_holder == None:
+            raise AttributeError('Uninitialized ValuePtr holder')
+        shrptr = (<PtrHolder>self.ptr_holder).shared_ptr
+        if shrptr.get() == NULL:
+            raise AttributeError('PtrHolder contains NULL reference')
+        return <cValuePtr&>shrptr
 
     def value_ptr(self):
         return PyLong_FromVoidPtr(<cValuePtr*>&(self.ptr_holder.shared_ptr))
@@ -58,6 +63,9 @@ cdef class Value:
 
     def to_list(self):
         raise TypeError('Type {} is not supported'.format(self.type()))
+
+    def __iter__(self):
+        return self.to_list().__iter__()
 
     def long_string(self):
         return self.get_c_value_ptr().get().to_string().decode('UTF-8')

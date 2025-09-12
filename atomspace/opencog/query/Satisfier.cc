@@ -31,12 +31,12 @@
 
 using namespace opencog;
 
-bool Satisfier::grounding(const GroundingMap &var_soln,
-                          const GroundingMap &term_soln)
+bool Satisfier::propose_grounding(const GroundingMap &var_soln,
+                                  const GroundingMap &term_soln)
 {
 	LOCK_PE_MUTEX;
 	// PatternMatchEngine::print_solution(var_soln, term_soln);
-	_result = TruthValue::TRUE_TV();
+	_result = true;
 
 	// XXX Temp hack alert. When Continuations finally terminate, they
 	// supply us with empty groundings. This probably needs to be fixed
@@ -98,7 +98,7 @@ bool Satisfier::search_finished(bool done)
 
 	// If there was a grounding, then don't re-run; we're here
 	// only to handle the no-groundings case.
-	if (TruthValue::TRUE_TV() == _result) return done;
+	if (_result) return done;
 
 	// _optionals_present will be set to true if some optional clause
 	// was grounded. Ergo, its not the no-grounding case.
@@ -119,30 +119,44 @@ bool Satisfier::search_finished(bool done)
 	GroundingMap empty;
 	bool rc = eval_sentence(_pattern_body, empty);
 	if (rc)
-		_result = TruthValue::TRUE_TV();
+		_result = true;
 
 	return rc;
 }
 
 // ===========================================================
 
-// MeetLink and GetLink groundings go through here.
-bool SatisfyingSet::grounding(const GroundingMap &var_soln,
-                              const GroundingMap &term_soln)
+void SatisfyingSet::setup_marginals(void)
 {
-	LOCK_PE_MUTEX;
-	// PatternMatchEngine::log_solution(var_soln, term_soln);
+	// Grab the places where we'll record the marginals.
+	for (const Handle& var: _varseq)
+	{
+		ValuePtr vp(_plp->getValue(var));
+		ContainerValuePtr cvp(ContainerValueCast(vp));
+		if (nullptr == cvp) continue;
+		if (cvp->is_closed())
+		{
+			cvp->clear();
+			cvp->open();
+		}
+		_var_marginals.insert({var, cvp});
+	}
+}
 
-	// Do not accept new solution if maximum number has been already reached
-	if (_result_queue->concurrent_queue<ValuePtr>::size() >= max_results)
-		return true;
+ValuePtr SatisfyingSet::wrap_result(const GroundingMap& var_soln)
+{
+	_num_results ++;
 
 	if (1 == _varseq.size())
 	{
 		// std::map::at() can throw. Rethrow for easier deubugging.
 		try
 		{
-			_result_queue->push(var_soln.at(_varseq[0]));
+			ValuePtr gvp(var_soln.at(_varseq[0]));
+			auto it = _var_marginals.find(_varseq[0]);
+			if (_var_marginals.end() != it)
+				(*it).second->add(gvp);
+			return gvp;
 		}
 		catch (...)
 		{
@@ -150,9 +164,6 @@ bool SatisfyingSet::grounding(const GroundingMap &var_soln,
 				"Internal error: ungrounded variable %s\n",
 				_varseq[0]->to_string().c_str());
 		}
-
-		// If we found as many as we want, then stop looking for more.
-		return (_result_queue->concurrent_queue<ValuePtr>::size() >= max_results);
 	}
 
 	// If more than one variable, encapsulate in sequential order,
@@ -165,32 +176,88 @@ bool SatisfyingSet::grounding(const GroundingMap &var_soln,
 		// have a grounding; this will cause std::map::at to throw.
 		try
 		{
-			vargnds.push_back(var_soln.at(hv));
+			ValuePtr gvp(var_soln.at(hv));
+			auto it = _var_marginals.find(hv);
+			if (_var_marginals.end() != it)
+				(*it).second->add(gvp);
+			vargnds.push_back(gvp);
 		}
 		catch (...)
 		{
 			vargnds.push_back(hv);
 		}
 	}
-	ValuePtr gnds(createLinkValue(std::move(vargnds)));
+	return createLinkValue(std::move(vargnds));
+}
 
-	_result_queue->push(std::move(gnds));
+// MeetLink and GetLink groundings go through here.
+bool SatisfyingSet::propose_grounding(const GroundingMap& var_soln,
+                                      const GroundingMap& term_soln)
+{
+	LOCK_PE_MUTEX;
+	// PatternMatchEngine::log_solution(var_soln, term_soln);
+
+	// Do not accept new solution if maximum number has been already reached
+	if (_num_results >= max_results)
+		return true;
+
+	_result_queue->add(std::move(wrap_result(var_soln)));
 
 	// If we found as many as we want, then stop looking for more.
-	return (_result_queue->concurrent_queue<ValuePtr>::size() >= max_results);
+	return (_num_results >= max_results);
+}
+
+/// Much like the above, but groundings are organized into groupings.
+/// The primary technical problem here is that we cannot report any
+/// search results, until after the search has completed. This is
+/// because the very last item to be reported may belong to the very
+/// first group. So we sit here, stupidly, and wait for search results
+/// to dribble in. Perhaps the engine search could be modified in some
+/// clever way to find groupings in a single batch; but for now, I don't
+/// see how this could be done.
+bool SatisfyingSet::propose_grouping(const GroundingMap &var_soln,
+                                     const GroundingMap &term_soln,
+                                     const GroundingMap &grouping)
+{
+	// Do not accept new solution if maximum number has been already reached
+	if (_num_results >= max_results)
+		return true;
+
+	// Place the result into the indicated grouping.
+	ValueSet& grp = _groups[grouping];
+	grp.insert(wrap_result(var_soln));
+
+	return false;
 }
 
 bool SatisfyingSet::start_search(void)
 {
-	// *Every* search gets a brand new, fresh queue!
-	// This allows users to hang on to the old queue, holding
-	// previous results, if they need to.
-	_result_queue = createQueueValue();
+	if (_result_queue->is_closed())
+	{
+		_result_queue->clear();
+		_result_queue->open();
+	}
 	return false;
 }
 
 bool SatisfyingSet::search_finished(bool done)
 {
+	// If there are groupings, report them now.
+	// Report only those groupings in the requested size range.
+	size_t gmin = _pattern->group_min_size;
+	size_t gmax = ULONG_MAX;
+	if (0 < _pattern->group_max_size) gmax = _pattern->group_max_size;
+	for (const auto& gset : _groups)
+	{
+		size_t gsz = gset.second.size();
+		if (gmin <= gsz and gsz <= gmax)
+			_result_queue->add(std::move(createLinkValue(gset.second)));
+	}
+
+	// Close all queues
+	for (auto& mgs : _var_marginals)
+		mgs.second->close();
+
 	_result_queue->close();
 	return done;
 }

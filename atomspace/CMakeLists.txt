@@ -13,6 +13,11 @@
 # or newer, but Ubuntu Bionic 18.04 only has 3.10. Bummer about that.
 CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 
+# Python venv seems to need this.
+IF(CMAKE_VERSION VERSION_GREATER 3.31)
+   CMAKE_POLICY(SET CMP0177 NEW)
+ENDIF(CMAKE_VERSION VERSION_GREATER 3.31)
+
 PROJECT(atomspace)
 
 # ----------------------------------------------------------
@@ -33,7 +38,7 @@ PROJECT(atomspace)
 # Uncomment to build in release mode with debug information.
 # SET(CMAKE_BUILD_TYPE RelWithDebInfo)
 
-# default build type
+# Default build type
 IF (CMAKE_BUILD_TYPE STREQUAL "")
 	SET(CMAKE_BUILD_TYPE Release)
 ENDIF (CMAKE_BUILD_TYPE STREQUAL "")
@@ -93,34 +98,6 @@ include(Summary)
 # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
 
 # ----------------------------------------------------------
-# Check for boost. We need dynamic-linked, threaded libs by default.
-SET(Boost_USE_STATIC_LIBS OFF)
-SET(Boost_USE_MULTITHREADED ON)
-SET(MIN_BOOST 1.46)
-
-# Required boost packages
-FIND_PACKAGE(Boost ${MIN_BOOST} REQUIRED COMPONENTS system)
-
-IF(Boost_FOUND)
-	SET(Boost_FOUND_SAVE 1)
-ELSE(Boost_FOUND)
-	MESSAGE(FATAL_ERROR "Boost ${MIN_BOOST} or newer is needed to build OpenCog!")
-ENDIF(Boost_FOUND)
-
-# Atomspace won't compile with Boost 1.51, some kind of conflict with
-# hash functions, see github bugs 1 and 36
-IF(105100 EQUAL ${Boost_VERSION})
-	MESSAGE(FATAL_ERROR "Boost version 1.51 will not work with AtomSpace.  Please use a different version.")
-ENDIF(105100 EQUAL ${Boost_VERSION})
-
-MESSAGE(STATUS "Boost version ${Boost_VERSION} found.")
-
-# Arghhh. Except cmake is treating above as required, not optional. #$%**&
-IF(Boost_FOUND_SAVE)
-	SET(Boost_FOUND 1)
-ENDIF(Boost_FOUND_SAVE)
-
-# ----------------------------------------------------------
 # Optional, but needed for unit tests.
 
 FIND_PACKAGE(Cxxtest)
@@ -144,18 +121,38 @@ IF (FOLLY_FOUND)
 	MESSAGE(STATUS "Folly found.")
 	SET(HAVE_FOLLY 1)
 	ADD_DEFINITIONS(-DHAVE_FOLLY)
+	# Disable. Hard to install, shows no improvments
+	# ADD_DEFINITIONS(-DUSE_FOLLY)
 ELSE (FOLLY_FOUND)
 	MESSAGE(STATUS "Folly missing: provides more efficient std::set replacement.")
 ENDIF (FOLLY_FOUND)
 
+FIND_PACKAGE(SparseHash)
+IF (SPARSEHASH_FOUND)
+	MESSAGE(STATUS "SparseHash found.")
+	SET(HAVE_SPARSEHASH 1)
+	ADD_DEFINITIONS(-DHAVE_SPARSEHASH)
+
+	# Set these directly in the header files. Setting them here also
+	# works, but it's more complex and error prone. Harder to debug.
+	# ADD_DEFINITIONS(-DUSE_SPARSE_INCOMING)
+	# ADD_DEFINITIONS(-DUSE_SPARSE_TYPESET)
+	# SET(COMPILE_TIME_DEFS
+	#	"HAVE_SPARSEHASH;USE_SPARSE_INCOMING=1;USE_SPARSE_TYPESET=1")
+	# Disable USE_SPARSE_KVP; see Atom.h for explanation.
+	# ADD_DEFINITIONS(-DUSE_SPARSE_KVP)
+	# The below is used in atomspace.pc for pkg-config
+	# SET(ATOMSPACE_CFLAGS "-DHAVE_SPARSEHASH -DUSE_SPARSE_INCOMING")
+ELSE (SPARSEHASH_FOUND)
+	MESSAGE(STATUS "SparseHash missing: provides more efficient std::set replacement.")
+ENDIF (SPARSEHASH_FOUND)
+
 # ----------------------------------------------------------
-# Find Guile
+# Find Guile. Required.
 include(OpenCogFindGuile)
 
 # ----------------------------------------------------------
-# By default, this uses Python3.
-# To use Python2 only, run the following in the build directory:
-# rm CMakeCache.txt && cmake -DCMAKE_DISABLE_FIND_PACKAGE_Python3Interp=TRUE ..
+# Find Python3 (optional; needed for Python3 bindings.)
 include(OpenCogFindPython)
 
 # ----------------------------------------------------------
@@ -176,47 +173,16 @@ ENDIF (OCAML_FOUND)
 
 # ----------------------------------------------------------
 # Glasgow Haskell compiler (Optional; needed for the Haskell bindings)
+# The Haskell bindings are very old and unmaintained, and should not be
+# used in development. Stub them out until a maintainer shows up and
+# modernizes them.
 
 FIND_PACKAGE(Stack)
 IF (STACK_FOUND)
-	ADD_DEFINITIONS(-DHAVE_STACK)
-	SET(HAVE_STACK 1)
+	# ADD_DEFINITIONS(-DHAVE_STACK)
+	# SET(HAVE_STACK 1)
+	MESSAGE(STATUS "Haskell was found, but will not be built, due to bit-rot.")
 ENDIF (STACK_FOUND)
-
-# ----------------------------------------------------------
-# Optional/deprecated ODBC.
-
-FIND_PACKAGE(UnixODBC QUIET)
-IF (UnixODBC_FOUND)
-	ADD_DEFINITIONS(-DHAVE_SQL_STORAGE)
-	SET(HAVE_SQL_STORAGE 1)
-	ADD_DEFINITIONS(-DHAVE_ODBC_STORAGE)
-	SET(ODBC_FOUND 1)
-	SET(ODBC_INCLUDE_DIRS ${UnixODBC_INCLUDE_DIRS})
-	SET(ODBC_LIBRARIES ${UnixODBC_LIBRARIES})
-	SET(ODBC_DIR_MESSAGE "UnixODBC was found.")
-ELSE (UnixODBC_FOUND)
-	SET(ODBC_FOUND 0)
-	SET(ODBC_DIR_MESSAGE "UnixODBC was not found; ODBC persistence subsystem will not be built.\nTo over-ride, make sure UnixODBC_LIBRARIES and UnixODBC_INCLUDE_DIRS are set.")
-ENDIF (UnixODBC_FOUND)
-MESSAGE(STATUS "${ODBC_DIR_MESSAGE}")
-
-# ----------------------------------------------------------
-# Optional Postgres, needed for PostgresStorageNode
-
-FIND_PACKAGE(PGSQL 9.5)
-IF (PGSQL_FOUND)
-	ADD_DEFINITIONS(-DHAVE_SQL_STORAGE)
-	SET(HAVE_SQL_STORAGE 1)
-	ADD_DEFINITIONS(-DHAVE_PGSQL_STORAGE)
-	SET(HAVE_PGSQL_STORAGE 1)
-	SET(PGSQL_FOUND 1)
-	SET(PGSQL_DIR_MESSAGE "PostgresSQL ${PGSQL_VERSION_STRING} was found.")
-ELSE (PGSQL_FOUND)
-	SET(PGSQL_FOUND 0)
-	SET(PGSQL_DIR_MESSAGE "PostgresSQL was not found; PGSQL persistence subsystem will not be built.\nTo over-ride, make sure PGSQL_LIBRARIES and PGSQL_INCLUDE_DIRS are set.")
-ENDIF (PGSQL_FOUND)
-MESSAGE(STATUS "${PGSQL_DIR_MESSAGE}")
 
 # ----------------------------------------------------------
 # Optional, currently needed only to hush up DRD in util/Logger.cc
@@ -239,9 +205,6 @@ ENDIF (VALGRIND_FOUND)
 # NOTE: This is the official semantic-version, as it is derived from
 # a version-control independent means of declaring versioning.
 #
-# TODO: Once CMAKE_MINIMUM_REQUIRED >= 3.0.2 check use of policy
-# CMP0048.
-#
 FILE(READ "${CMAKE_SOURCE_DIR}/opencog/atomspace/version.h" _ATOMSPACE_H_CONTENTS)
 STRING(REGEX MATCH
 	"#define ATOMSPACE_VERSION_STRING \"([0-9]+[.0-9]+[.0-9]+)\""
@@ -253,7 +216,15 @@ SET(SEMANTIC_VERSION ${CMAKE_MATCH_1})
 
 # Set default include paths.
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR}
-	${Boost_INCLUDE_DIRS} ${COGUTIL_INCLUDE_DIR})
+	${COGUTIL_INCLUDE_DIR})
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+	message(STATUS "Configuring for macOS...")
+    
+    # Add macOS-specific include and library paths
+    include_directories(/opt/homebrew/include)
+    link_directories(/opt/homebrew/lib)
+endif()
 
 # Macros that define how atom types get declared.
 INCLUDE("${CMAKE_SOURCE_DIR}/cmake/OpenCogAtomTypes.cmake")
@@ -317,6 +288,13 @@ IF (CXXTEST_FOUND)
 		COMMAND ${CMAKE_CTEST_COMMAND} $(ARGS)
 		COMMENT "Running Atomspace tests..."
 	)
+	ADD_CUSTOM_TARGET(test_flow
+		DEPENDS tests
+		DEPENDS tests/atoms/flow
+		WORKING_DIRECTORY tests/atoms/flow
+		COMMAND ${CMAKE_CTEST_COMMAND} $(ARGS)
+		COMMENT "Running Flow/stream tests..."
+	)
 	ADD_CUSTOM_TARGET(test_guile
 		DEPENDS tests
 		WORKING_DIRECTORY tests/scm
@@ -329,18 +307,6 @@ IF (CXXTEST_FOUND)
 		WORKING_DIRECTORY tests/atoms/container
 		COMMAND ${CMAKE_CTEST_COMMAND} $(ARGS)
 		COMMENT "Running Pattern Container tests..."
-	)
-	ADD_CUSTOM_TARGET(test_matrix
-		DEPENDS tests
-		WORKING_DIRECTORY tests/matrix
-		COMMAND ${CMAKE_CTEST_COMMAND} $(ARGS)
-		COMMENT "Running Sparse Matrix tests..."
-	)
-	ADD_CUSTOM_TARGET(test_persist
-		DEPENDS tests
-		WORKING_DIRECTORY tests/persist/
-		COMMAND ${CMAKE_CTEST_COMMAND} $(ARGS)
-		COMMENT "Running Persistance tests..."
 	)
 	ADD_CUSTOM_TARGET(test_python
 		WORKING_DIRECTORY tests/cython
@@ -429,13 +395,13 @@ ADD_SUBDIRECTORY(doc EXCLUDE_FROM_ALL)
 # Show a summary of what we found, what we will do.
 
 SUMMARY_ADD("Doxygen" "Code documentation" DOXYGEN_FOUND)
+# Don't print, it's never used.
 # SUMMARY_ADD("Folly" "Replacement for std::set" HAVE_FOLLY)
 SUMMARY_ADD("Haskell bindings" "Haskell bindings" HAVE_STACK)
 SUMMARY_ADD("OCaml bindings" "OCaML bindings" HAVE_OCAML)
 SUMMARY_ADD("Python bindings" "Python (cython) bindings" HAVE_CYTHON)
 SUMMARY_ADD("Python tests" "Python bindings nose tests" HAVE_NOSETESTS)
 SUMMARY_ADD("Scheme bindings" "Scheme (guile) bindings" HAVE_GUILE)
-SUMMARY_ADD("SQL ODBC bindings" "Save/Restore of AtomSpace to database via ODBC" ODBC_FOUND)
-SUMMARY_ADD("Postgres StorageNode" "Save/Restore of AtomSpace to Postgres database" PGSQL_FOUND)
+SUMMARY_ADD("SparseHash" "Replacement for std::set" HAVE_SPARSEHASH)
 SUMMARY_ADD("Unit tests" "Unit tests" CXXTEST_FOUND)
 SUMMARY_SHOW()

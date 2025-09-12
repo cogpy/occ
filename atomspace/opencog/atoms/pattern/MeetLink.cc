@@ -47,15 +47,26 @@ MeetLink::MeetLink(const HandleSeq&& hseq, Type t)
 
 /* ================================================================= */
 
-QueueValuePtr MeetLink::do_execute(AtomSpace* as, bool silent)
+ContainerValuePtr MeetLink::do_execute(AtomSpace* as, bool silent)
 {
 	if (nullptr == as) as = _atom_space;
 
+	// Where shall we place results? Why, right here!
+	ValuePtr vp(getValue(get_handle()));
+	if (nullptr == vp)
+		throw RuntimeException(TRACE_INFO,
+			"Expecting location for results!");
+	ContainerValuePtr cvp(ContainerValueCast(vp));
+	if (nullptr == cvp)
+		throw RuntimeException(TRACE_INFO,
+			"Expecting ContainerValue for results, got %s",
+			vp->to_string().c_str());
+
 	try
 	{
-		SatisfyingSet sater(as);
+		SatisfyingSet sater(as, cvp);
 		sater.satisfy(PatternLinkCast(get_handle()));
-		return sater.get_result_queue();
+		return cvp;
 	}
 	catch(const StandardException& ex)
 	{

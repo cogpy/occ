@@ -37,28 +37,49 @@ ENDMACRO()
 # identifier as the Python Atom object.
 MACRO(OPENCOG_PYTHON_WRITE_DEFS PYTHON_FILE)
 	IF (NOT TYPE_NAME STREQUAL "Atom")
+
+		# XXX This is broken in two ways. First, createValue() is
+		# a C++ template, and so it can't be used like this.
+		# Also, PYTHON_SUPPORTED_VALUE_LIST is an empty list (above)
+		# so this is a no-op, anyway. XXX FIXME someday, I guess
+		# Until then, the value ctors are hard-coded into
+		# opencog/cython/opencog/type_constructors.pyx
 		IF (ISVALUE STREQUAL "VALUE" OR ISSTREAM STREQUAL "STREAM")
 			LIST(FIND PYTHON_SUPPORTED_VALUE_LIST ${TYPE_NAME} _INDEX)
 			IF (${_INDEX} GREATER -1)
-				# Single arg will work as all of value constructors has
-				# single argument: either value or vector.
+				# Single arg will work as all of the value constructors
+				# have a single argument: either a value or a vector.
 				FILE(APPEND "${PYTHON_FILE}"
 					"def ${TYPE_NAME}(arg):\n"
 					"    return createValue(types.${TYPE_NAME}, arg)\n"
 				)
 			ENDIF (${_INDEX} GREATER -1)
 		ENDIF (ISVALUE STREQUAL "VALUE" OR ISSTREAM STREQUAL "STREAM")
+
 		IF (ISNODE STREQUAL "NODE")
 			FILE(APPEND "${PYTHON_FILE}"
 				"def ${TYPE_NAME}(node_name, tv=None):\n"
 				"    return add_node(types.${TYPE_NAME}, node_name, tv)\n"
 			)
+			IF (NOT SHORT_NAME STREQUAL "")
+				FILE(APPEND "${PYTHON_FILE}"
+					"def ${SHORT_NAME}(node_name, tv=None):\n"
+					"    return add_node(types.${TYPE_NAME}, node_name, tv)\n"
+				)
+			ENDIF (NOT SHORT_NAME STREQUAL "")
 		ENDIF (ISNODE STREQUAL "NODE")
+
 		IF (ISLINK STREQUAL "LINK")
 			FILE(APPEND "${PYTHON_FILE}"
 				"def ${TYPE_NAME}(*args, tv=None):\n"
 				"    return add_link(types.${TYPE_NAME}, args, tv=tv)\n"
 			)
+			IF (NOT SHORT_NAME STREQUAL "")
+				FILE(APPEND "${PYTHON_FILE}"
+					"def ${SHORT_NAME}(*args, tv=None):\n"
+					"    return add_link(types.${TYPE_NAME}, args, tv=tv)\n"
+				)
+			ENDIF (NOT SHORT_NAME STREQUAL "")
 		ENDIF (ISLINK STREQUAL "LINK")
 	ENDIF (NOT TYPE_NAME STREQUAL "Atom")
 

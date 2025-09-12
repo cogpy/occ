@@ -22,6 +22,7 @@
 
 #include <opencog/atoms/atom_types/NameServer.h>
 
+#include "AtomSpace.h"
 #include "Frame.h"
 
 using namespace opencog;
@@ -55,8 +56,18 @@ Frame::~Frame()
 void Frame::install()
 {
 	Handle llc(get_handle());
+	OC_ASSERT(llc->is_type(ATOM_SPACE), "Can't deal with anything else right now");
+	AtomSpace* self = AtomSpaceCast(llc).get();
 	for (Handle& h : _outgoing)
-		h->insert_atom(llc);
+	{
+		if (nullptr == h->getAtomSpace())
+		{
+			h->setAtomSpace(self);
+			h->insert_atom(llc);
+		}
+		else
+			h->insert_atom(llc);
+	}
 }
 
 void Frame::remove()
@@ -69,20 +80,39 @@ void Frame::remove()
 /// Remove all dead frames in the incoming set.
 void Frame::scrub_incoming_set(void)
 {
-	if (not _use_iset) return;
+	if (not (_flags.load() & USE_ISET_FLAG)) return;
+#if USE_BARE_BACKPOINTER
+	// This won't work with bare pointers. Which means we have a
+	// problem with the validity of the incoming set for Frames:
+	// it will include Frames that have been deleted, and thus
+	// pointing at freed memory. Oddly enough, no unit test seems
+	// to trip on this. But .. well, I guess it's uhh.. maybe bad
+	// luck, eh?
+	#warning "Using AtomSpace frames with bare pointers is asking for trouble!"
+#else
 	INCOMING_UNIQUE_LOCK;
+	if (not have_inset_map()) return;
 
 	// Iterate over all frame types
 	std::vector<Type> framet;
 	nameserver().getChildrenRecursive(FRAME, back_inserter(framet));
+	InSetMap& iset = get_inset_map();
 	for (Type t : framet)
 	{
-		auto bucket = _incoming_set._iset.find(t);
+		auto bucket = iset.find(t);
+		if (bucket == iset.end()) continue;
 		for (auto bi = bucket->second.begin(); bi != bucket->second.end();)
 		{
 			if (0 == bi->use_count())
+#if HAVE_SPARSEHASH
+				// sparsehash erase does not invalidate iterators.
+				bucket->second.erase(bi);
+			bi++;
+#else
 				bi = bucket->second.erase(bi);
 			else bi++;
+#endif
 		}
 	}
+#endif
 }

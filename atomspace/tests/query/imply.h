@@ -2,6 +2,7 @@
 #include <opencog/util/oc_assert.h>
 #include <opencog/atoms/core/FindUtils.h>
 #include <opencog/atoms/pattern/BindLink.h>
+#include <opencog/atoms/value/QueueValue.h>
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/query/Implicator.h>
 
@@ -28,22 +29,16 @@ static inline Handle imply(AtomSpace* as, Handle hclauses, Handle himplicand)
 	BindLinkPtr bl(createBindLink(std::move(oset)));
 
 	// Now perform the search.
-	Implicator impl(as);
-	impl.implicand.push_back(himplicand);
-
+	QueueValuePtr qvp(createQueueValue());
+	ContainerValuePtr cvp(qvp);
+	qvp->close();
+	Implicator impl(as, cvp);
 	impl.satisfy(bl);
 
 	// The result_set contains a list of the grounded expressions.
 	// Turn it into a true list, and return it.
-	HandleSeq hlist;
-	QueueValuePtr qv(impl.get_result_queue());
-	OC_ASSERT(qv->is_closed(), "Unexpected queue state!");
-	std::queue<ValuePtr> vals(qv->wait_and_take_all());
-	while (not vals.empty())
-	{
-		hlist.push_back(HandleCast(vals.front()));
-		vals.pop();
-	}
+	OC_ASSERT(qvp->is_closed(), "Unexpected queue state!");
+	HandleSeq hlist(qvp->to_handle_seq());
 	Handle gl = as->add_link(LIST_LINK, std::move(hlist));
 	return gl;
 }

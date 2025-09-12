@@ -86,10 +86,16 @@ void ThreadedUTest::test_exec(void)
 
 	TS_ASSERT_EQUALS(vp->get_type(), QUEUE_VALUE);
 
+	// The eval is done async, and so the returned queue might
+	// still be open, and the threads still running. We must wait
+	// for the threads to finish, and the queue to close. Do this
+	// by asking for the values.
 	QueueValuePtr qvp = QueueValueCast(vp);
+	const std::vector<ValuePtr>& vals = qvp->value();
+
 	printf("Got %s\n", qvp->to_string().c_str());
 
-	TS_ASSERT_EQUALS(2, qvp->LinkValue::size());
+	TS_ASSERT_EQUALS(2, vals.size());
 
 	logger().debug("END TEST: %s", __FUNCTION__);
 }
@@ -110,6 +116,10 @@ void ThreadedUTest::test_many(void)
 	QueueValuePtr qvp = QueueValueCast(vp);
 	const std::vector<ValuePtr>& vals = qvp->value();
 
+	// The qvp->value() above should have blocked, until the
+	// queue is closed. Check that to be sure.
+	TS_ASSERT(qvp->is_closed());
+
 	printf("Got %zu results\n", vals.size());
 	TS_ASSERT_EQUALS(100, vals.size());
 
@@ -121,8 +131,10 @@ void ThreadedUTest::test_many(void)
 	{
 		HandleSeq hs = LinkValueCast(v)->to_handle_seq();
 		TS_ASSERT_EQUALS(1, hs.size());
-		if (flower == hs[0]) nflowers++;
-		if (rock == hs[0]) nrocks++;
+		TS_ASSERT_EQUALS(LIST_LINK, hs[0]->get_type());
+		TS_ASSERT_EQUALS(2, hs[0]->size());
+		if (flower == hs[0]->getOutgoingAtom(1)) nflowers++;
+		if (rock == hs[0]->getOutgoingAtom(1)) nrocks++;
 	}
 
 	printf("Got %zu flowers and %zu rocks\n", nflowers, nrocks);

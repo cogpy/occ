@@ -41,8 +41,8 @@ public:
 	ThreadJoinLink(const ThreadJoinLink&) = delete;
 	ThreadJoinLink& operator=(const ThreadJoinLink&) = delete;
 
-	virtual TruthValuePtr evaluate(AtomSpace*, bool);
-	bool evaluate(AtomSpace*, bool, AtomSpace*);
+	virtual bool bevaluate(AtomSpace*, bool);
+	bool evaluate_scratch(AtomSpace*, bool, AtomSpace*);
 
 	static Handle factory(const Handle&);
 };

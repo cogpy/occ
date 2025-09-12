@@ -33,7 +33,8 @@ namespace opencog {
 /* ================================================================= */
 
 Handle Replacement::replace_nocheck(const Handle& term,
-                                    const HandleMap& vm)
+                                    const HandleMap& vm,
+                                    bool do_exec)
 {
 	HandleSeq to_insert;
 	IndexMap insert_index;
@@ -44,7 +45,7 @@ Handle Replacement::replace_nocheck(const Handle& term,
 		insert_index.insert({pr.first, idx});
 		idx++;
 	}
-	return substitute_scoped(term, to_insert, insert_index);
+	return substitute_scoped(term, to_insert, insert_index, do_exec);
 }
 
 /* ================================================================= */
@@ -62,6 +63,7 @@ Handle Replacement::replace_nocheck(const Handle& term,
 Handle Replacement::substitute_scoped(Handle term,
                                       const HandleSeq& args,
                                       const IndexMap& index_map,
+                                      bool do_exec,
                                       Quotation quotation)
 {
 	bool unquoted = quotation.is_unquoted();
@@ -125,7 +127,7 @@ Handle Replacement::substitute_scoped(Handle term,
 		// that wraps them up.  See FilterLinkUTest for examples.
 		if (GLOB_NODE == h->get_type())
 		{
-			Handle glst(substitute_scoped(h, args, *index_map_ptr, quotation));
+			Handle glst(substitute_scoped(h, args, *index_map_ptr, do_exec, quotation));
 			changed = true;
 
 			// Also unwrap any ListLinks that were inserted by
@@ -138,8 +140,35 @@ Handle Replacement::substitute_scoped(Handle term,
 		}
 		else
 		{
-			Handle sub(substitute_scoped(h, args, *index_map_ptr, quotation));
-			if (sub != h) changed = true;
+			Handle sub(substitute_scoped(h, args, *index_map_ptr, do_exec, quotation));
+			if (sub != h)
+			{
+				changed = true;
+
+				// End of the line for streaming data. If the arguments
+				// that were being plugged in were executable streams,
+				// but they're being placed into something that is not
+				// executable, then run those streams, terminating them.
+				// The final result is then just a plain-old ordinary
+				// non-executable Atom, and nothing more.
+				//
+				// Well, sort-of. Execution could return something that
+				// is not an Atom. In that case, we redord the original
+				// form. This original form might be executted again,
+				// later on, and if this execution has side-effects,
+				// then, well, things get ugly.  But there's no obvious
+				// way of avoiding this; we'd need some method that
+				// tells us if execution returns only Atoms and never
+				// Values. And we don't have such a function...
+				if (do_exec and
+				    not term->is_executable() and
+				    sub->is_executable())
+				{
+					ValuePtr evp = sub->execute();
+					if (evp->is_atom())
+						sub = HandleCast(evp);
+				}
+			}
 			oset.emplace_back(sub);
 		}
 	}

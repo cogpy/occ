@@ -27,7 +27,6 @@
 #include <opencog/atoms/core/NumberNode.h>
 #include <opencog/atoms/execution/EvaluationLink.h>
 #include <opencog/atoms/parallel/ThreadJoinLink.h>
-#include <opencog/atoms/truthvalue/SimpleTruthValue.h>
 #include <opencog/atoms/value/LinkValue.h>
 
 #include <opencog/atomspace/AtomSpace.h>
@@ -55,9 +54,9 @@ static void thread_eval_tv(AtomSpace* as,
 	}
 }
 
-bool ThreadJoinLink::evaluate(AtomSpace* as,
-                              bool silent,
-                              AtomSpace* scratch)
+bool ThreadJoinLink::evaluate_scratch(AtomSpace* as,
+                                      bool silent,
+                                      AtomSpace* scratch)
 {
 	size_t arity = _outgoing.size();
 	std::vector<TruthValuePtr> tvp(arity);
@@ -84,12 +83,9 @@ bool ThreadJoinLink::evaluate(AtomSpace* as,
 	return true;
 }
 
-TruthValuePtr ThreadJoinLink::evaluate(AtomSpace* as,
-                                       bool silent)
+bool ThreadJoinLink::bevaluate(AtomSpace* as, bool silent)
 {
-	bool ok = evaluate(as, silent, as);
-	if (ok) SimpleTruthValue::TRUE_TV();
-	return SimpleTruthValue::FALSE_TV();
+	return evaluate_scratch(as, silent, as);
 }
 
 DEFINE_LINK_FACTORY(ThreadJoinLink, THREAD_JOIN_LINK)

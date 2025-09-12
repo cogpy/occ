@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <opencog/util/algorithm.h>
 #include <opencog/util/oc_assert.h>
 
 #include <opencog/atoms/base/Atom.h>
@@ -406,6 +405,18 @@ void FreeVariables::find_variables(const HandleSeq& oset, bool ordered_link)
 	init_index();
 }
 
+/**
+ * \return (s1 - s2) union (s2 - s1)
+ * s1 and s2 must be sorted
+ */
+template<typename Set>
+Set set_symmetric_difference(const Set& s1, const Set& s2) {
+	Set res;
+	std::set_symmetric_difference(s1.begin(), s1.end(), s2.begin(), s2.end(),
+	                              std::inserter(res, res.end()));
+	return res;
+}
+
 void FreeVariables::canonical_sort(const HandleSeq& hs)
 {
 	// Get free variables
@@ -459,16 +470,18 @@ void FreeVariables::erase(const Handle& var)
 
 Handle FreeVariables::substitute_nocheck(const Handle& term,
                                          const HandleSeq& args,
-                                         bool silent) const
+                                         bool silent,
+                                         bool do_exec) const
 {
-	return substitute_scoped(term, args, index);
+	return substitute_scoped(term, args, index, do_exec);
 }
 
 Handle FreeVariables::substitute_nocheck(const Handle& term,
                                          const HandleMap& vm,
-                                         bool silent) const
+                                         bool silent,
+                                         bool do_exec) const
 {
-	return substitute_scoped(term, make_sequence(vm), index);
+	return substitute_scoped(term, make_sequence(vm), index, do_exec);
 }
 
 bool FreeVariables::operator<(const FreeVariables& other) const

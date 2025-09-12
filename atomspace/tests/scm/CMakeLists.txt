@@ -24,6 +24,7 @@ ADD_CXXTEST(SCMPrimitiveUTest)
 ADD_CXXTEST(MultiAtomSpaceUTest)
 ADD_CXXTEST(MultiThreadUTest)
 ADD_CXXTEST(SCMUtilsUTest)
+ADD_CXXTEST(SCMUtf8StringUTest)
 ADD_CXXTEST(SCMExecutionOutputUTest)
 
 ADD_GUILE_TEST(SCMOpencogTestRunnerPass scm-opencog-test-runner-pass.scm)
@@ -34,7 +35,6 @@ ADD_GUILE_TEST(SCMOpencogTestRunnerFail scm-opencog-test-runner-fail.scm)
 SET_PROPERTY(TEST SCMOpencogTestRunnerFail PROPERTY WILL_FAIL TRUE)
 
 ADD_GUILE_TEST(CopyAtomTest copy-atom-test.scm)
-ADD_GUILE_TEST(SCMLoadFile scm-load-file.scm)
 ADD_GUILE_TEST(SCMInlineValues inline-values.scm)
 
 # Guile-python bridge requires python

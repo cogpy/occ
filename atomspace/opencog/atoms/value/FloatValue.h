@@ -40,6 +40,8 @@ namespace opencog
 class FloatValue
 	: public Value
 {
+	friend class TransposeColumn;
+
 protected:
 	mutable std::vector<double> _value;
 
@@ -47,16 +49,17 @@ protected:
 
 	FloatValue(Type t) : Value(t) {}
 public:
+	FloatValue(Type t, const std::vector<double>& v) : Value(t), _value(v) {}
 	FloatValue(double v) : Value(FLOAT_VALUE) { _value.push_back(v); }
 	FloatValue(const std::vector<double>& v)
 		: Value(FLOAT_VALUE), _value(v) {}
-	FloatValue(Type t, const std::vector<double>& v) : Value(t), _value(v) {}
+	FloatValue(std::vector<double>&& v)
+		: Value(FLOAT_VALUE), _value(std::move(v)) {}
 
 	virtual ~FloatValue() {}
 
 	const std::vector<double>& value() const { update(); return _value; }
 	size_t size() const { return _value.size(); }
-	virtual ValuePtr value_at_index(size_t) const;
 	virtual ValuePtr incrementCount(const std::vector<double>&) const;
 	virtual ValuePtr incrementCount(size_t, double) const;
 
@@ -69,19 +72,8 @@ public:
 	virtual bool operator==(const Value&) const;
 };
 
-typedef std::shared_ptr<const FloatValue> FloatValuePtr;
-static inline FloatValuePtr FloatValueCast(const ValuePtr& a)
-	{ return std::dynamic_pointer_cast<const FloatValue>(a); }
-
-static inline const ValuePtr ValueCast(const FloatValuePtr& fv)
-{
-	return std::shared_ptr<Value>(fv, (Value*) fv.get());
-}
-
-template<typename ... Type>
-static inline std::shared_ptr<FloatValue> createFloatValue(Type&&... args) {
-	return std::make_shared<FloatValue>(std::forward<Type>(args)...);
-}
+VALUE_PTR_DECL(FloatValue);
+CREATE_VALUE_DECL(FloatValue);
 
 // Scalar multiplication and addition
 std::vector<double> plus(double, const std::vector<double>&);

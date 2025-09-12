@@ -23,6 +23,7 @@
 
 #include <opencog/atomspace/AtomSpace.h>
 #include "StreamValueOfLink.h"
+#include <opencog/atoms/value/ContainerValue.h>
 #include <opencog/atoms/value/FloatValue.h>
 #include <opencog/atoms/value/LinkValue.h>
 #include <opencog/atoms/truthvalue/SimpleTruthValue.h>
@@ -72,6 +73,7 @@ ValuePtr StreamValueOfLink::execute(AtomSpace* as, bool silent)
 		   ak->to_string().c_str(), ah->to_string().c_str());
 	}
 
+	// Test for Truth before Float, since Truth isa Float
 	if (stream->is_type(TRUTH_VALUE))
 	{
 		// Sample a value out of the stream.
@@ -83,6 +85,18 @@ ValuePtr StreamValueOfLink::execute(AtomSpace* as, bool silent)
 		// Sample a value out of the stream.
 		FloatValuePtr fvp = FloatValueCast(stream);
 		return createFloatValue(fvp->value());
+	}
+
+	if (stream->is_type(CONTAINER_VALUE))
+	{
+		// If the container is open for insertion, then
+		// just return a single value out of it. This will
+		// block if it is empty. If it is closed, just treat
+		// it like a normal LinkValue (thus the fall-thru).
+		ContainerValuePtr cvp = ContainerValueCast(stream);
+		if (not cvp->is_closed())
+			return createLinkValue(cvp->remove());
+		// else fall through
 	}
 
 	if (stream->is_type(LINK_VALUE))

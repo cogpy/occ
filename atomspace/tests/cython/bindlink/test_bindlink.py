@@ -2,7 +2,7 @@ import unittest
 import os
 
 from opencog.atomspace import Atom, types
-from opencog.execute import execute_atom, evaluate_atom
+from opencog.execute import evaluate_atom
 
 from opencog.type_constructors import *
 
@@ -78,22 +78,22 @@ class BindlinkTest(unittest.TestCase):
 
         # Check if the atom is a SetLink
         self.assertTrue(atom is not None)
-        self.assertEquals(atom.type, types.SetLink)
+        self.assertEqual(atom.type, types.SetLink)
 
         # Check the ending atomspace size, it should have added one SetLink.
         ending_size = self.atomspace.size()
-        self.assertEquals(ending_size, self.starting_size + 1)
+        self.assertEqual(ending_size, self.starting_size + 1)
 
         # The SetLink should have expected_arity items in it.
-        self.assertEquals(atom.arity, expected_arity)
+        self.assertEqual(atom.arity, expected_arity)
 
     def test_bindlink(self):
-        atom = execute_atom(self.atomspace, self.bindlink_atom)
+        atom = self.bindlink_atom.execute()
         print(f"Bindlink found: {str(atom)}")
         self._check_result_setlink(atom, 3)
 
     def test_satisfying_set(self):
-        atom = execute_atom(self.atomspace, self.getlink_atom)
+        atom = self.getlink_atom.execute()
         self._check_result_setlink(atom, 3)
 
     def test_satisfy(self):
@@ -129,24 +129,22 @@ class BindlinkTest(unittest.TestCase):
 
         tv = evaluate_atom(self.atomspace, satisfaction_atom)
         self.assertTrue(tv is not None and tv.mean <= 0.5)
-        self.assertEquals(green_count(), 2)
-        self.assertEquals(red_count(), 1)
+        self.assertEqual(green_count(), 2)
+        self.assertEqual(red_count(), 1)
 
     def test_execute_atom(self):
-        result = execute_atom(self.atomspace,
-                ExecutionOutputLink(
+        result = ExecutionOutputLink(
                     GroundedSchemaNode("py: test_functions.add_link"),
                     ListLink(
                         ConceptNode("one"),
                         ConceptNode("two")
                     )
-                )
-            )
+                ).execute()
         list_link = ListLink(
                 ConceptNode("one"),
                 ConceptNode("two")
             )
-        self.assertEquals(result, list_link)
+        self.assertEqual(result, list_link)
 
     def test_evaluate_atom(self):
         result = evaluate_atom(self.atomspace,
@@ -158,13 +156,12 @@ class BindlinkTest(unittest.TestCase):
                     )
                 )
             )
-        self.assertEquals(result, TruthValue(0.6, 0.234))
+        self.assertEqual(result, TruthValue(0.6, 0.234))
 
     def test_execute_atom_no_return_value(self):
-        result = execute_atom(self.atomspace,
-                PutLink(DeleteLink(VariableNode("X")),
-                        ConceptNode("deleteme")))
-        self.assertEquals(result, None)
+        result = PutLink(DeleteLink(VariableNode("X")),
+                        ConceptNode("deleteme")).execute()
+        self.assertEqual(result, None)
 
 
     def test_tmp_atomspace(self):
@@ -178,11 +175,11 @@ class BindlinkTest(unittest.TestCase):
                         ListLink(VariableNode("x"))),
                    EvaluationLink(GroundedPredicateNode( "py: test_functions.func_two"),
                    ListLink (VariableNode ("x")))))
-        result = execute_atom(self.atomspace, get)
+        result = get.execute()
         self.assertFalse(result.out)
         self.assertFalse(self.atomspace.is_node_in_atomspace(types.ConceptNode, 'barleycorn'))
         test_functions.func_one_result = TruthValue(1,1)
-        result = execute_atom(self.atomspace, get)
+        result = get.execute()
         self.assertTrue(result.out)
         # still should not be in the current namespace
         self.assertFalse(self.atomspace.is_node_in_atomspace(types.ConceptNode, 'barleycorn'))

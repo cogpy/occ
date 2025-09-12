@@ -95,15 +95,17 @@ ValuePtr CondLink::execute(AtomSpace *scratch, bool silent)
 {
 	for (unsigned i = 0; i < conds.size(); ++i)
 	{
-		TruthValuePtr tvp(EvaluationLink::do_evaluate(scratch, conds[i]));
+		bool crisp(EvaluationLink::crisp_evaluate(scratch, conds[i]));
 
-		// If the do_evaluate worked, but the result is NOT a TV,
-		// then assume that a non-empty result is same as TRUE.
-		// Empty results cause do_evaluate() to return FALSE_TV.
-		if (nullptr == tvp or tvp->get_mean() > 0.5)
+		if (crisp)
 		{
 			if (exps[i]->is_executable())
 				return exps[i]->execute(scratch, silent);
+
+			// Instantiator does the wrong kind of things inside of
+			// Evaluatable links. So don't let it go there.
+			if (exps[i]->is_type(EVALUATABLE_LINK))
+				return exps[i];
 
 			// At this time, not every Atom type knows how to execute
 			// itself. So if the above didn't work, try again, forcing
@@ -115,6 +117,10 @@ ValuePtr CondLink::execute(AtomSpace *scratch, bool silent)
 
 	if (default_exp->is_executable())
 		return default_exp->execute(scratch, silent);
+
+	if (default_exp->is_type(EVALUATABLE_LINK))
+		return default_exp;
+
 	Instantiator inst(scratch);
 	return inst.execute(default_exp);
 }

@@ -26,7 +26,6 @@
 #include <opencog/util/platform.h>
 #include <opencog/atoms/execution/EvaluationLink.h>
 #include <opencog/atoms/parallel/ParallelLink.h>
-#include <opencog/atoms/truthvalue/SimpleTruthValue.h>
 
 #include <opencog/atomspace/AtomSpace.h>
 
@@ -52,9 +51,9 @@ static void thread_eval(AtomSpace* as,
 	}
 }
 
-void ParallelLink::evaluate(AtomSpace* as,
-                            bool silent,
-                            AtomSpace* scratch)
+void ParallelLink::evaluate_scratch(AtomSpace* as,
+                                    bool silent,
+                                    AtomSpace* scratch)
 {
 	// Create and detach threads; return immediately.
 	for (const Handle& h : _outgoing)
@@ -64,11 +63,10 @@ void ParallelLink::evaluate(AtomSpace* as,
 	}
 }
 
-TruthValuePtr ParallelLink::evaluate(AtomSpace* as,
-                                     bool silent)
+bool ParallelLink::bevaluate(AtomSpace* as, bool silent)
 {
-	evaluate(as, silent, as);
-	return SimpleTruthValue::TRUE_TV();
+	evaluate_scratch(as, silent, as);
+	return true;
 }
 
 DEFINE_LINK_FACTORY(ParallelLink, PARALLEL_LINK)

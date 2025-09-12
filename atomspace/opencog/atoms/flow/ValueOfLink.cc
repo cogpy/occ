@@ -90,6 +90,14 @@ ValuePtr ValueOfLink::do_execute(AtomSpace* as, bool silent)
 	// executed, as needed. So in the current apps, this all works
 	// fine. In the future... well, I'm not fiddling with this today.
 	// Worst case scenario, app can use a DontExecLink.
+
+	// Avoid null-pointer deref due to user error.
+	// This can happen with improperly built FilterLinks.
+	if (nullptr == as)
+		throw RuntimeException(TRACE_INFO,
+			"Expecting AtomSpace, got null pointer for %s\n",
+			to_string().c_str());
+
 	Handle ah(as->add_atom(_outgoing[0]));
 	Handle ak(as->add_atom(_outgoing[1]));
 
@@ -132,8 +140,17 @@ ValuePtr ValueOfLink::execute(AtomSpace* as, bool silent)
 		{
 			return createFloatValue(NumberNodeCast(_outgoing[0])->value());
 		}
+
+		// Well, we could also be wrapping a unary ValueShim.
+		// I think this only happens when there's a bug somewhere
+		// else, but ... well, its not totally preposterous, so
+		// go ahead and handle it.
+		if (VALUE_SHIM_LINK == _outgoing[0]->get_type())
+		{
+			return _outgoing[0]->execute(as, silent);
+		}
 		throw InvalidParamException(TRACE_INFO,
-			"Expecting an Atom and a key");
+			"Expecting an Atom and a key; got %s", to_string().c_str());
 	}
 
 	return do_execute(as, silent);

@@ -42,6 +42,8 @@ namespace opencog
 class LinkValue
 	: public Value
 {
+	friend class TransposeColumn;
+
 protected:
 	mutable std::vector<ValuePtr> _value;
 	virtual void update() const {}
@@ -57,8 +59,26 @@ public:
 	LinkValue(const ValueSeq& vlist)
 		: Value(LINK_VALUE), _value(vlist) {}
 
+	LinkValue(ValueSeq&& vlist)
+		: Value(LINK_VALUE), _value(std::move(vlist)) {}
+
 	LinkValue(Type t, const ValueSeq& vlist)
 		: Value(t), _value(vlist) {}
+
+	LinkValue(Type t, ValueSeq&& vlist)
+		: Value(t), _value(std::move(vlist)) {}
+
+	LinkValue(Type t, const ValueSet& vset)
+		: Value(t)
+	{ for (const ValuePtr& v: vset) _value.emplace_back(v); }
+
+	LinkValue(Type t, const HandleSeq& hseq)
+		: Value(t)
+	{ for (const Handle& h: hseq) _value.emplace_back(h); }
+
+	LinkValue(Type t, const HandleSet& hset)
+		: Value(t)
+	{ for (const Handle& h: hset) _value.emplace_back(h); }
 
 	LinkValue(const ValueSet& vset)
 		: Value(LINK_VALUE)
@@ -78,7 +98,6 @@ public:
 	HandleSeq to_handle_seq(void) const;
 	HandleSet to_handle_set(void) const;
 	size_t size() const { return _value.size(); }
-	ValuePtr value_at_index(size_t) const;
 
 	/** Returns a string representation of the value.  */
 	virtual std::string to_string(const std::string& indent = "") const;
@@ -88,16 +107,8 @@ public:
 	virtual bool operator==(const Value&) const;
 };
 
-typedef std::shared_ptr<LinkValue> LinkValuePtr;
-static inline LinkValuePtr LinkValueCast(const ValuePtr& a)
-	{ return std::dynamic_pointer_cast<LinkValue>(a); }
-static inline const ValuePtr ValueCast(const LinkValuePtr& lv)
-	{ return std::shared_ptr<Value>(lv, (Value*) lv.get()); }
-
-template<typename ... Type>
-static inline std::shared_ptr<LinkValue> createLinkValue(Type&&... args) {
-	return std::make_shared<LinkValue>(std::forward<Type>(args)...);
-}
+VALUE_PTR_DECL(LinkValue);
+CREATE_VALUE_DECL(LinkValue);
 
 /** @}*/
 } // namespace opencog

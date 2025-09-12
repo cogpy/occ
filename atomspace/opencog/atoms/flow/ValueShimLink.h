@@ -46,6 +46,7 @@ private:
 public:
 	ValueShimLink(Type=VALUE_SHIM_LINK);
 	ValueShimLink(const HandleSeq&, Type=VALUE_SHIM_LINK);
+	ValueShimLink(const ValuePtr& v) : Link(VALUE_SHIM_LINK), val(v) {}
 
 	ValueShimLink(const ValueShimLink&) = delete;
 	ValueShimLink& operator=(const ValueShimLink&) = delete;
@@ -55,8 +56,8 @@ public:
 	virtual bool is_executable() const { return true; }
 
 	virtual void setAtomSpace(AtomSpace *);
-	virtual std::string to_string(const std::string& indent) const;
-	virtual std::string to_short_string(const std::string& indent) const;
+	virtual std::string to_string(const std::string& = "") const;
+	virtual std::string to_short_string(const std::string& = "") const;
 
 	static Handle factory(const Handle&);
 };

@@ -15,7 +15,13 @@ cdef class Atom(Value):
     
     @staticmethod
     cdef Atom createAtom(const cHandle& handle):
-        return Atom(PtrHolder.create(<shared_ptr[void]&>handle))
+        # Create temporary Handle that is not const, so that we can then
+        # use it to create the desired ValuePtr. If we don't do this,
+        # then cython warns either of failing to use the correct
+        # C++ shared_ptr casting methods, or ir errors out with
+        # casting away constness.
+        cdef cHandle nch = handle
+        return Atom(PtrHolder.create(<shared_ptr[cValue]&>(nch, nch.get())))
 
     cdef cHandle get_c_handle(Atom self):
         """Return C++ shared_ptr from PtrHolder instance"""
@@ -24,7 +30,7 @@ cdef class Atom(Value):
     @property
     def atomspace(self):
         cdef cAtomSpace* a = self.get_c_handle().get().getAtomSpace()
-        return AtomSpace_factory(a)
+        return AtomSpace_factoid(as_cast(a))
 
     @property
     def name(self):
@@ -32,7 +38,7 @@ cdef class Atom(Value):
         if self._name is None:
             atom_ptr = self.handle.atom_ptr()
             if atom_ptr == NULL:   # avoid null-pointer deref
-                return None
+                raise RuntimeError("Null Atom!")
             if atom_ptr.is_node():
                 self._name = atom_ptr.get_name().decode('UTF-8')
             else:
@@ -44,7 +50,7 @@ cdef class Atom(Value):
         cdef cAtom* atom_ptr = self.handle.atom_ptr()
         cdef tv_ptr tvp
         if atom_ptr == NULL:   # avoid null-pointer deref
-            return None
+            raise RuntimeError("Null Atom!")
         tvp = atom_ptr.getTruthValue()
         if (not tvp.get()):
             raise AttributeError('cAtom returned NULL TruthValue pointer')
@@ -58,7 +64,7 @@ cdef class Atom(Value):
             raise TypeError("atom.tv property needs a TruthValue object")
         cdef cAtom* atom_ptr = self.handle.atom_ptr()
         if atom_ptr == NULL:   # avoid null-pointer deref
-            return
+            raise RuntimeError("Null Atom!")
         atom_ptr.setTruthValue(deref((<TruthValue>truth_value)._tvptr()))
 
     def id_string(self):
@@ -74,14 +80,14 @@ cdef class Atom(Value):
         cdef cValuePtr value = self.get_c_handle().get().getValue(
             deref((<Atom>key).handle))
         if value.get() == NULL:
-            return None
+            raise RuntimeError("Null Atom!")
         return create_python_value_from_c_value(value)
 
     def get_keys(self):
         """
-        Returns the keys of values associated with this atom.
+        Returns the keys of Values associated with this Atom.
 
-        :returns: A list of atoms.
+        :returns: A list of Atoms.
         """
         cdef cpp_set[cHandle] keys = self.get_c_handle().get().getKeys()
         return convert_handle_set_to_python_list(keys)
@@ -89,21 +95,24 @@ cdef class Atom(Value):
     def get_out(self):
         cdef cAtom* atom_ptr = self.handle.atom_ptr()
         if atom_ptr == NULL:   # avoid null-pointer deref
-            return None
+            raise RuntimeError("Null Atom!")
         cdef vector[cHandle] handle_vector = atom_ptr.getOutgoingSet()
         return convert_handle_seq_to_python_list(handle_vector)
 
-    @property
-    def out(self):
+    def to_list(self):
         if self._outgoing is None:
             atom_ptr = self.handle.atom_ptr()
             if atom_ptr == NULL:   # avoid null-pointer deref
-                return None
+                raise RuntimeError("Null Atom!")
             if atom_ptr.is_link():
                 self._outgoing = self.get_out()
             else:
                 self._outgoing = []
         return self._outgoing
+
+    @property
+    def out(self):
+        return self.to_list()
 
     @property
     def arity(self):
@@ -114,21 +123,42 @@ cdef class Atom(Value):
         cdef vector[cHandle] handle_vector
         cdef cAtom* atom_ptr = self.handle.atom_ptr()
         if atom_ptr == NULL:   # avoid null-pointer deref
-            return None
-        atom_ptr.getIncomingIter(back_inserter(handle_vector))
+            raise RuntimeError("Null Atom!")
+        handle_vector = atom_ptr.getIncomingSet()
         return convert_handle_seq_to_python_list(handle_vector)
 
     def incoming_by_type(self, Type type):
         cdef vector[cHandle] handle_vector
         cdef cAtom* atom_ptr = self.handle.atom_ptr()
         if atom_ptr == NULL:   # avoid null-pointer deref
-            return None
-        atom_ptr.getIncomingSetByType(back_inserter(handle_vector), type)
+            raise RuntimeError("Null Atom!")
+        handle_vector = atom_ptr.getIncomingSetByType(type)
         return convert_handle_seq_to_python_list(handle_vector)
 
     def truth_value(self, mean, count):
         self.tv = createTruthValue(mean, count)
         return self
+
+    def is_executable(self):
+        cdef cAtom* atom_ptr = self.handle.atom_ptr()
+        if atom_ptr == NULL:   # avoid null-pointer deref
+            raise RuntimeError("Null Atom!")
+        return atom_ptr.is_executable()
+
+    def execute(self):
+        """
+        Execute the Atom, returning the result of execution.
+
+        :returns: A Value
+        """
+        cdef cAtom* atom_ptr = self.handle.atom_ptr()
+        if atom_ptr == NULL:   # avoid null-pointer deref
+            raise RuntimeError("Null Atom!")
+        if not atom_ptr.is_executable():
+            return self
+
+        cdef cValuePtr c_value_ptr = atom_ptr.execute()
+        return create_python_value_from_c_value(c_value_ptr)
 
     def __richcmp__(self, other, int op):
         assert isinstance(other, Atom), "Only Atom instances are comparable with atoms"

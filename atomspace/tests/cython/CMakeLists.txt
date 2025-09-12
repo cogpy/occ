@@ -1,5 +1,5 @@
 INCLUDE_DIRECTORIES(
-	${PYTHON_INCLUDE_PATH}
+	${Python3_INCLUDE_DIRS}
 	${PROJECT_SOURCE_DIR}/opencog/atomspace
 	${PROJECT_SOURCE_DIR}/opencog/guile
 	${PROJECT_SOURCE_DIR}/opencog/util
@@ -62,9 +62,9 @@ SET_PROPERTY(TEST PythonUtilitiesUTest
 IF (HAVE_NOSETESTS)
 
 	# Basic test, just does the cython wrapper for opencog/util
-	ADD_TEST(Cython ${NOSETESTS_EXECUTABLE} -vs
-		${CMAKE_SOURCE_DIR}/tests/cython/)
-	SET_PROPERTY(TEST Cython
+	ADD_TEST(CythonLogger ${NOSETESTS_EXECUTABLE} -vs
+		${CMAKE_SOURCE_DIR}/tests/cython/logger)
+	SET_PROPERTY(TEST CythonLogger
 		APPEND PROPERTY ENVIRONMENT ${TEST_ENVIRONMENT})
 
 	ADD_TEST(CythonAtomSpace ${NOSETESTS_EXECUTABLE} -vs

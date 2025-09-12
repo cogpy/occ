@@ -24,7 +24,7 @@
 #define _OPENCOG_FORMULA_STREAM_H
 
 #include <vector>
-#include <opencog/atoms/value/StreamValue.h>
+#include <opencog/atoms/value/FloatValue.h>
 #include <opencog/atoms/base/Handle.h>
 #include <opencog/atomspace/AtomSpace.h>
 
@@ -40,10 +40,10 @@ namespace opencog
  * FloatValue, every time it is queried for data.
  */
 class FormulaStream
-	: public StreamValue
+	: public FloatValue
 {
 protected:
-	FormulaStream(Type t) : StreamValue(t) {}
+	FormulaStream(Type t) : FloatValue(t) {}
 
 	void init(void);
 	virtual void update() const;
@@ -63,16 +63,8 @@ public:
 	virtual bool operator==(const Value&) const;
 };
 
-typedef std::shared_ptr<FormulaStream> FormulaStreamPtr;
-static inline FormulaStreamPtr FormulaStreamCast(ValuePtr& a)
-	{ return std::dynamic_pointer_cast<FormulaStream>(a); }
-
-template<typename ... Type>
-static inline std::shared_ptr<FormulaStream> createFormulaStream(Type&&... args)
-{
-	return std::make_shared<FormulaStream>(std::forward<Type>(args)...);
-}
-
+VALUE_PTR_DECL(FormulaStream);
+CREATE_VALUE_DECL(FormulaStream);
 
 /** @}*/
 } // namespace opencog

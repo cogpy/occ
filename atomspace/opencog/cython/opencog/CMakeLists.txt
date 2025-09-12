@@ -15,8 +15,13 @@ SET(CMAKE_INSTALL_RPATH
    "${CMAKE_INSTALL_PREFIX}/lib/opencog"
    "${PYTHON_DEST}")
 
+# Search path for module load paths in load_scm_file_relative()
+ADD_DEFINITIONS(
+	-DCMAKE_INSTALL_PREFIX="\\"${CMAKE_INSTALL_PREFIX}\\""
+)
+
 INCLUDE_DIRECTORIES(
-	${PYTHON_INCLUDE_DIRS}
+	${Python3_INCLUDE_DIRS}
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_BINARY_DIR}
 )
@@ -33,7 +38,7 @@ ADD_LIBRARY(logger_cython
 
 TARGET_LINK_LIBRARIES(logger_cython
 	${COGUTIL_LIBRARY}
-	${PYTHON_LIBRARIES}
+	${Python3_LIBRARIES}
 )
 
 # Python is expecting the shared object to be called `logger.so` and
@@ -47,7 +52,7 @@ SET_TARGET_PROPERTIES(logger_cython PROPERTIES
 CYTHON_ADD_MODULE_PYX(atomspace
 	"atom.pyx" "nameserver.pyx" "truth_value.pyx"
 	"atomspace_details.pyx" "value.pyx" "float_value.pyx" "string_value.pyx"
-	"link_value.pyx" opencog_atom_types
+	"link_value.pyx" "queue_value.pyx" "uniset_value.pyx" "bool_value.pyx" opencog_atom_types
 	"../../atoms/truthvalue/TruthValue.h" "../../atoms/truthvalue/SimpleTruthValue.h"
 	"../../atoms/atom_types/NameServer.h" "../../atoms/base/Handle.h"
 	"../../atomspace/AtomSpace.h"
@@ -57,6 +62,7 @@ list(APPEND ADDITIONAL_MAKE_CLEAN_FILES "atomspace_api.h")
 
 # opencog.atomspace Python bindings
 ADD_LIBRARY(atomspace_cython
+	ExecuteStub.cc
 	atomspace.cpp
 )
 
@@ -73,15 +79,18 @@ ADD_DEPENDENCIES(atomspace_cython opencog_atom_types)
 TARGET_LINK_LIBRARIES(atomspace_cython
 	${NO_AS_NEEDED}
 	atomspace
-	smob
-	${PYTHON_LIBRARIES}
+	${Python3_LIBRARIES}
 )
+
+IF(HAVE_GUILE)
+	TARGET_LINK_LIBRARIES(atomspace_cython smob)
+ENDIF(HAVE_GUILE)
 
 SET_TARGET_PROPERTIES(atomspace_cython PROPERTIES
 	PREFIX ""
 	OUTPUT_NAME atomspace)
 
-# The cogserver needs the atomspace pxd file to get the Handle, Atom and
+# The cogserver needs the atomspace.pxd file to get the Handle, Atom and
 # AtomSpace definitions during compilation. So this must be installed.
 INSTALL (FILES
 	__init__.py
@@ -92,6 +101,9 @@ INSTALL (FILES
 )
 
 ############################## type constructors #####################
+# FYI The second and remaining args to CYTHON_ADD_MODULE_PYX are
+# dependencies, telling cmake what order to build things in,
+# and when a rebuild is needed.
 
 CYTHON_ADD_MODULE_PYX(type_constructors
 	"atomspace.pxd" opencog_atom_types
@@ -104,7 +116,7 @@ ADD_LIBRARY(type_constructors
 TARGET_LINK_LIBRARIES(type_constructors
 	${NO_AS_NEEDED}
 	atomspace
-	${PYTHON_LIBRARIES}
+	${Python3_LIBRARIES}
 )
 
 SET_TARGET_PROPERTIES(type_constructors PROPERTIES
@@ -115,7 +127,7 @@ SET_TARGET_PROPERTIES(type_constructors PROPERTIES
 ############################## utilities #####################
 
 CYTHON_ADD_MODULE_PYX(utilities
-	"atomspace.pxd" opencog_atom_types
+	"atomspace.pxd" "utilities.pxd" opencog_atom_types
 )
 
 ADD_LIBRARY(utilities_cython
@@ -126,14 +138,22 @@ ADD_LIBRARY(utilities_cython
 TARGET_LINK_LIBRARIES(utilities_cython
 	PythonEval
 	atomspace
-	type_constructors
 	executioncontext
-	${PYTHON_LIBRARIES}
+	${Python3_LIBRARIES}
 )
 
 SET_TARGET_PROPERTIES(utilities_cython PROPERTIES
 	PREFIX ""
 	OUTPUT_NAME utilities)
+
+INSTALL (TARGETS utilities_cython EXPORT AtomSpaceTargets
+   DESTINATION "lib${LIB_DIR_SUFFIX}/opencog"
+)
+
+INSTALL (FILES
+	Utilities.h
+	DESTINATION "include/opencog/cython/opencog"
+)
 
 ############################## execute module #####################
 
@@ -143,21 +163,20 @@ CYTHON_ADD_MODULE_PYX(execute
 )
 
 ADD_LIBRARY(exec_cython
-	"BindlinkStub.cc"
 	"execute.cpp"
 )
 
 TARGET_LINK_LIBRARIES(exec_cython
 	atomspace_cython
 	atomspace
-	${PYTHON_LIBRARIES}
+	${Python3_LIBRARIES}
 )
 
 SET_TARGET_PROPERTIES(exec_cython PROPERTIES
 	PREFIX ""
 	OUTPUT_NAME execute)
 
-### install the modules ###
+### Install the modules ###
 INSTALL(TARGETS
 	atomspace_cython
 	exec_cython
@@ -166,12 +185,18 @@ INSTALL(TARGETS
 	utilities_cython
 	DESTINATION "${PYTHON_DEST}")
 
-# install the legacy bindlink module
-INSTALL(FILES
-	"bindlink.py"
-	"exec.py"
-	"scheme_wrapper.py"
-	DESTINATION "${PYTHON_DEST}")
+# This custom target allows *only* the Python bindings to be installed;
+# this is intended for use when installing into a python virtual env.
+# Unfortunately, this is a crummy solution, and really install should
+# be fixed so that everything goes into the virtualenv, including guile.
+# But guile wants to go into ${GUILE_SITE_DIR} and not into
+# $ENV{VIRTUAL_ENV}, which is what python wants. Argh. Its a mess.
+ADD_CUSTOM_TARGET(PythonBindings DEPENDS
+	atomspace_cython
+	exec_cython
+	logger_cython
+	type_constructors
+	utilities_cython)
 
 IF (HAVE_GUILE)
 	############################## scheme wrapper #####################
@@ -193,7 +218,7 @@ IF (HAVE_GUILE)
 		atomspace_cython
 		atomspace
 		smob
-		${PYTHON_LIBRARIES}
+		${Python3_LIBRARIES}
 	)
 
 	SET_TARGET_PROPERTIES(scheme PROPERTIES

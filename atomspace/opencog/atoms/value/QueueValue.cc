@@ -25,13 +25,15 @@
 
 using namespace opencog;
 
+typedef concurrent_queue<ValuePtr> conq;
+
 // ==============================================================
 
 QueueValue::QueueValue(const ValueSeq& vseq)
-	: LinkStreamValue(QUEUE_VALUE)
+	: ContainerValue(QUEUE_VALUE)
 {
 	for (const ValuePtr& v: vseq)
-		push(v); // concurrent_queue<ValutePtr>::push(v);
+		push(v); // concurrent_queue<ValuePtr>::push(v);
 
 	// Since this constructor placed stuff on the queue,
 	// we also close it, to indicate we are "done" placing
@@ -56,7 +58,7 @@ QueueValue::QueueValue(const ValueSeq& vseq)
 void QueueValue::update() const
 {
 	// Do nothing; we don't want to clobber the _value
-	if (is_closed() and 0 == concurrent_queue<ValuePtr>::size()) return;
+	if (is_closed() and 0 == conq::size()) return;
 
 	// Reset, to start with.
 	_value.clear();
@@ -71,7 +73,7 @@ void QueueValue::update() const
 			_value.emplace_back(val);
 		}
 	}
-	catch (typename concurrent_queue<ValuePtr>::Canceled& e)
+	catch (typename conq::Canceled& e)
 	{}
 
 	// If we are here, the queue closed up. Reopen it
@@ -88,6 +90,71 @@ void QueueValue::update() const
 
 // ==============================================================
 
+void QueueValue::open()
+{
+	if (not conq::is_closed()) return;
+	conq::open();
+}
+
+void QueueValue::close()
+{
+	if (conq::is_closed()) return;
+	conq::close();
+}
+
+bool QueueValue::is_closed() const
+{
+	return conq::is_closed();
+}
+
+// ==============================================================
+
+void QueueValue::add(const ValuePtr& vp)
+{
+	conq::push(vp);
+}
+
+void QueueValue::add(ValuePtr&& vp)
+{
+	conq::push(vp);
+}
+
+ValuePtr QueueValue::remove(void)
+{
+	return conq::value_pop();
+}
+
+size_t QueueValue::size(void) const
+{
+	if (is_closed())
+	{
+		if (0 != conq::size()) update();
+		return _value.size();
+	}
+	return conq::size();
+}
+
+// ==============================================================
+
+void QueueValue::clear()
+{
+	// Reset contents
+	_value.clear();
+
+	// Do nothing; we don't want to clobber the _value
+	if (conq::is_closed())
+	{
+		conq::wait_and_take_all();
+		return;
+	}
+
+	conq::close();
+	conq::wait_and_take_all();
+	conq::open();
+}
+
+// ==============================================================
+
 bool QueueValue::operator==(const Value& other) const
 {
 	// Derived classes use this, so use get_type()
@@ -99,6 +166,20 @@ bool QueueValue::operator==(const Value& other) const
 	if (not ((const QueueValue*) &other)->is_closed()) return false;
 
 	return LinkValue::operator==(other);
+}
+
+std::string QueueValue::to_string(const std::string& indent) const
+{
+	// The default printer for QueueValue is LinkValue ...
+	// with only one small problem: it will hang if the queue
+	// is open. So we use it only if it is closed. Otherwise
+	// we must punt. I mean, we could maybe print the contents
+	// of an active queue, but this would be ... misleading,
+	// as those contents would be changing even as the printer is
+	// running. And would certanily be stale by the time the
+	// print string is returned to the user.
+	if (is_closed()) return LinkValue::to_string(indent);
+	return indent + "(QueueValue) ;; currently open for writing";
 }
 
 // ==============================================================

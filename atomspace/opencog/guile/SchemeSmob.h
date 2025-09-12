@@ -171,8 +171,6 @@ private:
 	static SCM ss_tv_get_mean(SCM);
 	static SCM ss_tv_get_confidence(SCM);
 	static SCM ss_tv_get_count(SCM);
-	static SCM ss_tv_merge(SCM, SCM);
-	static SCM ss_tv_merge_hi_conf(SCM, SCM);
 
 	// Atom Spaces
 	static SCM ss_new_as(SCM);
@@ -196,6 +194,7 @@ private:
 	static SCM ss_is_closed(SCM);
 
 	// Misc utilities
+	static SCM convert_to_utf8(void *, SCM, SCM);
 	static std::string to_string(SCM);
 	static std::string protom_to_string(SCM);
 	static std::string protom_to_server_string(SCM);

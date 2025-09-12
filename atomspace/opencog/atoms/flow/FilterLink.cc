@@ -28,6 +28,7 @@
 #include <opencog/atoms/core/VariableSet.h>
 #include <opencog/atoms/rule/RuleLink.h>
 #include <opencog/atoms/value/LinkValue.h>
+#include <opencog/atoms/value/ContainerValue.h>
 
 #include "FilterLink.h"
 #include "LinkSignatureLink.h"
@@ -53,7 +54,7 @@ void FilterLink::init(void)
 		termpat = DefineLink::get_definition(termpat);
 		if (nullptr == termpat)
 			throw SyntaxException(TRACE_INFO,
-				"FilterLink cannot find defnition for %s",
+				"FilterLink cannot find definition for %s",
 				_outgoing[0]->to_string().c_str());
 
 		tscope = termpat->get_type();
@@ -80,7 +81,7 @@ void FilterLink::init(void)
 	// re-write that should be performed.  Viz, RuleLinks are
 	// of the form P(x)->Q(x).  Here, the `_rewrite` is the Q(x)
 	if (nameserver().isA(tscope, RULE_LINK))
-		_rewrite = RuleLinkCast(_pattern)->get_implicand();
+		_rewrite = RuleLinkCast(HandleCast(_pattern))->get_implicand();
 
 	// Locate all GlobNodes in the pattern
 	FindAtoms fgn(GLOB_NODE, true);
@@ -372,6 +373,17 @@ bool FilterLink::extract(const Handle& termpat,
 		return false;
 	}
 
+	// Search for a specific StringValue. There's not way to
+	// place StringValues directly into the pattern, but it
+	// can be encoded with StringOfLink. Note this is a content
+	// compare, not a pointer compare, because values are not
+	// de-duped.
+	if (STRING_OF_LINK == t)
+	{
+		ValuePtr patval = termpat->execute();
+		return (*patval == *vgnd);
+	}
+
 	// If they are (non-variable) nodes, they must be identical.
 	if (not termpat->is_link())
 		return (termpat == vgnd);
@@ -545,11 +557,17 @@ ValuePtr FilterLink::rewrite_one(const ValuePtr& vterm,
 	// beta-reduction; we've already done that, during matching.
 	for (const Handle& impl : _rewrite)
 	{
-		ValuePtr red(_mvars->substitute_nocheck(impl, valseq));
-		if (red->is_atom() and HandleCast(red)->is_executable())
+		ValuePtr red(_mvars->substitute_nocheck(impl, valseq, false, true));
+		if (red->is_atom())
 		{
-			ValuePtr v(HandleCast(red)->execute(scratch, silent));
-			if (v) rew.emplace_back(v);
+			const Handle& hred(HandleCast(red));
+			if (hred->is_executable())
+			{
+				ValuePtr v(hred->execute(scratch, silent));
+				if (v) rew.emplace_back(v);
+			}
+			else
+				rew.emplace_back(scratch->add_atom(hred));
 		}
 		else
 			rew.emplace_back(red);
@@ -567,7 +585,7 @@ ValuePtr FilterLink::rewrite_one(const ValuePtr& vterm,
 	{
 		// Type kind = LinkSignatureLinkCast(body)->get_kind();
 		// if (LINK_VALUE == kind) ...
-		return createLinkValue(rew);
+		return createLinkValue(std::move(rew));
 	}
 
 	// A list of Handles.
@@ -584,9 +602,20 @@ ValuePtr FilterLink::execute(AtomSpace* as, bool silent)
 	{
 		vex = _outgoing[1]->execute(as, silent);
 
-		// XXX TODO FIXME -- if vex is a stream, e.g. a QueueValue,
-		// then we should construct another Queue as the return value,
-		// and perform filtering on-demand.
+		// If it's a container, and its not closed, then pull
+		// one value out, and process it. Else if its closed,
+		// fall through, and let the next stage handle it.
+		if (vex->is_type(CONTAINER_VALUE))
+		{
+			ContainerValuePtr cvp = ContainerValueCast(vex);
+			if (not cvp->is_closed())
+			{
+				ValuePtr mone = rewrite_one(cvp->remove(), as, silent);
+				return createLinkValue(mone);
+			}
+			// If it is closed, fall through.
+		}
+
 		if (vex->is_type(LINK_VALUE))
 		{
 			ValueSeq remap;
@@ -595,7 +624,7 @@ ValuePtr FilterLink::execute(AtomSpace* as, bool silent)
 				ValuePtr mone = rewrite_one(vp, as, silent);
 				if (nullptr != mone) remap.emplace_back(mone);
 			}
-			return createLinkValue(remap);
+			return createLinkValue(std::move(remap));
 		}
 	}
 
@@ -631,7 +660,7 @@ ValuePtr FilterLink::execute(AtomSpace* as, bool silent)
 			remap.emplace_back(rewrite_one(v, as, silent));
 
 		if (1 == remap.size()) return remap[0];
-		return createLinkValue(remap);
+		return createLinkValue(std::move(remap));
 	}
 
 	// Its a singleton. Just remap that.
