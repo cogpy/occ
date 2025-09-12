@@ -25,8 +25,9 @@
 #define _OPENCOG_RANDOM_H
 
 #include <iomanip>
-
-#include <boost/numeric/conversion/cast.hpp>
+#include <sstream>
+#include <limits>
+#include <type_traits>
 
 #include <opencog/util/dorepeat.h>
 #include <opencog/util/RandGen.h>
@@ -104,15 +105,18 @@ T gaussian_rand(T mean, T std_dev, RandGen& rng=randGen())
     double val = mean + std_dev *
         std::sqrt(-2.0 * std::log(rng.randdouble_one_excluded())) *
         std::cos(2.0 * M_PI * rng.randdouble_one_excluded());
-    T res;
-    try {
-        res = boost::numeric_cast<T>(val);
-    } catch(boost::numeric::positive_overflow&) {
-        res = std::numeric_limits<T>::max();
-    } catch(boost::numeric::negative_overflow&) {
-        res = std::numeric_limits<T>::min();
+
+    // Handle overflow/underflow without Boost
+    if (std::is_integral<T>::value) {
+        // For integral types, clamp to min/max values
+        if (val > static_cast<double>(std::numeric_limits<T>::max())) {
+            return std::numeric_limits<T>::max();
+        } else if (val < static_cast<double>(std::numeric_limits<T>::min())) {
+            return std::numeric_limits<T>::min();
+        }
     }
-    return res;
+
+    return static_cast<T>(val);
 }
 
 //! linear biased random bool, b in [0,1] when b tends to 1 the result
