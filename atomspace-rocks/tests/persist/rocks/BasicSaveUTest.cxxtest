@@ -25,6 +25,7 @@
  * Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#include <unistd.h>
 #include <cstdio>
 
 #include <opencog/atoms/base/Atom.h>
@@ -62,6 +63,7 @@ class BasicSaveUTest :  public CxxTest::TestSuite
             logger().set_level(Logger::INFO);
             // logger().set_level(Logger::DEBUG);
             logger().set_print_to_stdout_flag(true);
+            logger().set_sync_flag(true);
 
             uri = "rocks:///tmp/cog-rocks-unit-test";
         }
@@ -158,18 +160,21 @@ static void atomCompare(AtomPtr a, AtomPtr b, const char* where)
  */
 void BasicSaveUTest::single_atom_save_restore(std::string id)
 {
-    RocksStorage *store = new RocksStorage(uri);
+    RocksStorageNodePtr store = createRocksStorageNode(std::string(uri));
+    logger().debug("single_atom_save_restore: create %p", store.get());
     store->open();
+    logger().debug("single_atom_save_restore: opened");
     if (!store->connected())
     {
         logger().debug("single_atom_save_restore: cannot connect to storage");
         TSM_ASSERT("cannot connect to storage", false);
         return;
     }
+    logger().debug("single_atom_save_restore: connected");
 
     // Create an atom ...
     AtomPtr a(createNode(SCHEMA_NODE, id + "someNode"));
-    TruthValuePtr stv(SimpleTruthValue::createTV(0.55, 0.6));
+    TruthValuePtr stv(createSimpleTruthValue(0.55, 0.6));
     a->setTruthValue(stv);
 
     Handle h = a->get_handle();
@@ -180,12 +185,20 @@ void BasicSaveUTest::single_atom_save_restore(std::string id)
     store->storeAtom(h, true);
     store->barrier();
     printf("Done storing single node\n");
+    fflush(stdout);
 
     // Fetch it back ...
     std::string nam = id + "someNode";
     Handle b = createNode(SCHEMA_NODE, nam);
+    logger().debug("single_atom_save_restore: try to get");
+    logger().debug("single_atom_save_restore: try to get schema=%s",
+        b->to_string().c_str());
     store->getAtom(b);
+    logger().debug("single_atom_save_restore: Got the Atom");
+    logger().debug("single_atom_save_restore: Got the schema=%s",
+        b->to_string().c_str());
     printf("Done fetching single node\n");
+    fflush(stdout);
 
     // Are they equal ??
     atomCompare(a, b, "Single node save-restore");
@@ -203,14 +216,16 @@ void BasicSaveUTest::single_atom_save_restore(std::string id)
     store->storeAtom(l->get_handle(), true);
     store->barrier();
     printf("Done storing single link\n");
+    fflush(stdout);
 
     Handle hl(createLink(LIST_LINK, a->get_handle(), a2->get_handle()));
     store->getAtom(hl);
     atomCompare(l, hl, "Single link save-restore");
     printf("Done fetching single link\n");
+    fflush(stdout);
 
     store->kill_data();
-    delete store;
+    store->close();
 }
 
 // ============================================================
@@ -219,13 +234,13 @@ void BasicSaveUTest::add_to_table(int idx, AtomSpace *table, std::string id)
 {
     // Create an atom ...
     n1[idx] = createNode(SCHEMA_NODE, id + "fromNode");
-    TruthValuePtr stv(SimpleTruthValue::createTV(0.11, 1.0/(100.0+idx)));
+    TruthValuePtr stv(createSimpleTruthValue(0.11, 1.0/(100.0+idx)));
     n1[idx]->setTruthValue(stv);
     n1[idx] = table->add_atom(n1[idx]);
     a1[idx] = n1[idx];
 
     n2[idx] = createNode(SCHEMA_NODE, id + "toNode");
-    TruthValuePtr stv2(SimpleTruthValue::createTV(0.22, 1.0/(200.0+idx)));
+    TruthValuePtr stv2(createSimpleTruthValue(0.22, 1.0/(200.0+idx)));
     n2[idx]->setTruthValue(stv2);
     n2[idx] = table->add_atom(n2[idx]);
     a2[idx] = n2[idx];
@@ -236,7 +251,7 @@ void BasicSaveUTest::add_to_table(int idx, AtomSpace *table, std::string id)
     n3[idx] = createNode(SCHEMA_NODE, qmark + id + "third ? wheel");
 
     // We need to test crazy-large and crazy-small float point values.
-    TruthValuePtr stv3(SimpleTruthValue::createTV(1.0e33/3.0, (1.0e-30)/(300.0+idx)));
+    TruthValuePtr stv3(createSimpleTruthValue(1.0e33/3.0, (1.0e-30)/(300.0+idx)));
     n3[idx]->setTruthValue(stv3);
     n3[idx] = table->add_atom(n3[idx]);
     a3[idx] = n3[idx];
@@ -247,7 +262,7 @@ void BasicSaveUTest::add_to_table(int idx, AtomSpace *table, std::string id)
     n4[idx] = createNode(NUMBER_NODE, buf);
 
     // We need to test crazy-large and crazy-small float point values.
-    TruthValuePtr stv4(SimpleTruthValue::createTV((4.0e-200)/9.0, 1.0e40/(400.0+idx)));
+    TruthValuePtr stv4(createSimpleTruthValue((4.0e-200)/9.0, 1.0e40/(400.0+idx)));
     n4[idx]->setTruthValue(stv4);
     n4[idx] = table->add_atom(n4[idx]);
     a4[idx] = n4[idx];
@@ -322,12 +337,12 @@ void BasicSaveUTest::test_fresh_atom(void)
 
     // Store a ListLink with stuff in it.
     Handle lf(createLink(LIST_LINK, ha, hb));
-    lf->setTruthValue(SimpleTruthValue::createTV(0.55, 0.6));
+    lf->setTruthValue(createSimpleTruthValue(0.55, 0.6));
     store->storeAtom(lf, true);
 
     // Store an empty ListLink.
     Handle le(createLink(HandleSeq(), LIST_LINK));
-    le->setTruthValue(SimpleTruthValue::createTV(0.1, 0.9));
+    le->setTruthValue(createSimpleTruthValue(0.1, 0.9));
     store->storeAtom(le, true);
     store->barrier();
 
@@ -345,6 +360,7 @@ void BasicSaveUTest::test_fresh_atom(void)
     atomCompare(le, he, "Empty Fresh");
 
     store->kill_data();
+    store->close();
     delete store;
 
     logger().debug("END TEST: %s", __FUNCTION__);
@@ -382,6 +398,7 @@ void BasicSaveUTest::test_table()
         printf("Store table has %s\n", h->to_string().c_str());
     }
 #endif
+    store->close();
     delete store;
     delete as1;
     printf("Done storing table; size=%lu\n", num_stored);
@@ -411,6 +428,7 @@ void BasicSaveUTest::test_table()
     check_table(idx++, table2, "eee ");
 
     store->kill_data();
+    store->close();
     delete store;
     delete as2;
 

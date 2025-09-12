@@ -36,6 +36,7 @@
 #include <opencog/atomspace/AtomSpace.h>
 
 #include <opencog/persist/api/StorageNode.h>
+#include <opencog/persist/rocks-types/atom_types.h>
 
 #include <opencog/util/Logger.h>
 
@@ -103,7 +104,7 @@ void MultiDeleteUTest::worker(int thread_id)
 		{
 			int id = (thread_id + i) % (thread_id + 7);
 			Handle hb(as->add_node(CONCEPT_NODE, std::to_string(id)));
-			Handle li(as->add_link(LIST_LINK, ha, hb, ha, hb));
+			Handle li(as->add_link(LIST_LINK, {ha, hb, ha, hb}));
 
 			// Store the link.
 			store->store_atom(li);
@@ -113,7 +114,7 @@ void MultiDeleteUTest::worker(int thread_id)
 		{
 			int id = (thread_id + i) % (thread_id + 7);
 			Handle hb(as->get_node(CONCEPT_NODE, std::to_string(id)));
-			Handle li(as->get_link(LIST_LINK, ha, hb, ha, hb));
+			Handle li(as->get_link(LIST_LINK, {ha, hb, ha, hb}));
 
 			// If it's already gone, do nothing.
 			if (nullptr == li) continue;

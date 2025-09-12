@@ -583,10 +583,11 @@ void RocksStorage::getKeysMonospace(AtomSpace* as,
 
 		size_t junk = 0;
 		ValuePtr vp = Sexpr::decode_value(it->value().ToString(), junk);
-		if (vp) vp = as->add_atoms(vp);
-
 		if (as)
+		{
+			if (vp) vp = as->add_atoms(vp);
 			as->set_value(h, key, vp);
+		}
 		else
 			h->setValue(key, vp);
 	}
@@ -1117,7 +1118,7 @@ void RocksStorage::loadAtoms(AtomSpace* as)
 	{
 		Handle h = Sexpr::decode_atom(it->value().ToString());
 		h = add_nocheck(as, h);
-		// There's a trailing colo. drop it.
+		// There's a trailing colon. Drop it.
 		const std::string& sidcolon = it->key().ToString().substr(2);
 		size_t len = sidcolon.size();
 		getKeysMonospace(as, sidcolon.substr(0, len-1), h);
