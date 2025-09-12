@@ -8,43 +8,26 @@
 
 ; --------------------------------------------------------
 ; Basic demo: Open a file for writing, and place some text into it.
-; Open the file for writing; create it if it does not exist.
-; Position cursor at the end of the file (for appending).
-; The returned stream should be thought of as a cursor into the file.
-(define txt-stream
-	(cog-execute!
-		(Open (Type 'TextFileStream) (Sensory "file:///tmp/foobar.txt"))))
+; Unlike the File reader, which returns a stream that can be read from,
+; the writer is implemented by the object itself. Reader streams are
+; opened automatically when the stream is created. Writers must be
+; explicitly opened before writing.
+;
+; Upon opening, the file is created, if it does not exist.
+; The cursor is positioned at the end of the file (for appending).
+(define text-file (TextFile "file:///tmp/foobar.txt"))
+
+(cog-execute!
+	(SetValue text-file (Predicate "*-open-*") (Type 'StringValue)))
 
 ; Perform `ls -la /tmp/foo*` and you should see a file of zero length.
 
-; A WriteLink consists of two parts: where to write, and what
-; to write. Since the write cursor is a Value, not an Atom, we
-; cannot specify it directly. Thus, we place it at an anchor
-; point. (Neither the name "file anchor", nor the key "output place"
-; matter. They can be anything, and any atom can be used in their
-; place, including Links.)
-(cog-set-value!
-	(Concept "file anchor") (Predicate "output place") txt-stream)
+; Write some text to the file.
+(cog-set-value! text-file
+	(Predicate "*-write-*") (StringValue "Hello there!\n"))
 
-; Create a WriteLink
-(define writer
-	(WriteLink
-		(ValueOf (Concept "file anchor") (Predicate "output place"))
-		(Concept "stuff to write to the file\n")))
-
-; Creating above does not write anything to the file.
-; Verify this with another `ls -la /tmp/foo*`
-
-; Write stuff to the file.
-(cog-execute! writer)
-
-; Verify that it was written: `cat /tmp/foobar.txt`
-(cog-execute! writer)
-
-; Do it a few more times.
-(cog-execute! writer)
-(cog-execute! writer)
-(cog-execute! writer)
+(cog-set-value! (TextFile "file:///tmp/foobar.txt")
+	(Predicate "*-write-*") (StringValue "How are you?\n"))
 
 ; --------------------------------------------------------
 ; Demo: Perform indirect streaming. The text to write will be placed as
@@ -53,15 +36,14 @@
 (cog-set-value!
 	(Concept "source") (Predicate "key")
 	(StringValue
-		"some text\n"
-		"without a newline"
+		"Some text\n"
+		"Without a newline "
 		"after it\n"
 		"Goodbye!\n"))
 
-; Redefine the writer.
+; Define a writer, that, when executed, will write to the file.
 (define writer
-	(WriteLink
-		(ValueOf (Concept "file anchor") (Predicate "output place"))
+	(SetValue text-file (Predicate "*-write-*")
 		(ValueOf (Concept "source") (Predicate "key"))))
 
 ; Write it out.
@@ -75,17 +57,27 @@
 ; Demo: Combine the reader and the writer to perform a file copy.
 ; Just as in the `file-read.scm` demo, the demo file should be copied
 ; to the temp directory, first: `cp demo.txt /tmp`
+(copy-file "demo.txt" "/tmp/demo.txt")
 
-; Instead of using the custom scheme API `cog-set-value`, use the
-; generic cog-execute! instead, and the SetValueLink to wire things
-; into place.
+; The writer was previously configured (just a few lines up above)
+; to obtain text from (Concept "source") (Predicate "key"). Here,
+; we replace that text with a file reader stream. Thus, when the
+; writer is executed, it will suck text out of this stream, and
+; write it to the output file.
+(define input-text-file (TextFile "file:///tmp/demo.txt"))
 (cog-execute!
 	(SetValue
 		(Concept "source") (Predicate "key")
-		(Open (Type 'TextFileStream) (Sensory "file:///tmp/demo.txt"))))
+		(ValueOf input-text-file (Predicate "*-stream-*"))))
 
-; Running the writer will enter an infinite loop, pulling one line
-; at a time from the input file, and writing it to the output file.
+; Open it before we do anything else.
+(define please-be-kind-rewind
+   (SetValue input-text-file (Predicate "*-open-*") (Type 'StringValue)))
+
+(cog-execute! please-be-kind-rewind)
+
+; Running the writer will enter a loop (infinite loop), pulling one
+; line at a time from the input file, and writing it to the output file.
 ; The loop exits when end-of-file is reached.
 (cog-execute! writer)
 
@@ -96,12 +88,9 @@
 ; were no changes: `cat /tmp/foobar.txt`
 (cog-execute! writer)
 
-; Get a fresh handle to the input stream. Each call
-; to SetValue will create a new file handle.
-(cog-execute!
-	(SetValue
-		(Concept "source") (Predicate "key")
-		(Open (Type 'TextFileStream) (Sensory "file:///tmp/demo.txt"))))
+; Get a fresh input stream. Each execution of SetValue will create
+; a new stream.
+(cog-execute! please-be-kind-rewind)
 
 ; And now write again:
 (cog-execute! writer)
@@ -116,7 +105,7 @@
 (cog-execute!
 	(SetValue
 		(Concept "source") (Predicate "raw file input key")
-		(Open (Type 'TextFileStream) (Sensory "file:///tmp/demo.txt"))))
+		(ValueOf input-text-file (Predicate "*-stream-*"))))
 
 ; Define a rule that will take each line of input text, and
 ; process it in some way. In this case, it will just make
@@ -130,7 +119,7 @@
 (define rule-applier
 	(Filter
 		(Rule
-			(TypedVariable (Variable "$x") (Type 'ItemNode))
+			(TypedVariable (Variable "$x") (Type 'StringValue))
 			(Variable "$x")
 			(LinkSignature
 				(Type 'LinkValue)
@@ -150,7 +139,7 @@
 ; stream, until end-of-file. For that, create a promise to do that,
 ; when executed.
 (define prom
-	(Promise (TypeNode 'FutureStream)  rule-applier))
+	(Promise (TypeNode 'FutureStream) rule-applier))
 
 ; Designate the promise as the source of data for the file writer.
 (cog-execute!
@@ -159,19 +148,15 @@
 ; Run the file-writer. This uses exactly the same definition as before.
 ; Be sure to `ls -la /tmp/foobar.txt` before and after running this,
 ; or just `cat` it, to see the output file contents change.
+(cog-execute! please-be-kind-rewind)
 (cog-execute! writer)
 
 ; Do it again. Nothing happens, because the input file cursor is at
 ; the end of file.
 (cog-execute! writer)
 
-; Reset the input file cursor. (or pick a new input file.)
-(cog-execute!
-	(SetValue
-		(Concept "source") (Predicate "raw file input key")
-		(Open (Type 'TextFileStream) (Sensory "file:///tmp/demo.txt"))))
-
-; Now, the writer will run again.
+; Rewind, and try again.
+(cog-execute! please-be-kind-rewind)
 (cog-execute! writer)
 
 ; If unclear about the promise, you can explore it several ways.

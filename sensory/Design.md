@@ -21,7 +21,7 @@ design choices governing the system.
   the ReadLink & WriteLink. (early April 2024)
 * [Notes Part B](DesignNotes-B.md) -- Basic idea of Action/Perception
   and basic idea of a DTD (Document Type Definition) or IDL (Interface
-  Description Lanuage) for IRC chat.  First description of using Link
+  Description Language) for IRC chat.  First description of using Link
   Grammar Sections for the DTD/IDL.
   (mid-April 2024)
 * [Notes Part C](DesignNotes-C.md) -- Sketch how to create a netlist
@@ -33,9 +33,35 @@ design choices governing the system.
   (late-April 2024)
 * [Notes Part E](DesignNotes-E.md) -- Pipe and matrix ruminations.
   (early May 2024)
+* [Notes Part F](DesignNotes-F.md) -- Recursion, decision making.
+  How to perform recursive walks of observable networks.
+  (Christmas 2024)
+* [Notes Part G](DesignNotes-G.md) -- Flow Type conversions.
+  The `FilterLink` can be used to alter stream flows, but its awkward.
+  (February 2025)
+* [Notes Part H](DesignNotes-H.md) -- Vector Similarity.
+  Initial thinking on evidence-gathering and how this can be handled
+  by an agent. (April 2025)
+* [Notes Part I](DesignNotes-I.md) -- Sending Messages.
+  This arcs back to older issues: old, existing parts of the AtomSpace
+  look like objects, and, much like OO object-oriented objects, we
+  want to send them messages. This seems to solve some old problems
+  while also making contact with current work. (August 2025)
+* [Notes Part J](DesignNotes-J.md) -- Objects and Streams.
+  Contemplating a major rewrite, which is undertaken. The old
+  implementation is now called version 0 or v0.
 
 Current Implementation
 ----------------------
+The code base is being ported to a new API. Under construction.
+
+Version Zero Implementation
+---------------------------
+Version zero of the sensory API is problematic: it confuses the role
+of streams and objects. This implementation got to be fairly large,
+before the failure, and a fix for it, became apparent.  It is being
+kept here as a reference for the port to the Version One API.
+
 Documentation for the implementation internals. Lowlevel stuff. See the
 [examples](examples) directory for demos on how this stuff should be
 *used*. By contrast, the below explains how it *works*, which most
@@ -56,10 +82,12 @@ The `OpenLink` API is
 		(TypeNode 'FoobarStream) ; e.g. TextFileStream or IRChatStream
 		(SensoryNode "url://of/some/sort")) ; e.g file:// or irc://
 ```
-The `TypeNode` must indicate a valid Atomese type that can be created.
-The `SensoryNode` is just some text passed into the stream constructor.
+The `TypeNode` must indicate a valid Atomese ValyeStream type.
+The `SensoryNode` is some configuration text passed into the stream
+constructor.
 
-Currently supported are `TextFileStream` and `IRChatStream`
+Currently supported are `TextFileStream`, `TerminalStream` and
+`IRChatStream`.
 
 The `WriteLink` API is
 ```
@@ -73,7 +101,7 @@ things that return the desired streams.
 How does the C++ perform the write?
 ```
 class OutputStream
-	: public LinkStreamValue
+	: public LinkValue
 {
 	virtual ValuePtr write_out(const Handle&) = 0;
 };
@@ -107,9 +135,12 @@ TODO List
 ---------
 * The text API should probably be changed to use StringValue instead
   of ItemNode. But this breaks LG parser, for now. FIXME
+  See [Design Notes G](DesignNotes-G.md) for more.
 * The text file reader should probably throw on end-of-file, instead
   of returning empty content. This would allow intermediate processors
   to have an easier time of it.
+* An exception-handling architecture is needed.
+* Probably need a `CloseLink`.
 * The concurrent queue should be changed to finite-size buffer and
   discard old data. Goal is to avoid unbounded-size chat buffers.
 * The NICK command gets a badly-parsed response if the nick is in use.

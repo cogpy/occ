@@ -1,9 +1,14 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0.1)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 SET(CMAKE_INSTALL_MESSAGE LAZY)
 
 PROJECT(sensory)
 
-# Cogutil
+# Setting this will use -O3 -g -flto and the -flto flag is slow.
+SET(CMAKE_BUILD_TYPE Release)
+# SET(CMAKE_BUILD_TYPE Debug)
+
+# ----------------------------------------------------------
+# Cogutil. Required prerequisite.
 FIND_PACKAGE(CogUtil 2.0.3 CONFIG REQUIRED)
 IF(COGUTIL_FOUND)
 	SET(HAVE_COGUTIL 1)
@@ -33,7 +38,7 @@ ENDIF()
 # Guile Python and Cython
 
 include(OpenCogFindGuile)
-# include(OpenCogFindPython)
+include(OpenCogFindPython)
 
 # Load cmake functions defined in cogutil repo that depend on Guile.
 INCLUDE(OpenCogMacros)
@@ -42,6 +47,7 @@ INCLUDE(OpenCogCython)
 
 # ----------------------------------------------------------
 ADD_SUBDIRECTORY (opencog)
+ADD_SUBDIRECTORY (cmake)
 
 # Unit tests
 ADD_CUSTOM_TARGET(tests)
@@ -58,3 +64,9 @@ ADD_CUSTOM_TARGET(check
 	COMMAND ${CMAKE_CTEST_COMMAND} $(ARGS)
 	COMMENT "Running tests..."
 )
+
+# ===================================================================
+# Show a summary of what we found, what we will do.
+
+SUMMARY_ADD("Python bindings" "Python (cython) bindings" HAVE_CYTHON)
+SUMMARY_SHOW()

@@ -4,7 +4,7 @@ Navigating through directories and interacting with files.
 
 Examples
 --------
-The `TextFileStream` can be used to read and write files. See the
+The `TextFileNode` can be used to read and write files. See the
 [examples](../../../examples) directory.
 
 Design

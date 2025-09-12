@@ -4,7 +4,7 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
 
 ADD_LIBRARY (sensory-terminal SHARED
-	TerminalStream.cc
+	TerminalNode.cc
 )
 
 # Without this, parallel make will race and crap up the generated files.
@@ -22,6 +22,6 @@ INSTALL (TARGETS sensory-terminal EXPORT AtomSpaceTargets
 )
 
 INSTALL (FILES
-	TerminalStream.h
+	TerminalNode.h
 	DESTINATION "include/opencog/atoms/sensory"
 )

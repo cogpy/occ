@@ -28,16 +28,13 @@
 ; Anyway, that's the general plan. The details remain obscure.
 ;
 (use-modules (opencog) (opencog exec) (opencog sensory))
-(use-modules (srfi srfi-1))
 
 ; -----------------------------------------------------------
 ; Preliminary setup.
 
-; Open filesystem node, and anchor it.
-(cog-execute!
-	(SetValue
-		(Anchor "xplor") (Predicate "fsys")
-		(Open (Type 'FileSysStream) (Sensory "file:///tmp"))))
+; Open the filesystem node.
+(define fsnode (FileSysNode "file:///tmp"))
+(cog-set-value! fsnode (Predicate "*-open-*") (Type 'StringValue))
 
 ; In principle, the agent should do the above after discovery.
 ; For now, for this demo, just hard-code it, as above.
@@ -48,23 +45,48 @@
 ; is beside the point; the goal is to have a self-describing
 ; interface. In some programming languages, this is called
 ; "introspection" or "reflection".
-(cog-execute! (Write (ValueOf (Anchor "xplor") (Predicate "fsys"))
+(cog-execute! (SetValue fsnode (Predicate "*-write-*")
 	(Item "pwd")))
 
-(cog-execute! (Write (ValueOf (Anchor "xplor") (Predicate "fsys"))
-	(Item "ls")))
+; The result of doing the pwd is obtained with a read.
+(cog-execute! (ValueOf fsnode (Predicate "*-read-*")))
 
-(cog-execute! (Write (ValueOf (Anchor "xplor") (Predicate "fsys"))
-	(List (Item "cd") (Item "file:///home"))))
+; Don't do this!! Doing this one more time will hang;
+; the current thread is trying to read more sensory info,
+; but there isn't any. The best you can do with a hang is
+; to unblock it, by issueing another command in another thread,
+; or, if you don't have that, then killing guile. Sorry!
+; (cog-execute! (ValueOf fsnode (Predicate "*-read-*")))
 
-(cog-execute! (Write (ValueOf (Anchor "xplor") (Predicate "fsys"))
-	(Item "ls")))
+; A scheme utility will make writing and reading easier.
+(define (run-fs-cmd CMD)
+	(cog-execute! (SetValue fsnode (Predicate "*-write-*") CMD))
+	(cog-execute! (ValueOf fsnode (Predicate "*-read-*"))))
+
+(run-fs-cmd (Item "pwd"))
+(run-fs-cmd (Item "ls"))
+(run-fs-cmd (Item "special"))  ;; special files
+(run-fs-cmd (Item "btime"))    ;; birth time
+(run-fs-cmd (Item "mtime"))    ;; modification time
+(run-fs-cmd (Item "filesize")) ;; filesize
+
+(run-fs-cmd (List (Item "cd") (Item "file:///home")))
+(run-fs-cmd (Item "ls"))
 
 ; --------------------------------------------------------
 ; Now lets look at how the API for the above is represented.
 ; This builds a crude stimulus-reponse pipeline in scheme.
 ; Ultimately, we want such pipes to be in Atomese, not scheme,
 ; but it is easier to poke at bit bits and pieces with scheme.
+
+;;; XXX Everything below here is broken, unimplemented,
+;;; under-designed, half-baked port of a previous version that
+;;; barely never almost even ran and had missing pieces.
+;;; Of course, TODO, finish me.
+;;; A working version can be found in sensory-v0 which is
+;;; is where this is being ported from.
+;;; See the paper on structuralism for more details on a
+;;; possible design.
 
 ; Get the description of what this sensory device provides.
 (define fsys-descr

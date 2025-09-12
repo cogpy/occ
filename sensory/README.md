@@ -9,6 +9,48 @@ A software conception of "basal cognition".
 The experimental lab for this is "perceiving" filesystem files,
 "moving" through directories, and likewise for IRC chat streams.
 
+This is part of a group of inter-related research projects:
+* [Evidence](https://github.com/opencog/evidence), which makes grasping
+  attempts at defining hierarchically justified evidence evaluation.
+  The similarity of two items should be some combination of the
+  similarities of the parts they are made out of, and so on,
+  recursively. What is the evidence for that similarity?
+* [Motor](https://github.com/opencog/motor), which looks at the issues
+  raised below from a different perspective, perhaps simplifying the
+  problem into a more tractable and practical form.
+* [Agents](https://github.com/opencog/agents), which was originally
+  intended to make use of the above, but has gotten sidelines a bit.
+
+Motivation
+----------
+OpenCog has repeatedly attempted to build "embodied AI systems", by
+attaching symbolic and probabilistic AI reasoning systems to assorted
+robot platforms. These include:
+* The [Hanson Robotics](https://www.hansonrobotics.com/) Sophia robot,
+  via [ROS and Blender](https://github.com/opencog/docker/tree/master/indigo).
+* [Minecraft](https://www.minecraft.net), via MineRL and Malmo, with the
+  Rational OpenCog Controlled Agent,
+  [ROCCA](https://github.com/opencog/rocca).
+* The Unity game engine, to create
+  [pet](https://www.youtube.com/watch?v=FEmpGRLwbqE)
+  [dog](https://www.youtube.com/watch?v=vZtnjKcrdZQ)
+  [avatars](https://www.youtube.com/watch?v=of-BahzS8qQ)
+  that
+  [talk](https://www.youtube.com/watch?v=ii-qdubNsx0).
+
+These are the major efforts; there were half-a-dozen lesser efforts,
+including a soccer-playing robothon, held in Ethiopia. All of these
+failed, although all were educational: the robothon was explicitly
+arranged by students in Ethiopia as a part of university coursework.
+
+All of these failed, in large part because not enough effort was
+put into understanding sensing and motion, and far too much on
+reasoning, planning and language. The ideas of sensing and movement
+seem trivial and obvious, and are implemented with brute-force hackery.
+Not worthy of intellectual effort, in contrast to the veneration
+given to reasoning and logic.  This is a fundamental mistake.
+
+
 Philosophical Overview
 ----------------------
 The issue for any agent is being able to perceive the environment that
@@ -118,8 +160,10 @@ when two parties connect.
 The experiment being done here, in this git repo, in this code-base, is
 to assign a type to a pipe. This replaces the earliest stages of
 protocol negotiation: if a system wishes only connect to pipes of type
-`FOO`, then it can know what is available a priori, by examining the
-connection types attached to that pipe. If they are
+`FOO`, then it can find out what is available by examining ("looking
+at") the pipe description. The pipe descrription is a disjoint list
+of connector types: types that caharacterize how a connection can be
+made.  If this list is
 `BAR+ or FOO+ or BLITZ+`, then we're good: the `or` is a disjunctive-or,
 a menu choice of what is being served on that pipe. Upon opening that
 pipe, some additional data descriptors might be served up, again in the
@@ -159,6 +203,85 @@ the actions that can be taken (move, open, ...) These connector-sets
 are "affordances" to the external world: they describe how an agent can
 work with the sensori-motor interface to "do things" in the external
 world.
+
+Wiring
+------
+The words "wiring", "wire up" and "connect up" are being used
+self-consciously.  This is what one does for electrical and electronic
+circuits; but it is also what is done for plumbing, say, for a chemical
+refining plant. One distinguishes the devices connected up, from the
+current flowing on the wires. The current itself has properties:
+different voltages, or, in the case of chemical processing, different
+substances.
+
+Wiring is conventionally done by specifying netlists: lists of what is
+connected to what, organized by type of wire. There's a multi-billion
+dollar industry dealing in
+[Electronic Design Automation (EDA)](https://en.wikipedia.org/wiki/Electronic_design_automation)
+tools. Prominent programming languages include
+[VHDL](https://en.wikipedia.org/wiki/VHDL) and
+[Verilog](https://en.wikipedia.org/wiki/Verilog) for digital circuits,
+and
+[SPICE](https://en.wikipedia.org/wiki/SPICE) for analog circuit design.
+Verilog has been adapted for mixed-signal design, and also for
+[synthetic biological circuits](https://en.wikipedia.org/wiki/Synthetic_biological_circuit),
+and so is relatively generic.
+
+This project is explicitly performing a kind of wiring, but it is using
+Atomese, not Verilog, for that wiring. Could this project be done in
+Verilog? Possibly. When Atomese was being invented, this wasn't
+foreseen.
+
+There is another example where "wiring" is commonly done: in
+[compilers](https://en.wikipedia.org/wiki/Compiler). A compiler takes a
+high-level language (C, C++, Java) and converts it to
+[assembly code](https://en.wikipedia.org/wiki/Assembly_language).
+Part of the magic of doing this is to describe CPU hardware, and
+specifically the assembly instructions, as if they were electronic
+devices, having inputs and generating outputs. The assembly instructions
+are then "wired up", so that data flows correctly through them. Thus, for
+example, the ADD instruction has two inputs, one output, all of which
+are registers; the result must go into the register that the next
+instruction is expecting, or must be routed to memory.
+
+Examples of such data-flow descriptions include gcc's
+[Register Transfer Language (RTL)](https://en.wikipedia.org/wiki/Register_transfer_language)
+and [GIMPLE](https://gcc.gnu.org/onlinedocs/gccint/GIMPLE.html).
+There are many more: the idea of an
+[intermediate representation (IR)](https://en.wikipedia.org/wiki/Intermediate_representation)
+language is generic in programming language design.
+
+Just like Verilog is intended for electronic circuits, the IR languages
+are intended for programming languages. Neither of these generalize very
+well to domains outside of their original specification. Atomese is
+attempting to be the superset or generalization of all of these
+different approaches to wiring. It is trying to capture the generic
+abstraction of "what is wiring" and "what does it mean to hook things
+together".
+
+Two side-comments: it is not an accident that Atomese resembles GCC's
+RTL. Both capture something fundamental about wiring. There is also
+another tickling analogy: Atomese Values are meant to be transient
+changing things, while Atoms in the AtomSpace are meant to be static,
+with the AtomSpace a repository, a database for these Atoms. This
+resembles the relatioship between CPU registers, where computation takes
+place, and system RAM, while holds and "remembers" stuff. One of the
+basic rewrite rules in Atomese is the one that moves Values into Atoms,
+storing them in the AtomSpace, and vice-versa, streams Atoms out of the
+AtomSpace, and into Values.
+
+Some generalizations and generalities: in chemistry, one has literal
+atoms, which, like tinker toys or jigsaw-puzzle pieces, can hook up one
+to the other, to form complex molecules. The process is recursive:
+certain complex molecules, such as DNA and protiens, can further hook up
+and participate in processing. The idea of hooking up and connecting is
+pervasive. It's in chemistry certainly, and obviously in mechanical
+linkages. One builds high-rises by connecting steel girders.
+
+One of the sub-goals of this project is to understand the generic,
+mathematical, philsophical nature of what it means to "hook things up",
+in full abstractness.
+
 
 Auto-wiring and theorem proving
 -------------------------------
@@ -222,7 +345,7 @@ are worth mentioning.
   might supplement or replace old ones. Compilers also want a program,
   written in a high-level language, as input. In this project, we won't
   have such a program; our situation is closer too SOAR or ProLog or
-  theorem provers: we have a collection of jigsaws (insturction) to
+  theorem provers: we have a collection of jigsaws (instructions) to
   assemble, but no high-level program to specify that assembly.
 
 The above systems solve some of the aspects of what we want to do here,
@@ -252,6 +375,13 @@ select the "LG words" or "EDA parts", but LG/EDA does the rest,
 generating a "netlist" (in the case of EDA) or a "linkage" (in the case
 of LG).
 
+(Footnote:
+[Stimulus-response](https://en.wikipedia.org/wiki/Stimulus%E2%80%93response_model)
+is an old concept in psychology, dating back to Pavlov. SRAI is the name
+given to the rules used by the
+[AIML](https://en.wikipedia.org/wiki/Artificial_Intelligence_Markup_Language)
+chatbot language. The terminology is not accidental.)
+
 What if there is no human to guide parts selection and circuit design?
 You can't just give an EDA tool a BOM (Bill of Materials) and say
 "design some random circuit out of these parts". Well, actually, you
@@ -262,6 +392,38 @@ given purpose. A collection of such trees is called a "random forest" or
 "decision tree forest", and, until a few years ago, random forests were
 competitive in the machine-learning industry, equaling the performance
 seen in deep-learning neural nets (DLNN).
+
+(Footnote: A collection of items, each given a score, is termed an
+["ensemble"](https://en.wikipedia.org/wiki/Ensemble_(mathematical_physics))
+in statistical physics. Thus, a
+[random forest](https://en.wikipedia.org/wiki/Random_forest),
+where each tree is assigned a real-number fitness score, is an
+ensemble of trees.  Ensembles are described by
+[partition functions](https://en.wikipedia.org/wiki/Partition_function_(mathematics)):
+roughly, functions that tell you how many items there are having a given
+score. Partition functions tend to have a Gaussian (Bell curve)
+distribution, with the mean of the curve given by an
+[Action](https://en.wikipedia.org/wiki/Action_principles).
+This last is highly technical: the action describes not only the mean
+but also how neighboring items are related.  When the ensemble forms a
+continuum, the action can be used to obtain equations of motion; these
+are the
+[Hamilton-Jacobi equations](https://en.wikipedia.org/wiki/Hamilton%E2%80%93Jacobi_equation)
+There is a very rich theory surrounding these, everything from geodesics
+on Riemann surfaces to quantum field theory, with applications ranging
+from chemical reaction rates to petroleum exploration to
+measure-preserving dynamical systems. It is no accident that Bill Friston
+proposes free energy as the fundamental underlying theoretical principle
+that can be used to understand AGI or general intelligence.  The
+ensemble is a powerful concept, and when coupled to a fitness score and
+the accompanying mathemetcial apparatus of Gibbs free energy and
+Boltzmann distributions, it aappears to be pervasive. The issue here is
+that we are still grasping at basic principles: the AtomSpace and Atomese
+allow for ensembles of representations of "mechanical parts" to be
+created, but it is not yet clear how to score them, how to create the
+Ising-like model of interacting, self-assembling components. We are
+still very far away from being able to write down a generic action for
+Atomese.)
 
 Deep learning now outperforms random forests. Can we (how can we) attach
 a DLNN system to the sensori-motor system being described here? Should
@@ -397,18 +559,47 @@ A nice, quick & easy overview of SOAR can be found here:
 Architecture](https://acs.ist.psu.edu/ist597/pst-soar%20v14.2.pdf)",
 Tony Kalus and Frank Ritter (2010)
 
+### CGW Wires
+There was a much earlier attempt at wiring with Atomese, from 2008,
+termed "Cog Graphical Wires" (CGW). It never went anywhere. Right
+idea, wrong time.  The description still sounds sexy, and mirrors
+the above. It can be found in the now-deleted directory
+[CGW Wires](https://github.com/opencog/atomspace/tree/3f58a2cdd7891da074ee48bd517c7f656ff12b14/opencog/scm/wires)
+That code was inspired by a paper:
+* ''The Art of the Propagator'', Alexey Radul; Gerald Jay Sussman,
+  MIT Technical Report MIT-CSAIL-TR-2009-002
+  http://dspace.mit.edu/handle/1721.1/44215
+
+I haven't read that paper in over a decade. Perhaps it has some gems.
+
 
 ### Status
-***Version 0.3.0*** -- Experimental. Basic demos actually work. Overall
-low-level parts of the architecture and implementation seem ok-ish. The
-upper-level parts have not yet been designed. The grand questions above
-remain mysterious, but are starting to clarify.
+***Version 0.5.0*** -- Experimental. There are two versions implemented
+in this repo: **"Version Zero"** (the original working version) and
+**"Version Half"** (the current working version).
+All demos work for both versions. Of course, Version Zero is now
+deprecated. It had a low-level architecture seemed ok-ish, but flaws
+have become apparent, and so "Version Half" was created.
 
-Provides:
-* Basic interactive terminal I/O stream.
-* Basic File I/O stream.
-* Prototype Filesystem navigation stream.
-* Prototype IRC chatbot stream.
+Version Zero and Version Half both provide:
+* A basic interactive terminal I/O stream.
+* A basic File I/O stream.
+* A basic Filesystem navigation stream.
+* A prototype IRC chatbot stream.
+
+Version Zero also provided object interface descriptions aka "jigsaws"
+that are meant to allow gluing, using some appropriate gluing
+algorithm. These have not yet been ported to Version Half.
+
+There are two potential gluing algorithms available; both have to be
+adapted to the current framework. One is Link Grammar. It should be
+relatively easy to attach. The other is the odomter from the
+https://github.com/opencog/generate git repo. It too needs to be
+adapted.
+
+Upper-level abstractions, including how gluing should work (Random?
+Guided? Odometer? Transformer?) remain opaque and have not yet been
+designed.  The grand questions above remain mysterious.
 
 The [Architecture Overview](Architecture.md) provides a more detailed
 and specific description of how the system is supposed to look like, and
@@ -416,7 +607,10 @@ how it is to work, when it gets farther along. The
 [Design Diary](Design.md) documents the thought process used to obtain
 code that actually works and does what it needs to do.
 
-See the [examples](examples) directory for working examples.
+See the [examples](examples) directory for working Version Half
+examples.
+See the [examples-v0](examples-v0) directory for working Version Zero
+examples.
 
 The [AtomSpace Bridge](https://github.com/opencog/atomspace-bridge)
 provides an API between the AtomSpace and SQL. It almost conforms to
@@ -461,6 +655,8 @@ Details of the design in this git repo are explored in several places:
 
 * [Architecture](Architecture.md) -- Architecture overview.
 * [Design Overview](Design.md) -- Current design & TODO List.
+
+Some Version Half explainers:
 * [IRChatStream](opencog/atoms/irc/README.md) -- IRC chat design.
 * [TextFileStream](opencog/atoms/filedir/README.md) -- Directory navigation design.
 * [TerminalStream](opencog/atoms/terminal/README.md) -- Interactive terminal design.
@@ -480,16 +676,15 @@ sudo make install
 ```
 
 ### Examples
-See the [examples](examples) directory. The simplest example is for
-pinging text between two xterms. Other examples include opening,
+See the [examples](examples) directory. The simplest example is
+for pinging text between two xterms. Other examples include opening,
 reading & writing a single text file, navigating the file system,
-and a basic IRC echobot.
+and a basic IRC echobot. The IRC bot can log chat to a file.
 
 It will probably be useful to read the
 [Architecture Overview](Architecture.md) first.
 
-***Important*** All of this is pre-alpha! These examples are too
-low-level; the intent is to eventually automate the process for hooking
-up sensors to motors. Basic design work continues. But for now, these
-show some of the low-level infrastructure; the high-level stuff is still
-missing.
+***Important*** All of this is alpha! These examples are too low-level;
+the intent is to eventually automate the process for hooking up sensors
+to motors. Basic design work continues. But for now, these show some of
+the low-level infrastructure; the high-level stuff is still missing.
