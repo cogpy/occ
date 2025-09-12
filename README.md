@@ -1,63 +1,72 @@
+## The OpenCog Project 👋
+[OpenCog aims to create AGI](https://wiki.opencog.org/w/The_Open_Cognition_Project)
+with a combination of exploration, engineering and basic science research.
+Side quests have included robotics systems ([Hanson Robotics](https://www.hansonrobotics.com)),
+financial systems (Aidiya),
+genomics (MOZI and [Rejuve.bio](https://www.rejuve.bio)),
+machine learning ([predicting risk from clinician notes](https://doi.org/10.1371/journal.pone.0085733)),
+natural language chatbots ([virtual dog playing fetch](https://www.youtube.com/watch?v=FEmpGRLwbqE)) and more.
+This project was pioneered by [Dr. Ben Goertzel](https://en.wikipedia.org/wiki/Ben_Goertzel).
+Git repos fall into four categories:
 
+### OpenCog AtomSpace
+The core of the system. As of 2025, it is active, stable and supported.
 
+* [AtomSpace](https://github.com/opencog/atomspace) - Hypergraph database and query engine.
+* [Storage](https://github.com/opencog/atomspace-storage) - Base class for saving, loading, sending and receiving Atoms and AtomSpaces
+* [CogServer](https://github.com/opencog/cogserver) and [atomspace-cog](https://github.com/opencog/atomspace-cog) - Networking, json, websockets.
+* [atomspace-rocks](https://github.com/opencog/atomspace-rocks) - Disk I/O storage, based on RocksDB.
+* [Proxy Nodes](https://wiki.opencog.org/w/ProxyNode) - Managing Atoms flowing through large Atomspaces. 
+* [Sparse Vectors/Matrix](https://github.com/opencog/matrix) - Working with graphs as (embeddings in) sparse vectors.
+* [Link Grammar](https://github.com/opencog/link-grammar) - Maximal Planar Graph (MPG) parsing, natural lanuage parsing (NLP).
+* [Docker containers](https://github.com/opencog/docker) - System integration and demos.
+* [atomspace-pgres](https://github.com/opencog/atomspace-pgres) - Postgres StorageNode. Works, but old, deprecated.
 
-# Redox OS Machine Learning Integration Environment
+### OpenCog Research
+Git repos in which active resarch is being carried out:
+* [Sensory](https://github.com/opencog/sensory) - Dataflow of graphlets to/from external world. Agents I/O system.
+* [Atomese-SIMD](https://github.com/opencog/atomese-simd) - Flowing data to GPU's and other SIMD (OpenCL/CUDA) hardware w/the sensory API.
+* [Learn](https://github.com/opencog/learn) - Symbolic learning ("mature", batch-based processing.)
+* [Agents](https://github.com/opencog/agents) - Refactoring learning for an interactive environment.
+* [Motor](https://github.com/opencog/motor) - Controlling the focus of sensory attention. Perception-action.
 
-This repository contains the necessary files to set up a development environment for the integration of machine learning into Redox OS using Python, Rust, Prolog, and C. This environment is specifically designed for the development of OpenCog Hyperon.
+### OpenCog Fossils
+Older, abandoned and obsolete components and experiments. These were attempts to build subsystems 
+with specific goals and ideas in mind. As experiments, they provided validation for certain design
+ideas. They were educational and fun, but turned out to be unworkable. Thus, development has
+halted. These projects are no longer maintained. They do contain useful subsystems that could be
+salvaged for future use. This includes:
+* PLN, URE, Attention, Ghost, Relex, R2L, ROS, Hanson Robotics Eva/Sophia
+* MOSES (but not as-moses, see below).
+* Any repo that is marked "read-only" or "obsolete".
 
-## Set up
+### OpenCog Hyperon
+Being developed by [Singularity.net](https://singularitynet.io).
 
-### Traditional Setup
+### OpenCog Incubator
+These are the immature, incomplete, promising projects that haven't taken off yet.
 
-To set up the environment, run the following command in the terminal:
+* [as-moses](https://github.com/opencog/as-moses) - Port of MOSES to the AtomSpace.
+* [SQL Bridge](https://github.com/opencog/atomspace-bridge) - Direct I/O between SQL and AtomSpace
+* [Prolog-on-Atomspace](https://github.com/opencog/atomspace/tree/master/opencog/persist/prolog) - proof-of-concept
+* [Chemistry](https://github.com/opencog/cheminformatics) - Molecular bonds, molecular structural formulas (proof-of-concpept.)
+* [agi-bio](https://github.com/opencog/agi-bio) - Genomics, proteomics system used by MOZI and rejuve.bio
+* [Vision](https://github.com/opencog/vision) - Extracting structure from images, video (proof-of-concept.)
+* [Hyperon-on-top-of-atomspace](https://github.com/opencog/atomspace-metta) - Hyperon backwards-compat layer (proof-of-concept.)
+* [SpaceTime](https://github.com/opencog/spacetime) - Octree spatial bounding boxes and time intervals in Atomese.
 
-```
-pip3 install -r requirements.txt && cargo build --release
-```
+# HELP WANTED
+The above-mentioned commercial projects don't pay the bills. There are far more ideas
+and possibilities than there is time or money. If you're a software developer, bored
+and looking for something to do, there's a lot of great stuff here that is worthy of
+attention. If you are an academic, scientist or grad student, someone who wants to do
+cross-over Symbolic AI and Deep-Learning Neural Net research, and need a base toolset,
+this is the place. We will work with you to make sure this stuff fits your needs and
+does what you want it to do, the way you want it.
+Contact [Linas Vepstas](linasvepstas@gmail.com).
 
-This will install all the necessary dependencies and packages for the environment.
-
-### Using GNU Guix
-
-This repository includes complete GNU Guix packaging support. To use with Guix:
-
-```bash
-# Enter development environment with all dependencies
-guix shell -m .guix/manifest.scm
-
-# Or build the package directly
-guix build -f guix.scm
-
-# Or install the package
-guix install -f guix.scm
-```
-
-See `.guix/README.md` for detailed Guix usage instructions.
-
-## Get started
-
-To start the development environment, run the following command in the terminal:
-
-```
-python3 app.py
-```
-
-This will run the sample code provided in `app.py` and allow you to start developing and testing your own code.
-
-## Additional files
-
-This repository also includes the following files:
-
-- `requirements.txt`: contains a list of required Python packages for the environment
-- `.vscode/launch.json`: contains configuration settings for debugging in Visual Studio Code
-- `Cargo.toml`: contains configuration settings for the Rust package manager
-- `src/main.rs`: contains a sample Rust code for the Hyperon library
-- `src/lib.rs`: contains a sample Rust code for the Hyperon library
-- `src/test.rs`: contains a sample Rust code for testing the Hyperon library
-- `.guix/`: GNU Guix packaging files for reproducible environments
-
-Feel free to modify these files as needed for your development process.
-
-## License
-
-This repository is licensed under the MIT License. See the `LICENSE` file for more information.
+### Commercial support
+If you are a commercial business looking to use any of these components in your products,
+we can provide full-time support, if that's what you want. We'll custom-taylor components,
+systems, and API's to suit your needs. If you are an investor looking to build up a venture,
+well yes, that could happen too. Talk to us. Contact [Linas Vepstas](linasvepstas@gmail.com).
