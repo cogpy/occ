@@ -75,7 +75,7 @@ UBUNTU_ISO_IMAGE=$CURRENT_DIR/$UBUNTU_ISO #default location
 SELF_NAME=$(basename $0)
 TOOL_NAME=octool
 
-GUILEVERSION=3.0.7
+GUILEVERSION=3.0.10
 
 PROCESSORS=$(grep "^processor" /proc/cpuinfo | wc -l)
 MAKE_JOBS=$(($PROCESSORS+0))
@@ -92,107 +92,122 @@ VERBOSE="-v"				#for mount, umount, rm, etc.
 LIVE_DESKTOP_SOURCE="OpenCog Source Code"
 
 REPOSITORIES=""
-#		ppa:opencog-dev/ppa \
-#		opencog-dev: cxxtest
-#		gandelman: python-flask-restful
-#       ppa:chris-lea/zeromq \
-#		ppa:chris-lea/python-flask \
-#       ppa:chris-lea/python-itsdangerous \
-#       ppa:chris-lea/python-simplejson \
-#       ppa:gandelman-a/test-catalog \
 
 PACKAGES_TOOLS="
 		squashfs-tools \
 		genisoimage \
 		"
-		#aria2 \
-		#qemu-kvm \
-		#testdrive \
 
 PACKAGES_FETCH="
 		git \
 		curl \
 		wget \
-			"
-		#bzr-rewrite \
+		"
 
 PACKAGES_ADMIN="
 		apt-rdepends \
-		synaptic \
-		gdebi \
-		epiphany-browser \
+		"
+
+# The only remaining users of boost are ure, miner and as-moses
+# libboost-date-time-dev asmoses gregorian dates.
+# libboost-program-options-dev by asmoses/utils/log_prog_name.cc
+# libboost-regex-dev asmoses combo
+# libboost-random-dev asmoses random shuffle
+# liboctomap-dev for spacetime
+#
+PACKAGES_BUILD_OLD=" \
+		libboost-date-time-dev \
+		libboost-math-dev \
+		libboost-program-options-dev \
+		libboost-regex-dev \
+		libboost-random-dev \
+		liboctomap-dev \
+		"
+
+# Packages for GPU devel (OpenCL)
+#   clinfo
+# For AMD GPU's
+#   mesa-opencl-icd opencl-headers opencl-clhpp-headers
+# For Nvidia GPU's
+#   cuda-opencl-dev XXX no !??
+# Compiler for GPU kernels
+#   clang-14 llvm-spirv-14
+PACKAGES_BUILD_GPU=" \
+		clinfo \
+		mesa-opencl-icd \
+		ocl-icd-opencl-dev \
+		opencl-headers \
+		opencl-clhpp-headers \
+		clang-14 \
+		llvm-spirv-14 \
+		"
+
+# Default apt packages that provide guile.
+PACKAGES_BUILD_GUILE=" \
+		guile-3.0 guile-3.0-dev \
 		"
 
 # The opencv-dev package is needed for vision processing. Unfortunately
 # it sucks in vast numbers of junk packages as depdencies, including
 # parts of X11, libgtk-3-common, ubuntu-mono, unixodbc-common, libtk8.6
 # and more. Sidelining this one package could reduce a lot of cruft.
+PACKAGES_BUILD_VISION=" \
+		libopencv-dev \
+		"
 #
-# I think the following are no longer needed:
-# libicu-dev gfortran libfreetype6-dev libatlas-base-dev
-PACKAGES_BUILD=" build-essential \
-		cmake \
-		rlwrap \
+# libsparsehash-dev is optional for atomspace
+# libpq-dev is needed by the postgres storage node.
+# libjsoncpp-dev is needed by the cogserver.
+# libasio-dev is needed by the cogserver.
+# uuid-dev is used by lg-atomese and generate
+#
+# m4 autoconf-archive autoconf automake autopoint libtool swig flex
+# are all required to build link-grammar.
+#
+PACKAGES_BUILD_CORE=" build-essential \
 		binutils-dev \
 		libiberty-dev \
 		libltdl-dev \
-		libicu-dev \
+		libasio-dev \
 		libbz2-dev \
-		libboost-date-time-dev \
-		libboost-filesystem-dev \
-		libboost-math-dev \
-		libboost-program-options-dev \
-		libboost-regex-dev \
-		libboost-serialization-dev \
-		libboost-thread-dev \
-		libboost-system-dev \
-		libboost-random-dev \
 		libedit-dev \
+		libjsoncpp-dev \
 		libpcre2-dev \
 		libpq-dev \
-		libtbb-dev \
-		uuid-dev \
-		libssl-dev \
-		libfreetype6-dev \
-		libatlas-base-dev \
-		gfortran \
-		ccache \
-		cxxtest \
-		libgsasl7 \
-		libldap2-dev \
-		krb5-multidev \
-		libatomic-ops-dev \
-		libgmp-dev \
-		libffi-dev \
 		libreadline-dev \
-		libunistring-dev \
-		m4 \
-		autoconf-archive \
-		autoconf automake autopoint \
-		libtool \
-		swig \
-		flex \
 		librocksdb-dev \
-		libopencv-dev \
-		less \
-		vim \
+		libsparsehash-dev \
+		libssl-dev \
+		uuid-dev \
+		autoconf automake autopoint autoconf-archive \
+		ccache \
+		cmake \
+		cxxtest \
+		flex \
+		m4 \
+		libtool \
+		locales
+		swig \
 		"
 
-# AtomSpace OCaML no longer builds in Ubuntu 22.04, and so disable here,
-# until it is fixed.
-		#ocaml \
-		#ocaml-findlib \
+# Must install PACKAGES_BUILD_OLD for now, because the circle-ci
+# container expects these, in order for as-moses, etc to build.
+PACKAGES_BUILD="
+		$PACKAGES_BUILD_CORE \
+		$PACKAGES_BUILD_OLD \
+		$PACKAGES_BUILD_GUILE \
+		"
 
 PACKAGES_RUNTIME="
-		postgresql-client \
+		gperf \
+		less \
 		netcat-openbsd \
+		postgresql-client \
+		vim \
 		"
 
 PACKAGES_DOC="
 		ubuntu-docs \
-		#libglib2.0-doc \
-		#libpango1.0-doc \
-		#libgtk-3-doc \
 		texlive-latex-base-doc \
 		python-doc \
 		devhelp-common \
@@ -325,27 +340,7 @@ PACKAGES_EXDEV="
 		patch \
 		ttf-lyx \
 		zlib1g-dev \
-		python-bzrlib \
 		linux-headers-generic \
-		# libcpprest \
-		# libzmq3-dev \
-		# libsdl-gfx1.2-dev \
-		# tcl-dev \
-		# tcsh \
-		# libprotoc-dev \
-		# protobuf-compiler \
-		# wordnet \
-		# wordnet-dev \
-		# wordnet-sense-index \
-		# liblua5.1-0-dev \
-		# libxmlrpc-c3-dev \
-		# python-flask \
-		# python-flask-restful \
-		# libglade2-0 \
-		# python-glade2 \
-		# python-tk \
-		# tcl8.5 \
-		# tk8.5 \
 		"
 
 # SECTION 2: Command line option handling
@@ -356,17 +351,18 @@ if [ "$SELF_NAME" == "$TOOL_NAME" ] ; then
   echo " -r Add software repositories"
   echo " -d Install base/system build dependencies"
   echo " -p Install python build dependencies"
-  echo " -s Install haskell build dependencies in user space. Don't use sudo"
   echo " -i Install build-job artifacts"
   echo " -c Install CogUtil"
   echo " -a Install AtomSpace"
   echo " -f Install from opencog github repo. Pass the name of the repo as an argument"
-  echo " -o Install OpenCog"
-  echo " -n Install notebook"
   echo " -l [master|java] Install Link Grammar release tarball; else master branch"
-  echo " -m Install MOSES"
+  echo " -u Install the GPU subsystem"
   echo " -z Install the language subsystem"
-  echo " -g Install Guile $GUILEVERSION"
+  echo " -x Install the benchmarking tools"
+  echo " -n Install the vision subsystem"
+  echo " -m Install ASMOSES"
+  echo " -o Install OpenCog (obsolete)"
+  echo " -g Install Guile $GUILEVERSION from source"
   echo " -b Build source code in git worktree found @ $PWD"
   echo " -e Build examples in git worktree found @ $PWD"
   echo " -t Run tests of source code in git worktree found @ $PWD"
@@ -398,10 +394,10 @@ fi
 if [ $# -eq 0 ] ; then NO_ARGS=true ; fi
 
 if [ "$SELF_NAME" == "$TOOL_NAME" ] ; then
-  while getopts "abdef:gipcrstl:mhvj:ownz" flag ; do
+  while getopts "abdef:gipcrstl:mhvj:ownuz" flag ; do
     case $flag in
       r)	ADD_REPOSITORIES=true ;;
-      d)	INSTALL_DEPENDENCIES=true ;; #base development packages
+      d)	INSTALL_DEPENDENCIES=true ;; # base development packages
       w)	DOWNLOAD_DATA=true ;;
       p)	INSTALL_OPENCOG_PYTHON_PACKAGES=true ;;
       c)	INSTALL_COGUTIL=true ;;
@@ -414,16 +410,17 @@ if [ "$SELF_NAME" == "$TOOL_NAME" ] ; then
         	elif [ "$OPTARG" == "java" ]; then
         	  INSTALL_JAVA_LINK_GRAMMAR=true
         	fi ;;
-      m)	INSTALL_MOSES=true ;;
-      n)	INSTALL_NOTEBOOKS=true;;
+      u)	INSTALL_GPU_SUBSYS=true ;;
+      z)	INSTALL_LANGUAGE=true ;;
+      x)	INSTALL_BENCHMARK=true ;;
+      n)	INSTALL_VISION=true ;;
+      m)	INSTALL_ASMOSES=true ;;
       g)	INSTALL_GUILE=true ;;
       b)	BUILD_SOURCE=true ;;
       e)	BUILD_EXAMPLES=true ;;
       t)	TEST_SOURCE=true ;;
       v)	unset QUIET ;;
-      z)	INSTALL_LANGUAGE=true ;;
       j)	MAKE_JOBS="$OPTARG" ;;
-      s)	HASKELL_STACK_SETUP=true;;
       i)	INSTALL_BUILD=true ;;
       h)	usage ;;
       \?)	usage; exit 1 ;;
@@ -431,7 +428,7 @@ if [ "$SELF_NAME" == "$TOOL_NAME" ] ; then
     esac
   done
 else
-  while getopts ":i:o:j:s:c:l:r:adubtnxrvh" flag ; do
+  while getopts ":i:o:j:s:c:l:adubtnxvh" flag ; do
     case $flag in
       i)	INPUT_ISO_NAME="$OPTARG" ;;
       o)	OUTPUT_ISO_NAME="$OPTARG" ;;
@@ -439,7 +436,6 @@ else
       s)	HOST_SOURCE_BRANCH="$OPTARG" ;;
       c)	HOST_BUILD_DIR="$OPTARG" ;;     #local cached build dir
       l)	LIVE_BUILD_DIR="$OPTARG" ;;     #live build directory
-      r)	BZR_REVISION="$OPTARG" ;;
       a)	ADD_REPOSITORIES=true ;;
       d)	INSTALL_DEPENDENCIES=true ;;    #ALL, none
       u)	UPDATE_OPENCOG=true ;;          #git pull
@@ -595,12 +591,6 @@ for REPO in $REPOSITORIES ; do
   sudo apt-add-repository -y $REPO
 done
 
-# Add cmake repository. See https://apt.kitware.com/ for details.
-if [[ "$UBUNTU_VERSION" = "\"18.04\"" ]]; then
-  wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
-  echo "deb https://apt.kitware.com/ubuntu/ bionic main" | sudo tee '/etc/apt/sources.list.d/cmake.list'
-fi
-
 sudo apt-get $QUIET --assume-yes update
 }
 
@@ -667,116 +657,11 @@ install_cogutil() {
   install_opencog_github_repo cogutil
 }
 
-# Install notebooks
-install_notebooks() {
-  MESSAGE="Installing notebooks...." ; message
-
-
-  #####INSTALLING pip3 AND jupyter notebook
-  install_python_pip
-  cd
-  sudo pip3 install ipython jupyter
-
-  #####INSTALLING GUILE KERNEL#####
-  # Check if site folder exits
-  if [ ! -d "/usr/local/share/guile/site" ]
-  then
-    cd /usr/local/share/guile/
-    sudo mkdir site
-    cd
-  fi
-
-  # Install ZeroMQ library
-  # ??? Really? Is this really needed?
-  ## Clean up remenants of previous installations##
-  rm -rf zeromq-4.2.1*
-  wget https://github.com/zeromq/libzmq/releases/download/v4.2.1/zeromq-4.2.1.tar.gz
-  tar xvf zeromq-4.2.1.tar.gz
-  cd zeromq-4.2.1/
-  ./configure
-  make
-  sudo make install
-  cd
-
-  # Install guile-json library
-  ## Clean up remenants of previous installations##
-  rm -rf guile-json-0.6.0*
-  wget http://download.savannah.gnu.org/releases/guile-json/guile-json-0.6.0.tar.gz
-  tar xvf guile-json-0.6.0.tar.gz
-  cd guile-json-0.6.0
-  ./configure --prefix=/usr/local/
-  make
-  sudo make install
-  cd
-
-  cd `guile -c "(display (%global-site-dir))"`
-  # Place guile-simple-zmq library to the guile library folder
-  sudo rm -rf simple-zmq.scm*
-  sudo wget https://raw.githubusercontent.com/jerry40/guile-simple-zmq/master/src/simple-zmq.scm
-  #edit simple-zmq.scm => set BUF-SIZE to 8192.
-  sudo sed -i 's/(define BUF-SIZE.*)/(define BUF-SIZE 8192)/' simple-zmq.scm
-  cd
-
-  #Kernel setup
-  if [ ! -d "/home/$USER/.local/share/jupyter/kernels/guile" ]
-  then
-      sudo mkdir /home/$USER/.local/share/jupyter/kernels/guile
-  fi
-
-  cd /home/$USER/.local/share/jupyter/kernels/guile
-  sudo rm -rf guile-jupyter-kernel.scm hmac.scm kernel.json tools.scm
-  sudo wget https://github.com/jerry40/guile-kernel/raw/master/src/guile-jupyter-kernel.scm
-  sudo wget https://github.com/jerry40/guile-kernel/raw/master/src/hmac.scm
-  sudo wget https://github.com/jerry40/guile-kernel/raw/master/src/kernel.json
-  sudo wget https://github.com/jerry40/guile-kernel/raw/master/src/tools.scm
-  sudo sed -i 's,\/home.*local,'$HOME/.local',' kernel.json
-
-  echo "export PATH=$PATH:/home/$USER/.local/bin" >> /home/$USER/.bashrc
-  echo "source $HOME/.bashrc"
-  cd $CURRENT_DIR
-}
-
 # Install additional Python packages
 # Except that there aren't any at this time....
 install_opencog_python_packages() {
-  # MESSAGE="Installing python packages...." ; message
-  MESSAGE="There are no python packages to install." ; message
-  cd /tmp
-  # cleaning up remnants from previous install failures, if any.
-  #rm -f requirements.txt*
-  #wget https://raw.githubusercontent.com/opencog/opencog/master/opencog/python/attic/requirements.txt
-  # scipy, numpy & matplotlib if installed using python-pip will take a long time
-  # as they have to be built before being installed. And the artifacts of the
-  # build occupies a lot of space blotting the docker image. Thus instead a
-  # system installation is made.
-  # TODO: cleanup the requirements.txt file.
-  #sudo pip install -U $(awk '!/scipy/&&!/numpy/&&!/matplotlib/' requirements.txt)
-  #sudo apt-get install -y --no-install-recommends python3-matplotlib python3-numpy python3-scipy
-
-  # For sentiment analysis (obsolete)
-  # TODO: update depending on https://github.com/opencog/opencog/issues/2285
-  # sudo pip3 install -U pyyaml nltk Flask flask-restful flask-restful-swagger flask-cors
-  # sudo python3 -m nltk.downloader -d /usr/local/share/nltk_data punkt averaged_perceptron_tagger
-  # rm -f requirements.txt*
-  # cd $CURRENT_DIR
-}
-
-# Install Haskell Dependencies
-install_haskell_dependencies(){
-MESSAGE="Installing haskell dependencies in user space...." ; message
-sudo wget -qO- https://get.haskellstack.org/ | sh
-
-cd /tmp
-rm -rf patchelf*
-wget "https://nixos.org/releases/patchelf/patchelf-0.9/patchelf-0.9.tar.bz2"
-tar -jxf patchelf-0.9.tar.bz2
-rm patchelf-0.9.tar.bz2
-cd patchelf-0.9
-./configure
-sudo make install
-cd /tmp
-rm -rf patchelf-0.9
-cd $CURRENT_DIR
+  MESSAGE="Installing base python packages...." ; message
+  install_python
 }
 
 # The following sets the source & build directory for a project
@@ -799,7 +684,7 @@ a git worktree" ; message
 fi
 }
 
-# Build function for opencog, atomspace, moses & cogutil repos
+# Build function for cogutil, atomspace & asmoses repos
 build_source() {
   set_source_and_build_dir
   if [ -a $BUILD_DIR/CMakeCache.txt ]; then
@@ -814,7 +699,7 @@ build_source() {
   MESSAGE="Finished building source" ; message
 }
 
-# Build examples function for opencog, atomspace, moses & cogutil repos
+# Build examples function for atomspace & asmoses repos
 build_examples() {
   set_source_and_build_dir
   if [ -a $BUILD_DIR/CMakeCache.txt ]; then
@@ -829,7 +714,7 @@ build_examples() {
   MESSAGE="Finished building examples" ; message
 }
 
-# Run tests function for opencog, atomspace, moses & cogutil repos
+# Run tests function for cogutil, atomspace & asmoses repos
 test_source() {
   set_source_and_build_dir
   if [ -a $BUILD_DIR/CMakeCache.txt ]; then
@@ -858,10 +743,14 @@ install_build() {
 # Install Core AtomSpace
 install_atomspace(){
   install_opencog_github_repo atomspace
+  install_opencog_github_repo atomspace-storage
+  install_opencog_github_repo atomspace-pgres
   install_opencog_github_repo atomspace-rocks
   install_opencog_github_repo atomspace-cog
   install_opencog_github_repo cogserver
   install_opencog_github_repo unify
+  install_opencog_github_repo sensory
+  install_opencog_github_repo motor
 }
 
 # Install Language components
@@ -872,29 +761,47 @@ install_atomspace(){
 install_language() {
   install_opencog_github_repo lg-atomese
   install_link_grammar
+  install_opencog_github_repo matrix
   install_opencog_github_repo learn
-  install_opencog_github_repo sensory
   install_opencog_github_repo generate
+}
+
+# Install GPU stuff
+install_gpu_subsys() {
+
+  sudo apt-get $QUIET --no-upgrade --assume-yes install $PACKAGES_BUILD_GPU
+  install_opencog_github_repo atomese-simd
+}
+
+# Install vision stuff This installs 250 more apt packages!!
+install_vision() {
+  sudo apt-get $QUIET --no-upgrade --assume-yes install $PACKAGES_BUILD_VISION
   install_opencog_github_repo vision
 }
 
-# Install all of OpenCog
+# Install benchmarking subset
+# agi-bio does nothing but provide some atom types for benchmarking.
+install_benchmark() {
+  install_opencog_github_repo agi-bio
+  install_opencog_github_repo benchmark
+}
+
+# Install obsolete parts of OpenCog
 install_opencog() {
   install_language
+  sudo apt-get $QUIET --no-upgrade --assume-yes install $PACKAGES_BUILD_OLD
   install_opencog_github_repo ure
   install_opencog_github_repo attention
   install_opencog_github_repo spacetime
   install_opencog_github_repo pln
   install_opencog_github_repo miner
-  install_opencog_github_repo asmoses
-  install_opencog_github_repo opencog
-  install_opencog_github_repo agi-bio
-  install_opencog_github_repo benchmark
+# opencog no longer compiles.
+#  install_opencog_github_repo opencog
 }
 
-# Install MOSES
-install_moses() {
-  install_opencog_github_repo moses
+# Install ASMOSES
+install_asmoses() {
+  install_opencog_github_repo asmoses
 }
 
 # Install Link-Grammar
@@ -961,7 +868,7 @@ install_bdwgc() {
   # Apparently, the newest versions of curl behave differently!?
   # local _version=$(curl https://github.com/ivmai/bdwgc/releases/latest \
   #    | cut -d "\"" -f 2 | cut -d "/" -f 8)
-  local _version=$(curl --silent -w %{redirect_url} https://github.com/ivmai/bdwgc/releases/latest \
+  local _version=$(curl --silent -w %{redirect_url} https://github.com/bdwgc/bdwgc/releases/latest \
       | cut -d "\"" -f 2 | cut -d "/" -f 8)
 
   local _dir_name="gc-${_version:1}"
@@ -983,20 +890,18 @@ install_bdwgc() {
   rm -rf ${_dir_name}*
 }
 
-install_python(){
+install_python() {
   MESSAGE="Installing python3 ...." ; message
   sudo apt-get install -y --no-install-recommends python3-dev python3-dev
 
-  if [[ "$UBUNTU_VERSION" = "\"18.04\"" ]]; then
-    sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 1
-    sudo apt-get install -y --no-install-recommends python3-pip
-    sudo pip3 install -U pip nose3 cython setuptools
-  fi
   if [[ "$UBUNTU_VERSION" = "\"20.04\"" ]]; then
     sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 2
     sudo apt-get install -y --no-install-recommends python3-nose cython3
   fi
   if [[ "$UBUNTU_VERSION" = "\"22.04\"" ]]; then
+    sudo apt-get install -y --no-install-recommends python3-nose cython3
+  fi
+  if [[ "$UBUNTU_VERSION" = "\"24.04\"" ]]; then
     sudo apt-get install -y --no-install-recommends python3-nose cython3
   fi
 }
@@ -1011,10 +916,14 @@ install_python_pip() {
 }
 
 
-install_guile(){
-if [[ "$UBUNTU_VERSION" = "\"18.04\"" ]]; then
-    sudo apt-get install -y --no-install-recommends guile-2.2-dev
-else
+install_guile() {
+    # First, remove the default guile.
+    sudo apt-get --assume-yes purge $PACKAGES_BUILD_GUILE --auto-remove
+
+    # Next, install things that the bdwgc/guile build will need.
+    sudo apt-get install -y --no-install-recommends \
+      libatomic-ops-dev libgmp-dev libffi-dev libunistring-dev
+
     install_bdwgc
     MESSAGE="Installing guile-$GUILEVERSION...." ; message
     cd /tmp/
@@ -1032,30 +941,11 @@ else
     sudo ldconfig
     cd /tmp/
     rm -rf guile-${GUILEVERSION}*
-fi
-}
-
-# Install ros-behavior-scripting
-install_rbs(){
-MESSAGE="Installing ros-behavior-scripting ...." ; message
-cd /tmp/
-# cleaning up remnants from previous install failures, if any.
-rm -rf master.tar.gz* ros-behavior-scripting-master
-wget https://github.com/opencog/ros-behavior-scripting/archive/master.tar.gz
-tar -xvf master.tar.gz
-cd ros-behavior-scripting-master/
-mkdir build
-cd build/
-cmake ..
-sudo make install
-cd /tmp/
-rm -rf master.tar.gz ros-behavior-scripting-master/
-cd $CURRENT_DIR
 }
 
 # atomspace unit tests have UTF-8 test cases
 # link-grammar needs a smattering of locales
-ensure_UTF_installed(){
+ensure_UTF_installed() {
     if locale -a | grep -q en_US.utf8
     then
         echo UTF-8 locale enabled already
@@ -1091,7 +981,7 @@ install_dependencies() {
   install_python
 
   MESSAGE="Installing OpenCog build dependencies...." ; message
-  if ! sudo apt-get $QUIET --no-upgrade --assume-yes --no-install-recommends install $PACKAGES_BUILD $PACKAGES_RUNTIME $PACKAGES_FETCH liboctomap-dev locales ; then
+  if ! sudo apt-get $QUIET --no-upgrade --assume-yes --no-install-recommends install $PACKAGES_BUILD $PACKAGES_RUNTIME $PACKAGES_FETCH ; then
     exit 1
   fi
   ensure_UTF_installed
@@ -1099,13 +989,9 @@ install_dependencies() {
   # Update ccache links
   update_ccache_links
 
-  # Configure python alternative. The priority is soo high just to ensure that
-  # python is always set.
-  #PYTHON_PATH=$(readlink -f /usr/bin/python3)
-  #sudo update-alternatives --install /usr/bin/python python "$PYTHON_PATH" 1000
-
-  # Install guile >2.2 also install bdwgc for language-learning
-  install_guile
+  # Install custom guile >3.0.0 for language-learning
+  # The apt-get default is OK these days.
+  # install_guile
 }
 
 # Download data
@@ -1353,19 +1239,19 @@ if [ "$SELF_NAME" == "$TOOL_NAME" ] ; then
     if [ $ADD_REPOSITORIES ] ; then add_repositories ; fi
     if [ $INSTALL_DEPENDENCIES ] ; then install_dependencies ; fi
     if [ $DOWNLOAD_DATA ] ; then download_data ; fi
-    if [ $HASKELL_STACK_SETUP ] ; then install_haskell_dependencies ; fi
     if [ $INSTALL_OPENCOG_PYTHON_PACKAGES ] ; then install_opencog_python_packages ; fi
     if [ $INSTALL_COGUTIL ] ; then install_cogutil ; fi
     if [ $INSTALL_ATOMSPACE ] ; then install_atomspace ; fi
-    if [ $INSTALL_LANGUAGE ] ; then install_language ; fi
-    if [ $INSTALL_FROM_REPO ] ; then install_opencog_github_repo "$INSTALL_FROM_REPO" ; fi
-    if [ $INSTALL_NOTEBOOKS ] ; then install_notebooks ; fi
-    if [ $INSTALL_OPENCOG ] ; then install_opencog ; fi
     if [ $INSTALL_LINK_GRAMMAR ] ; then install_link_grammar ; fi
-    if [ $INSTALL_MOSES ] ; then install_moses ; fi
+    if [ $INSTALL_LANGUAGE ] ; then install_language ; fi
+    if [ $INSTALL_GPU_SUBSYS ] ; then install_gpu_subsys ; fi
+    if [ $INSTALL_BENCHMARK ] ; then install_benchmark ; fi
+    if [ $INSTALL_VISION ] ; then install_vision ; fi
+    if [ $INSTALL_FROM_REPO ] ; then install_opencog_github_repo "$INSTALL_FROM_REPO" ; fi
+    if [ $INSTALL_OPENCOG ] ; then install_opencog ; fi
+    if [ $INSTALL_ASMOSES ] ; then install_asmoses ; fi
     if [ $INSTALL_GUILE ] ; then install_guile ; fi
     if [ $BUILD_SOURCE ] ; then build_source ; fi
-    if [ $INSTALL_NOTEBOOKS ] ; then install_notebooks ; fi
     if [ $BUILD_EXAMPLES ] ; then build_examples ; fi
     if [ $TEST_SOURCE ] ; then test_source ; fi
     if [ $INSTALL_BUILD ] ; then install_build ; fi
