@@ -31,6 +31,11 @@ OPTION(BUILD_LEARN "Build symbolic learning" ON)
 OPTION(BUILD_AGENTS "Build interactive agents" ON)
 OPTION(BUILD_SENSORY "Build sensory dataflow system" ON)
 
+# External integration packages
+OPTION(BUILD_GNUCASH "Build Gnucash cognitive accounting integration" OFF)
+OPTION(BUILD_KOBOLDCPP "Build KoboldCpp story/world modeling integration" OFF)
+OPTION(BUILD_APHRODITE "Build Aphrodite Engine LLM inference integration" OFF)
+
 # Core components built in dependency order
 IF(BUILD_COGUTIL)
     MESSAGE(STATUS "Building CogUtil...")
@@ -67,6 +72,22 @@ IF(BUILD_SENSORY AND BUILD_ATOMSPACE)
     add_subdirectory(sensory)
 ENDIF()
 
+# External integration packages
+IF(BUILD_GNUCASH AND BUILD_ATOMSPACE)
+    MESSAGE(STATUS "Building Gnucash cognitive accounting integration...")
+    add_subdirectory(gnucash)
+ENDIF()
+
+IF(BUILD_KOBOLDCPP AND BUILD_ATOMSPACE)
+    MESSAGE(STATUS "Building KoboldCpp story/world modeling integration...")
+    add_subdirectory(koboldcpp)
+ENDIF()
+
+IF(BUILD_APHRODITE AND BUILD_ATOMSPACE)
+    MESSAGE(STATUS "Building Aphrodite Engine LLM inference integration...")
+    add_subdirectory(aphrodite-engine)
+ENDIF()
+
 # Optional: Additional AtomSpace extensions
 OPTION(BUILD_ATOMSPACE_STORAGE "Build AtomSpace storage backends" OFF)
 IF(BUILD_ATOMSPACE_STORAGE AND BUILD_ATOMSPACE)
@@ -95,4 +116,9 @@ MESSAGE(STATUS "Agents: ${BUILD_AGENTS}")
 MESSAGE(STATUS "Sensory: ${BUILD_SENSORY}")
 MESSAGE(STATUS "AtomSpace Storage: ${BUILD_ATOMSPACE_STORAGE}")
 MESSAGE(STATUS "AtomSpace Extensions: ${BUILD_ATOMSPACE_EXTENSIONS}")
+MESSAGE(STATUS "")
+MESSAGE(STATUS "External Integration Packages:")
+MESSAGE(STATUS "Gnucash (cognitive accounting): ${BUILD_GNUCASH}")
+MESSAGE(STATUS "KoboldCpp (story/world modeling): ${BUILD_KOBOLDCPP}")
+MESSAGE(STATUS "Aphrodite Engine (LLM inference): ${BUILD_APHRODITE}")
 MESSAGE(STATUS "")
