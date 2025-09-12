@@ -9,14 +9,14 @@
 # -- print pretty summary
 #
 
-# cogutils already requires 2.8.12.2, so may as well ask for that.
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12.2)
+# cogutils already requires 3.12, so may as well ask for that.
+CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 IF (COMMAND CMAKE_POLICY)
 	CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF (COMMAND CMAKE_POLICY)
 
 IF(CMAKE_VERSION VERSION_GREATER 3.0.2)
-	CMAKE_POLICY(SET CMP0037 OLD)
+	CMAKE_POLICY(SET CMP0037 NEW)
 ENDIF(CMAKE_VERSION VERSION_GREATER 3.0.2)
 
 PROJECT(opencog)
@@ -86,6 +86,15 @@ IF (ATOMSPACE_FOUND)
 ELSE (ATOMSPACE_FOUND)
 	MESSAGE(FATAL_ERROR "AtomSpace missing: it is needed!")
 ENDIF (ATOMSPACE_FOUND)
+
+FIND_PACKAGE(AtomSpaceStorage CONFIG REQUIRED)
+IF (ATOMSPACE_STORAGE_FOUND)
+	MESSAGE(STATUS "AtomSpace Storage found.")
+	ADD_DEFINITIONS(-DHAVE_ATOMSPACE_STORAGE)
+	SET(HAVE_ATOMSPACE_STORAGE 1)
+ELSE (ATOMSPACE_STORAGE_FOUND)
+	MESSAGE(FATAL_ERROR "AtomSpace Storage missing: it is needed!")
+ENDIF (ATOMSPACE_STORAGE_FOUND)
 
 # ----------------------------------------------------------
 # Needed for unit tests
@@ -180,10 +189,6 @@ IF (CXXTEST_FOUND)
 			COMMENT "Running tests..."
 		)
 	ENDIF (CMAKE_BUILD_TYPE STREQUAL "Coverage")
-
-	# When CMP00037 is finally turned off, just remove these two lines.
-	ADD_CUSTOM_TARGET(test)
-	ADD_DEPENDENCIES(test check)
 
 ENDIF (CXXTEST_FOUND)
 
