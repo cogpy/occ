@@ -1,11 +1,9 @@
-FROM mcr.microsoft.com/devcontainers/base:ubuntu
+FROM debian:bookworm
 
-ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update && apt-get install -y guix git curl build-essential
 
-RUN apt update && \
-apt install -y python3-pip python3-tk && \
-curl https://sh.rustup.rs -sSf | sh -s -- -y && \
-apt install -y swi-prolog && \
-apt install -y gcc
-apt install -y rustc && \
-apt install -y mono-devel
+RUN guix pull
+RUN guix install shepherd guile
+
+WORKDIR /workspace
+CMD ["/bin/bash"]
