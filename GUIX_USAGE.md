@@ -67,6 +67,7 @@ The repository includes GitHub Actions workflow for automated Guix builds:
 
 - **Workflow**: `.github/workflows/guix-build.yml`
 - **Trigger**: Push to main branch or pull requests
+- **Installation**: Non-interactive Guix installation using `curl | bash -s -- --yes`
 - **Action**: Builds the package using `guix build -f packaging/opencog.scm`
 
 ## Directory Structure
