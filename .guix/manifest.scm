@@ -47,6 +47,26 @@
    "zlib"
    "openssl"
    
+   ;; Dependencies for external integrations
+   ;; Gnucash dependencies
+   "gtk+"
+   "libxml2"
+   "sqlite"
+   "webkitgtk"
+   "libdbi"
+   
+   ;; KoboldCpp dependencies  
+   "openblas"
+   "llvm"
+   
+   ;; Aphrodite Engine dependencies
+   "cuda-toolkit"
+   "python-torch"
+   "python-transformers"
+   "python-fastapi"
+   "python-uvicorn"
+   "python-aiohttp"
+   
    ;; Python and scientific computing
    "python"
    "python-pip"

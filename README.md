@@ -7,9 +7,14 @@ genomics (MOZI and [Rejuve.bio](https://www.rejuve.bio)),
 machine learning ([predicting risk from clinician notes](https://doi.org/10.1371/journal.pone.0085733)),
 natural language chatbots ([virtual dog playing fetch](https://www.youtube.com/watch?v=FEmpGRLwbqE)) and more.
 This project was pioneered by [Dr. Ben Goertzel](https://en.wikipedia.org/wiki/Ben_Goertzel).
-Git repos fall into four categories:
 
-### OpenCog AtomSpace
+## OpenCog Collection (OCC) - Integrated Cognitive Architecture
+
+This monorepo integrates multiple OpenCog components and external tools into a unified cognitive system. The OCC provides a complete environment for cognitive computing research and AGI development.
+
+### Core OpenCog Components
+
+#### OpenCog AtomSpace
 The core of the system. As of 2025, it is active, stable and supported.
 
 * [AtomSpace](https://github.com/opencog/atomspace) - Hypergraph database and query engine.
@@ -22,13 +27,37 @@ The core of the system. As of 2025, it is active, stable and supported.
 * [Docker containers](https://github.com/opencog/docker) - System integration and demos.
 * [atomspace-pgres](https://github.com/opencog/atomspace-pgres) - Postgres StorageNode. Works, but old, deprecated.
 
-### OpenCog Research
+#### OpenCog Research
 Git repos in which active resarch is being carried out:
 * [Sensory](https://github.com/opencog/sensory) - Dataflow of graphlets to/from external world. Agents I/O system.
 * [Atomese-SIMD](https://github.com/opencog/atomese-simd) - Flowing data to GPU's and other SIMD (OpenCL/CUDA) hardware w/the sensory API.
 * [Learn](https://github.com/opencog/learn) - Symbolic learning ("mature", batch-based processing.)
 * [Agents](https://github.com/opencog/agents) - Refactoring learning for an interactive environment.
 * [Motor](https://github.com/opencog/motor) - Controlling the focus of sensory attention. Perception-action.
+
+### External Package Integrations
+
+The OCC includes powerful external tools integrated as modular Guix packages for enhanced cognitive capabilities:
+
+#### Gnucash (Cognitive Accounting)
+- **Purpose**: Double-entry accounting with cognitive attention and ECAN integration
+- **Features**: Financial transaction representation in AtomSpace, cognitive attention mechanisms
+- **Build**: `-DBUILD_GNUCASH=ON`
+- **Service**: Port 8080
+
+#### KoboldCpp (Story/World Modeling)  
+- **Purpose**: GGUF model inference for narrative reasoning and world simulation
+- **Features**: Local LLM inference, story generation from cognitive context, character modeling
+- **Build**: `-DBUILD_KOBOLDCPP=ON`
+- **Service**: Port 5001
+
+#### Aphrodite Engine (LLM Inference)
+- **Purpose**: High-performance LLM inference over AtomSpace knowledge graphs
+- **Features**: GPU-accelerated inference, OpenAI-compatible API, batch processing
+- **Build**: `-DBUILD_APHRODITE=ON`
+- **Service**: Port 2242
+
+See [External Integration Documentation](docs/EXTERNAL_INTEGRATION.md) for detailed usage instructions.
 
 ### OpenCog Fossils
 Older, abandoned and obsolete components and experiments. These were attempts to build subsystems 
