@@ -5,7 +5,7 @@ authors = ["Your Name <you@example.com>"]
 edition = "2018"
 
 [dependencies]
-hyperon = "0.1.0"
+# Add actual dependencies here if needed
 
 [lib]
 name = "hyperon"
@@ -20,9 +20,4 @@ debug = false
 lto = false
 opt-level = 0
 debug = true
-
-[workspace]
-members = [
-    "hyperon"
-]
 

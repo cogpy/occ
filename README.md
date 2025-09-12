@@ -7,13 +7,32 @@ This repository contains the necessary files to set up a development environment
 
 ## Set up
 
+### Traditional Setup
+
 To set up the environment, run the following command in the terminal:
 
 ```
-pip3 install -r requirements.txt && cargo install hyperon
+pip3 install -r requirements.txt && cargo build --release
 ```
 
 This will install all the necessary dependencies and packages for the environment.
+
+### Using GNU Guix
+
+This repository includes complete GNU Guix packaging support. To use with Guix:
+
+```bash
+# Enter development environment with all dependencies
+guix shell -m .guix/manifest.scm
+
+# Or build the package directly
+guix build -f guix.scm
+
+# Or install the package
+guix install -f guix.scm
+```
+
+See `.guix/README.md` for detailed Guix usage instructions.
 
 ## Get started
 
@@ -35,6 +54,7 @@ This repository also includes the following files:
 - `src/main.rs`: contains a sample Rust code for the Hyperon library
 - `src/lib.rs`: contains a sample Rust code for the Hyperon library
 - `src/test.rs`: contains a sample Rust code for testing the Hyperon library
+- `.guix/`: GNU Guix packaging files for reproducible environments
 
 Feel free to modify these files as needed for your development process.
 
