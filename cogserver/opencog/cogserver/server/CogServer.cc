@@ -22,9 +22,9 @@
 
 #include <opencog/cogserver/server/ServerConsole.h>
 #include <opencog/cogserver/server/WebServer.h>
+#include <opencog/cogserver/server/MCPServer.h>
 
 #include "CogServer.h"
-#include "BaseServer.h"
 
 using namespace opencog;
 
@@ -37,19 +37,23 @@ CogServer::~CogServer()
 }
 
 CogServer::CogServer(void) :
-    BaseServer(),
+    _atomSpace(createAtomSpace()),
     _consoleServer(nullptr),
     _webServer(nullptr),
+    _mcpServer(nullptr),
     _running(false)
 {
 }
 
 CogServer::CogServer(AtomSpacePtr as) :
-    BaseServer(as),
+    _atomSpace(as),
     _consoleServer(nullptr),
     _webServer(nullptr),
+    _mcpServer(nullptr),
     _running(false)
 {
+    if (nullptr == as)
+        _atomSpace = createAtomSpace();
 }
 
 /// Allow at most `max_open_socks` concurrent connections.
@@ -68,10 +72,21 @@ void CogServer::set_max_open_sockets(int max_open_socks)
 void CogServer::enableNetworkServer(int port)
 {
     if (_consoleServer) return;
-    _consoleServer = new NetworkServer(port, "Telnet Server");
+    try
+    {
+        _consoleServer = new NetworkServer(port, "Telnet Server");
+    }
+    catch (const std::system_error& ex)
+    {
+        fprintf(stderr, "Error: Cannot enable network server at port %d: %s\n",
+            port, ex.what());
+        logger().info("Error: Cannot enable network server at port %d: %s\n",
+            port, ex.what());
+        std::rethrow_exception(std::current_exception());
+    }
 
     auto make_console = [](void)->ServerSocket*
-            { return new ServerConsole(); };
+            { return new ServerConsole(cogserver()); };
     _consoleServer->run(make_console);
     _running = true;
     logger().info("Network server running on port %d", port);
@@ -82,11 +97,22 @@ void CogServer::enableWebServer(int port)
 {
 #ifdef HAVE_OPENSSL
     if (_webServer) return;
-    _webServer = new NetworkServer(port, "WebSocket Server");
+    try
+    {
+        _webServer = new NetworkServer(port, "WebSocket Server");
+    }
+    catch (const std::system_error& ex)
+    {
+        fprintf(stderr, "Error: Cannot enable web server at port %d: %s\n",
+            port, ex.what());
+        logger().info("Error: Cannot enable web server at port %d: %s\n",
+            port, ex.what());
+        std::rethrow_exception(std::current_exception());
+    }
 
     auto make_console = [](void)->ServerSocket* {
-        ServerSocket* ss = new WebServer();
-        ss->act_as_websocket();
+        ServerSocket* ss = new WebServer(cogserver());
+        ss->act_as_http_socket();
         return ss;
     };
     _webServer->run(make_console);
@@ -98,6 +124,38 @@ void CogServer::enableWebServer(int port)
 #endif // HAVE_SSL
 }
 
+/// Open the given port number for MCP service.
+void CogServer::enableMCPServer(int port)
+{
+#if HAVE_MCP
+    if (_mcpServer) return;
+    try
+    {
+        _mcpServer = new NetworkServer(port, "Model Context Protocol Server");
+    }
+    catch (const std::system_error& ex)
+    {
+        fprintf(stderr, "Error: Cannot enable MCP server at port %d: %s\n",
+            port, ex.what());
+        logger().info("Error: Cannot enable MCP server at port %d: %s\n",
+            port, ex.what());
+        std::rethrow_exception(std::current_exception());
+    }
+
+    auto make_console = [](void)->ServerSocket* {
+        ServerSocket* ss = new MCPServer(cogserver());
+        ss->act_as_mcp();
+        return ss;
+    };
+    _mcpServer->run(make_console);
+    _running = true;
+    logger().info("MCP server running on port %d", port);
+#else
+    printf("CogServer compiled without MCP Support.\n");
+    logger().info("CogServer compiled without MCP Support.");
+#endif // HAVE_SSL
+}
+
 void CogServer::disableNetworkServer()
 {
     // No-op for backwards-compat. Actual cleanup performed on
@@ -105,6 +163,10 @@ void CogServer::disableNetworkServer()
 }
 
 void CogServer::disableWebServer()
+{
+}
+
+void CogServer::disableMCPServer()
 {
 }
 
@@ -130,6 +192,8 @@ void CogServer::serverLoop()
 
     // Prevent the Network server from accepting any more connections,
     // and from queing any more Requests. I think. This might be racey.
+    if (_mcpServer)
+        _mcpServer->stop();
     if (_webServer)
         _webServer->stop();
     if (_consoleServer)
@@ -143,6 +207,8 @@ void CogServer::serverLoop()
     // doing this in other threads, e.g. the thread that calls stop()
     // or the thread that calls disableNetworkServer() will lead to
     // races.
+    if (_mcpServer) delete _mcpServer;
+    _mcpServer = nullptr;
     if (_webServer) delete _webServer;
     _webServer = nullptr;
     if (_consoleServer) delete _consoleServer;
@@ -198,7 +264,7 @@ std::string CogServer::stats_legend(void)
        "  STATE -- several states possible; `iwait` means waiting for input.\n"
        "  NLINE -- number of newlines received by the shell.\n"
        "  LAST-ACTIVITY -- the last time anything was received.\n"
-       "  K -- socket kind. `T` for telnet, `W` for WebSocket.\n"
+       "  K -- socket kind. `T` for telnet, `W` for WebSocket, 'M' for MCP.\n"
        "  U -- use count. The number of active handlers for the socket.\n"
        "  SHEL -- the current shell processor for the socket.\n"
        "  QZ -- size of the unprocessed (pending) request queue.\n"

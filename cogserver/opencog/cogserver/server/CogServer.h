@@ -12,10 +12,11 @@
 #ifndef _OPENCOG_COGSERVER_H
 #define _OPENCOG_COGSERVER_H
 
+#include <opencog/atomspace/AtomSpace.h>
+
 #include <opencog/cogserver/server/Module.h>
 #include <opencog/cogserver/server/ModuleManager.h>
 #include <opencog/network/NetworkServer.h>
-#include <opencog/cogserver/server/BaseServer.h>
 #include <opencog/cogserver/server/RequestManager.h>
 
 namespace opencog
@@ -47,13 +48,14 @@ namespace opencog
  * multi-user access.
  */
 class CogServer :
-    public BaseServer,
     public RequestManager,
     public ModuleManager
 {
 protected:
+    AtomSpacePtr _atomSpace;
     NetworkServer* _consoleServer;
     NetworkServer* _webServer;
+    NetworkServer* _mcpServer;
     bool _running;
 
     /** Protected; singleton instance! Bad things happen when there is
@@ -67,6 +69,10 @@ public:
     /** CogServer's destructor. Disables the network server and
      * unloads all modules. */
     virtual ~CogServer(void);
+
+    /** Returns the atomspace instance. */
+    AtomSpacePtr getAtomSpace() { return _atomSpace; }
+    void setAtomSpace(const AtomSpacePtr& as) { _atomSpace = as; }
 
     /** Server's main loop. Executed while the 'running' flag is set
      *  to true. It processes the request queue.
@@ -88,11 +94,16 @@ public:
      *  parameter SERVER_PORT */
     virtual void enableNetworkServer(int port=17001);
 
+	 /** Starts the webscokets server. */
     virtual void enableWebServer(int port=18080);
+
+	 /** Starts the MCP Model Context Protocol server. */
+    virtual void enableMCPServer(int port=18888);
 
     /** Stops the network server and closes all the open server sockets. */
     virtual void disableNetworkServer(void);
     virtual void disableWebServer(void);
+    virtual void disableMCPServer(void);
 
     bool running(void) { return _running; }
 
@@ -123,9 +134,9 @@ CogServer& cogserver(void);
 CogServer& cogserver(AtomSpacePtr);
 
 // Only cython needs this.
-inline AtomSpace& cython_server_atomspace(void)
+inline AtomSpacePtr cython_server_atomspace(void)
 {
-    return *(cogserver().getAtomSpace().get());
+    return cogserver().getAtomSpace();
 }
 
 /** @}*/

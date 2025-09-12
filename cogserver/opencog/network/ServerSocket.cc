@@ -151,7 +151,9 @@ std::string ServerSocket::connection_stats(void)
     char bf[132];
     snprintf(bf, 132, "%s %8d %s %5zd %s %c",
         sbuff, _tid, _status, _line_count, abuff,
-        _is_websocket?'W':'T');
+        _do_frame_io?'W':
+            (_is_http_socket?'H':
+                (_is_mcp_socket?'M':'T')));
 
     return bf;
 }
@@ -212,8 +214,11 @@ ServerSocket::ServerSocket(void) :
     _got_first_line(false),
     _got_http_header(false),
     _do_frame_io(false),
-    _is_websocket(false),
-    _got_websock_header(false)
+    _is_http_socket(false),
+    _got_websock_header(false),
+    _keep_alive(false),
+    _content_length(0),
+    _is_mcp_socket(false)
 {
     if (0 == _max_open_sockets)
     {
@@ -287,9 +292,9 @@ ServerSocket::~ServerSocket()
 
     Exit();
 
-    // An attempt to delete a boost socket, after being stopped with
-    // `boost::asio::io_service::stop()` will result in a crash, deep
-    // inside boost. Failing to delete is also obviously a memleak,
+    // An attempt to delete an asio socket, after being stopped with
+    // `asio::io_service::stop()` will result in a crash, deep
+    // inside asio. Failing to delete is also obviously a memleak,
     // but for now, well accept a memleak in exchange for stability.
     // See notes in the body of the Exit() method below (circa line 322).
     if (not _network_gone)
@@ -324,21 +329,41 @@ void ServerSocket::Send(const std::string& cmd)
 
     if (not _do_frame_io)
     {
-        Send(boost::asio::const_buffer(cmd.c_str(), cmdsize));
+        Send(asio::const_buffer(cmd.c_str(), cmdsize));
         return;
     }
+
+#if 0
+    // ??? Why is this here? Who uses this? Is this for MCP?
+    if (_is_http_socket)
+    {
+        // Build HTTP response with Content-Length
+        // XXX FIXME Content-Type is wrong for everyone but JSON,
+        // but who cares because only JSON uses HTTP.
+        std::string response =
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: application/json\r\n"
+            "Content-Length: " + std::to_string(cmdsize) + "\r\n"
+            "Cache-Control: no-cache\r\n"
+            "Connection: keep-alive\r\n"
+            "\r\n";
+
+        // Send headers
+        send_websocket(response);
+    }
+#endif
 
     // If we are here, we have to perform websockets framing.
     send_websocket(cmd);
 }
 
-void ServerSocket::Send(const boost::asio::const_buffer& buf)
+void ServerSocket::Send(const asio::const_buffer& buf)
 {
     OC_ASSERT(_socket, "Use of socket after it's been closed!\n");
 
-    boost::system::error_code error;
-    boost::asio::write(*_socket, buf,
-                       boost::asio::transfer_all(), error);
+    std::error_code error;
+    asio::write(*_socket, buf,
+                       asio::transfer_all(), error);
 
     // The most likely cause of an error is that the remote side has
     // closed the socket, even though we still had stuff to send.
@@ -346,18 +371,18 @@ void ServerSocket::Send(const boost::asio::const_buffer& buf)
     // (for example, ECONNRESET `Connection reset by peer`)
     // Don't log these harmless errors.
     // Do log true failures.
-    if (error.value() != boost::system::errc::success and
-        error.value() != boost::asio::error::not_connected and
-        error.value() != boost::asio::error::broken_pipe and
-        error.value() != boost::asio::error::bad_descriptor and
-        error.value() != boost::asio::error::connection_reset)
+    if (error and
+        error.value() != asio::error::not_connected and
+        error.value() != asio::error::broken_pipe and
+        error.value() != asio::error::bad_descriptor and
+        error.value() != asio::error::connection_reset)
         logger().warn("ServerSocket::Send(): %s on thread 0x%x\n",
              error.message().c_str(), pthread_self());
 }
 
-// As far as I can tell, boost::asio is not actually thread-safe,
+// As far as I can tell, asio is not actually thread-safe,
 // in particular, when closing and destroying sockets.  This strikes
-// me as incredibly stupid -- a first-class reason to not use boost.
+// me as incredibly stupid -- a first-class reason to not use asio.
 // But whatever.  Hack around this for now.
 static std::mutex _asio_crash;
 
@@ -372,26 +397,26 @@ void ServerSocket::Exit()
     logger().debug("ServerSocket::Exit()");
     try
     {
-        _socket->shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+        _socket->shutdown(asio::ip::tcp::socket::shutdown_both);
 
-        // OK, so there is some boost bug here. This line of code
+        // OK, so there is some asio bug here. This line of code
         // crashes, and I can't figure out how to make it not crash.
         // So, if we start a cogserver, telnet into it, stop the
         // cogserver, then exit telnet, it will crash deep inside of
-        // boost (in the `close()` below.) I think it crashes because
-        // boost is accessing freed memory. That is, by this point,
+        // asio (in the `close()` below.) I think it crashes because
+        // asio is accessing freed memory. That is, by this point,
         // we have called `NetworkServer::stop()` which calls
-        // `boost::asio::io_service::stop()` which probably frees
-        // something. Of course, we only wanted to stop boost from
+        // `asio::io_service::stop()` which probably frees
+        // something. Of course, we only wanted to stop asio from
         // listening, and not to stop it from servicing sockets. So
         // anyway, it frees stuff, and then does a use-after-free.
         //
         // Why do I think this? Because, on rare occasions, it does not
         // crash in the `close()` below. It crashes later, in `malloc()`
-        // with a corrupted free list. Which tells me boost is doing
+        // with a corrupted free list. Which tells me asio is doing
         // use-after-free.
         //
-        // Boost ASIO seems awfully buggy to me ... its forced us into
+        // ASIO seems awfully buggy to me ... its forced us into
         // this stunningly complex design, and ... I don't know how to
         // (easily) fix it.
         //
@@ -404,10 +429,10 @@ void ServerSocket::Exit()
         if (not _network_gone)
             _socket->close();
     }
-    catch (const boost::system::system_error& e)
+    catch (const std::system_error& e)
     {
-        if (e.code() != boost::asio::error::not_connected and
-            e.code() != boost::asio::error::bad_descriptor)
+        if (e.code() != asio::error::not_connected and
+            e.code() != asio::error::bad_descriptor)
         {
             logger().error("ServerSocket::Exit(): Error closing socket: %s", e.what());
         }
@@ -417,7 +442,7 @@ void ServerSocket::Exit()
 
 // ==================================================================
 
-void ServerSocket::set_connection(boost::asio::ip::tcp::socket* sock)
+void ServerSocket::set_connection(asio::ip::tcp::socket* sock)
 {
     if (_socket) delete _socket;
     _socket = sock;
@@ -425,8 +450,8 @@ void ServerSocket::set_connection(boost::asio::ip::tcp::socket* sock)
 
 // ==================================================================
 
-typedef boost::asio::buffers_iterator<
-    boost::asio::streambuf::const_buffers_type> bitter;
+typedef asio::buffers_iterator<
+    asio::streambuf::const_buffers_type> bitter;
 
 // See RFC 854
 #define IAC 0xff  // Telnet Interpret As Command
@@ -458,13 +483,33 @@ match_eol_or_escape(bitter begin, bitter end)
 
 /// Read a single newline-delimited line from the socket.
 /// Return immediately if a ctrl-C or ctrl-D is found.
-std::string ServerSocket::get_telnet_line(boost::asio::streambuf& b)
+std::string ServerSocket::get_telnet_line(asio::streambuf& b)
 {
-    boost::asio::read_until(*_socket, b, match_eol_or_escape);
+    asio::read_until(*_socket, b, match_eol_or_escape);
     std::istream is(&b);
     std::string line;
     std::getline(is, line);
     return line;
+}
+
+/// Read _content_length bytes from the socket.
+std::string ServerSocket::get_http_body(asio::streambuf& b)
+{
+    if (_content_length == 0) return "";
+
+    // Need to read more data
+    if (b.size() < _content_length)
+    {
+        size_t remaining = _content_length - b.size();
+        asio::read(*_socket, b,
+            asio::transfer_exactly(remaining));
+    }
+
+    std::string body;
+    body.resize(_content_length);
+    std::istream is(&b);
+    is.read(&body[0], _content_length);
+    return body;
 }
 
 // ==================================================================
@@ -478,10 +523,10 @@ void ServerSocket::handle_connection(void)
     _pth = pthread_self();
     logger().debug("ServerSocket::handle_connection()");
 
-    // telent sockets have no setup to do.
-    if (not _is_websocket)
+    // telnet sockets have no setup to do.
+    if (not _is_http_socket)
         OnConnection();
-    boost::asio::streambuf b;
+    asio::streambuf b;
     while (true)
     {
         try
@@ -492,6 +537,12 @@ void ServerSocket::handle_connection(void)
                line = get_telnet_line(b);
             else
                line = get_websocket_line();
+
+            // Some local Linux D-Bus daemon desperately wants to
+            // talk to us, sending us binary garbage of some kind.
+            // Desperately ignore it.
+            if (1 < line.size() and
+                0x1 == line.c_str()[0] and 0x21 == line.c_str()[1]) break;
 
             // Strip off carriage returns. The line already stripped
             // newlines.
@@ -504,19 +555,42 @@ void ServerSocket::handle_connection(void)
             total_line_count++;
             _status = RUN;
 
-				// Bypass until we've got the WebSocket fully open.
-				if (_is_websocket and not _do_frame_io)
-					HandshakeLine(line);
-				else
-            	OnLine(line);
+            // If its not an http sock, then the API is simple.
+            if (not _is_http_socket)
+                OnLine(line);
+            else
+            {
+                // Bypass until we've received the full HTTP header.
+                if (not _got_http_header)
+                    HandshakeLine(line);
+                if (_got_http_header)
+                {
+                    // Process the complete HTTP request
+                    // If we're running websockets, then we're doing
+                    // frame I/O and we've already got the line.
+                    // Otherwise, we use http Content-Length.
+                    if (_do_frame_io)
+                        OnLine(line);
+                    else
+                    {
+                        std::string http_body(get_http_body(b));
+                        OnLine(http_body);
+
+                        // Reset for next HTTP request.
+                        _got_http_header = false;
+                        _got_first_line = false;
+                        _content_length = 0;
+                    }
+                }
+            }
         }
-        catch (const boost::system::system_error& e)
+        catch (const std::system_error& e)
         {
-            if (e.code() == boost::asio::error::eof) {
+            if (e.code() == asio::error::eof) {
                 break;
-            } else if (e.code() == boost::asio::error::connection_reset) {
+            } else if (e.code() == asio::error::connection_reset) {
                 break;
-            } else if (e.code() == boost::asio::error::not_connected) {
+            } else if (e.code() == asio::error::not_connected) {
                 break;
             } else {
                 logger().error("ServerSocket::handle_connection(): Error reading data. Message: %s", e.what());
@@ -532,7 +606,7 @@ void ServerSocket::handle_connection(void)
     _status = CLOSE;
 
     // Perform cleanup at end, if in telnet mode.
-    if (not _is_websocket)
+    if (not _is_http_socket)
     {
         // If the data sent to us is not new-line terminated, then
         // there may still be some bytes sitting in the buffer. Get

@@ -1,6 +1,5 @@
 OpenCog CogServer
 =================
-
 [![CircleCI](https://circleci.com/gh/opencog/cogserver.svg?style=svg)](https://circleci.com/gh/opencog/cogserver)
 
 The OpenCog CogServer is a network scheme & python command-line
@@ -41,7 +40,7 @@ This capability is useful in several different ways:
   The only difference is that prompts are not sent. For example, the
   python API is available at `ws://localhost:18080/py`.  At this time,
   encryption is not supported, so `wss://` URL's will not work.
-  See the [websocket example](./examples/websocket/demo.html) for more.
+  See the [websocket example](./examples/websockets/demo.html) for more.
 
 * **JSON-style interface.** This is useful for creating JavaScript-powered
   visualizers and user interfaces. Suitable for people who are more
@@ -63,8 +62,15 @@ This capability is useful in several different ways:
 
 * **Proxy Agents.** The proxy infrastructure has been replaced by a
   more general, more flexible, more powerful and configurable proxying
-  system. See the main AtomSpace git repo, in the
-  [opencog/persist/proxy directory.](https://github.com/opencog/atomspace/tree/master/opencog/persist/proxy)
+  system. See the AtomSpace Storage git repo, in the
+  [opencog/persist/proxy directory.](https://github.com/opencog/atomspace-storage/tree/master/opencog/persist/proxy)
+
+* **Model Context Protocol.** An experimental MCP interface is being
+  developed; this allows MCP-compatible LLM's to interact with the
+  AtomSpace. There are two interfaces to it; one is plain-text, as would
+  be the case for stdio MCP servers. The other is a standard HTTP
+  connection.  See the [MCP README](./examples/mcp/README.md) for more
+  info.
 
 * The `stats` command provides a `top`-like command for viewing who is
   connected to the Cogserver, and what they are doing. Type `help stats`
@@ -75,7 +81,7 @@ For more info, please consult the
 
 Version
 -------
-This is **version 3.2.0**. The code is stable, it's been used in
+This is **version 3.3.0**. The code is stable, it's been used in
 production settings for a decade.   There are no known bugs. There are
 some planned features; see below.
 
@@ -143,11 +149,25 @@ To build and run the CogServer, you need to install the AtomSpace first.
   to `sudo make install` at the end.
 
 The WebSockets server needs the OpenSSL devel environment to be
-installed.
+installed. Optional; if not installed, the cogserver will be built
+without websockets support.
+
+###### ASIO
+> The ASIO asynchronous IO system.
+> On Debian/Ubuntu, `sudo apt install libasio-dev`
 
 ###### OpenSSL
 > OpenSSL
 > On Debian/Ubuntu, `sudo apt install libssl-dev`
+
+The MCP Model Context Protocol server needs the NLohmann JSON devel
+environment to be installed.  Optional; if not installed, the cogserver
+will be built without MCP support.
+
+###### NLohmann JSON
+> JSON support library
+> On Debian/Ubuntu, `sudo apt install nlohmann-json3-dev`
+
 
 Unit tests
 ----------

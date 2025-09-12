@@ -19,13 +19,23 @@
 #include <opencog/util/Config.h>
 #include <opencog/util/Logger.h>
 #include <opencog/util/exceptions.h>
-#include <opencog/util/files.h>
 #include <opencog/util/misc.h>
-#include <opencog/util/platform.h>
 
 #include "ModuleManager.h"
 
 using namespace opencog;
+
+static std::string get_exe_dir()
+{
+    static const int PATH_MAX=1024;
+    static char buf[PATH_MAX];
+    int rslt = readlink("/proc/self/exe", buf, PATH_MAX);
+    if (rslt < 0) return "";
+
+    buf[rslt] = '\0';
+    std::string exeName(buf);
+    return exeName.substr(0, exeName.rfind("/")+1);
+}
 
 ModuleManager::ModuleManager(void)
 {
@@ -346,6 +356,7 @@ void ModuleManager::loadModules(CogServer& cs)
             "libscheme-shell.so, "
             "libsexpr-shell.so, "
             "libjson-shell.so, "
+            "libmcp-shell.so, "
             "libpy-shell.so";
 
     std::vector<std::string> modules;

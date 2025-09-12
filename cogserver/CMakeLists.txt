@@ -8,7 +8,12 @@
 # -- configure various config files.
 # -- print pretty summary
 #
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
+
+# Python venv seems to need this.
+IF(CMAKE_VERSION VERSION_GREATER 3.31)
+	CMAKE_POLICY(SET CMP0177 NEW)
+ENDIF(CMAKE_VERSION VERSION_GREATER 3.31)
 
 PROJECT(cogserver)
 
@@ -52,11 +57,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/lib/")
 # Cogutil
 FIND_PACKAGE(CogUtil 2.0.1 CONFIG REQUIRED)
 IF (COGUTIL_FOUND)
-    MESSAGE(STATUS "CogUtil found.")
-    ADD_DEFINITIONS(-DHAVE_COGUTIL)
-    SET(HAVE_COGUTIL 1)
+	MESSAGE(STATUS "CogUtil found.")
+	ADD_DEFINITIONS(-DHAVE_COGUTIL)
+	SET(HAVE_COGUTIL 1)
 ELSE (COGUTIL_FOUND)
-    MESSAGE(FATAL_ERROR "CogUtil missing: it is needed!")
+	MESSAGE(FATAL_ERROR "CogUtil missing: it is needed!")
 ENDIF (COGUTIL_FOUND)
 
 # add the 'cmake' directory from cogutil to search path
@@ -80,27 +85,25 @@ ELSE (ATOMSPACE_FOUND)
 	MESSAGE(FATAL_ERROR "AtomSpace missing: it is needed!")
 ENDIF (ATOMSPACE_FOUND)
 
+# AtomSpace Storage proves s-expression parsing
+FIND_PACKAGE(AtomSpaceStorage CONFIG REQUIRED)
+IF (ATOMSPACE_STORAGE_FOUND)
+	MESSAGE(STATUS "AtomSpace Storage found.")
+	ADD_DEFINITIONS(-DHAVE_ATOMSPACE_STORAGE)
+	SET(HAVE_ATOMSPACE_STORAGE 1)
+ELSE (ATOMSPACE_STORAGE_FOUND)
+	MESSAGE(FATAL_ERROR "AtomSpace Storage missing: it is needed!")
+ENDIF (ATOMSPACE_STORAGE_FOUND)
+
+FIND_PACKAGE(Asio REQUIRED)
+IF (Asio_FOUND)
+	ADD_DEFINITIONS(-DHAVE_ASIO)
+	SET(HAVE_ASIO 1)
+ELSE (Asio_FOUND)
+	MESSAGE(FATAL_ERROR "ASIO missing: can't build without it.")
+ENDIF (Asio_FOUND)
+
 # ----------------------------------------------------------
-# Check for boost. We need dynamic-linked, threaded libs by default.
-SET(Boost_USE_STATIC_LIBS OFF)
-SET(Boost_USE_MULTITHREADED ON)
-SET(MIN_BOOST 1.46)
-
-# Required boost packages
-FIND_PACKAGE(Boost ${MIN_BOOST} COMPONENTS system REQUIRED)
-
-IF(Boost_FOUND)
-	SET(Boost_FOUND_SAVE 1)
-ELSE(Boost_FOUND)
-	MESSAGE(FATAL_ERROR "Boost ${MIN_BOOST} or newer is needed to build OpenCog!")
-ENDIF(Boost_FOUND)
-
-# Opencog won't compile with Boost 1.51, some kind of conflict with
-# hash functions, see github bugs 1 and 36
-IF(105100 EQUAL ${Boost_VERSION})
-	MESSAGE(FATAL_ERROR "Boost version 1.51 will not work with OpenCog.  Please use a different version.")
-ENDIF(105100 EQUAL ${Boost_VERSION})
-MESSAGE(STATUS "Boost version ${Boost_VERSION} found.")
 
 FIND_PACKAGE(OpenSSL)
 IF (OPENSSL_FOUND)
@@ -109,6 +112,17 @@ IF (OPENSSL_FOUND)
 ELSE (OPENSSL_FOUND)
 	MESSAGE(STATUS "OpenSSL missing: needed for WebSockets.")
 ENDIF (OPENSSL_FOUND)
+
+FIND_PACKAGE(PkgConfig)
+PKG_CHECK_MODULES(JSONCPP jsoncpp)
+IF (JSONCPP_FOUND)
+	ADD_DEFINITIONS(-DHAVE_MCP=1)
+	SET(HAVE_MCP 1)
+	INCLUDE_DIRECTORIES(${JSONCPP_INCLUDE_DIRS})
+ELSE (JSONCPP_FOUND)
+	MESSAGE(STATUS "MCP missing: needed for Model Context Protocol support (jsoncpp required).")
+ENDIF (JSONCPP_FOUND)
+
 
 # ----------------------------------------------------------
 # Needed for unit tests
@@ -143,17 +157,12 @@ ENDIF (VALGRIND_FOUND)
 # Include configuration.
 
 # Set default include paths.
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS}
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}
 	${COGUTIL_INCLUDE_DIR} ${ATOMSPACE_INCLUDE_DIR})
 
-# Macros that define how atom types get declared.
-IF (NOT DEFINED ATOMSPACE_DATA_DIR)
-	SET (ATOMSPACE_DATA_DIR "${COGUTIL_DATA_DIR}")
-ENDIF (NOT DEFINED ATOMSPACE_DATA_DIR)
-
-INCLUDE("${ATOMSPACE_DATA_DIR}/cmake/OpenCogMacros.cmake")
-INCLUDE("${ATOMSPACE_DATA_DIR}/cmake/OpenCogGuile.cmake")
-INCLUDE("${ATOMSPACE_DATA_DIR}/cmake/OpenCogCython.cmake")
+INCLUDE(OpenCogMacros)
+INCLUDE(OpenCogGuile)
+INCLUDE(OpenCogCython)
 
 # ==========================================================
 # Decide what to build, based on the packages found.
@@ -165,7 +174,14 @@ ENDIF(HAVE_ATOMSPACE AND HAVE_COGUTIL)
 IF(HAVE_SERVER)
 	ADD_SUBDIRECTORY(lib)
 	ADD_SUBDIRECTORY(opencog)
-	ADD_SUBDIRECTORY(examples EXCLUDE_FROM_ALL)
+	# ADD_SUBDIRECTORY(examples EXCLUDE_FROM_ALL)
+	ADD_SUBDIRECTORY(examples)
+
+	ADD_CUSTOM_TARGET(examples
+		COMMAND $(MAKE)
+		WORKING_DIRECTORY examples
+		COMMENT "Building examples"
+	)
 ENDIF(HAVE_SERVER)
 
 IF (CXXTEST_FOUND AND HAVE_SERVER)
@@ -220,7 +236,7 @@ STRING(TIMESTAMP UTC_DATE %Y%m%d UTC)
 FILE(WRITE "${PROJECT_BINARY_DIR}/install_manifest.txt")
 ## It doesn't have a header-file declaring the version similar to cogutil and
 ## atomspace.
-SET(SEMANTIC_VERSION 0.1.4)
+SET(SEMANTIC_VERSION 3.3.0)
 
 ## Cpack configuration
 SET(CPACK_GENERATOR "DEB")
@@ -262,6 +278,7 @@ FIND_PACKAGE(Doxygen)
 
 SUMMARY_ADD("CogServer"    "CogServer network server" HAVE_SERVER)
 SUMMARY_ADD("WebSockets"   "WebSockets network server" HAVE_OPENSSL)
+SUMMARY_ADD("MCP"          "Model Context Protocol network server" HAVE_MCP)
 SUMMARY_ADD("Cython"       "Cython (python) bindings" HAVE_CYTHON)
 SUMMARY_ADD("Doxygen"      "Code documentation" DOXYGEN_FOUND)
 SUMMARY_ADD("Python tests" "Python bindings nose tests" HAVE_NOSETESTS)

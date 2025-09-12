@@ -5,7 +5,7 @@ INCLUDE_DIRECTORIES(
 
 IF (HAVE_CYTHON)
 	INCLUDE_DIRECTORIES(
-		${PYTHON_INCLUDE_PATH}
+		${Python3_INCLUDE_DIRS}
 	)
 
 	ADD_LIBRARY (py-shell SHARED
@@ -21,7 +21,7 @@ IF (HAVE_CYTHON)
 		${ATOMSPACE_smob_LIBRARY}
 		${ATOMSPACE_LIBRARY}
 		${COGUTIL_LIBRARY}
-		${PYTHON_LIBRARIES}
+		${Python3_LIBRARIES}
 	)
 ENDIF (HAVE_CYTHON)
 
@@ -46,6 +46,7 @@ ADD_LIBRARY (sexpr-shell SHARED
 TARGET_LINK_LIBRARIES(sexpr-shell
 	network
 	server
+	${ATOMSPACE_STORAGE_LIBRARIES}
 	${ATOMSPACE_LIBRARY}
 	${COGUTIL_LIBRARY}
 )
@@ -58,6 +59,7 @@ ADD_LIBRARY (json-shell SHARED
 TARGET_LINK_LIBRARIES(json-shell
 	network
 	server
+	${ATOMSPACE_STORAGE_LIBRARIES}
 	${ATOMSPACE_LIBRARY}
 	${COGUTIL_LIBRARY}
 )
@@ -75,6 +77,35 @@ TARGET_LINK_LIBRARIES(top-shell
 	${COGUTIL_LIBRARY}
 )
 
+IF (HAVE_MCP)
+	ADD_LIBRARY (mcp-eval SHARED
+		McpEval.cc
+		McpPlugEcho.cc
+	)
+	TARGET_LINK_LIBRARIES(mcp-eval
+		${ATOMSPACE_STORAGE_LIBRARIES}
+		${JSONCPP_LIBRARIES}
+	)
+
+	INSTALL (TARGETS mcp-eval
+		EXPORT CogServerTargets
+		DESTINATION "lib${LIB_DIR_SUFFIX}/opencog"
+	)
+
+	ADD_LIBRARY (mcp-shell SHARED
+		McpShell.cc
+		McpShellModule.cc
+	)
+
+	TARGET_LINK_LIBRARIES(mcp-shell
+		mcp-eval
+		network
+		server
+		${ATOMSPACE_LIBRARY}
+		${COGUTIL_LIBRARY}
+	)
+ENDIF (HAVE_MCP)
+
 # ---------------------- install targets
 
 INSTALL (TARGETS
@@ -89,3 +120,7 @@ IF (HAVE_CYTHON)
 		LIBRARY DESTINATION "lib${LIB_DIR_SUFFIX}/opencog/modules")
 ENDIF (HAVE_CYTHON)
 
+IF (HAVE_MCP)
+	INSTALL (TARGETS mcp-shell
+		LIBRARY DESTINATION "lib${LIB_DIR_SUFFIX}/opencog/modules")
+ENDIF (HAVE_MCP)
