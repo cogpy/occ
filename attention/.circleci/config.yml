@@ -29,7 +29,7 @@ jobs:
           name: Checkout AtomSpace
           command: git clone --depth 1 https://github.com/$CIRCLE_PROJECT_USERNAME/atomspace /ws/atomspace
       - restore_cache:
-          name: Restore GCH Cache
+          name: Restore GHC Cache
           keys:
             - ghc-{{checksum "/ws/atomspace/opencog/haskell/stack.yaml"}}-{{ arch }}
       - restore_cache:
@@ -53,13 +53,35 @@ jobs:
           paths:
             - /ws/atomspace/opencog/haskell/.stack-work
       - run:
+          name: Install AtomSpace Storage
+          command: |
+            git clone --depth 1 https://github.com/$CIRCLE_PROJECT_USERNAME/atomspace-storage /ws/atomspace-storage
+            mkdir -p /ws/atomspace-storage/build
+            cd /ws/atomspace-storage/build && cmake .. && make -j2 && make -j2 install
+            ldconfig
+      - run:
           name: Install CogServer
           command: |
             git clone --depth 1 https://github.com/$CIRCLE_PROJECT_USERNAME/cogserver /ws/cogserver
             mkdir -p /ws/cogserver/build
             cd /ws/cogserver/build && cmake .. && make -j2 && make -j2 install
             ldconfig
-      - checkout
+
+      # The checkout directive only works if there is a deploy key
+      # configured in github. Most repos have this, but some do not.
+      # Work around this by doing the clone manually. This is all
+      # read-only anyway, so I have no clue why the special key was
+      # needed.
+      #
+      # Without the deploy key, one gets the cryptic error message
+      # Either git or ssh (required by git to clone through SSH) is Not Installed in the Image
+      # apt-get installing openssh-client says 'access denied', which
+      # tells us that the deploy key is missing.
+      #
+      # - checkout
+      - run:
+          command: |
+            git clone --depth 1 https://github.com/$CIRCLE_PROJECT_USERNAME/attention /ws/attention
       - run:
           name: CMake Configure
           command: mkdir build && cd build && cmake ..
@@ -84,6 +106,7 @@ jobs:
           paths:
             - cogutil
             - atomspace
+            - atomspace-storage
             - cogserver
             - attention
             - ccache
@@ -99,7 +122,7 @@ jobs:
       - attach_workspace:
           at: /ws/
       - restore_cache:
-          name: Restore GCH Cache
+          name: Restore GHC Cache
           keys:
             - ghc-{{checksum "/ws/atomspace/opencog/haskell/stack.yaml"}}-{{ arch }}
       - restore_cache:
@@ -112,6 +135,9 @@ jobs:
       - run:
           name: Install AtomSpace
           command: cd /ws/atomspace/build && make -j2 install && ldconfig
+      - run:
+          name: Install AtomSpace Storage
+          command: cd /ws/atomspace-storage/build && make -j2 install && ldconfig
       - run:
           name: Install CogServer
           command: cd /ws/cogserver/build && make -j2 install && ldconfig

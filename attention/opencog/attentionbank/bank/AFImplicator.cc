@@ -19,6 +19,7 @@
 
 #include <opencog/atoms/core/UnorderedLink.h>
 #include <opencog/atoms/pattern/BindLink.h>
+#include <opencog/atoms/value/QueueValue.h>
 #include "AFImplicator.h"
 
 using namespace opencog;
@@ -40,15 +41,15 @@ Handle af_bindlink(AtomSpace* as, const Handle& hbindlink)
 	BindLinkPtr bl(BindLinkCast(hbindlink));
 
 	// Now perform the search.
-	AFImplicator impl(as);
-	impl.implicand = bl->get_implicand();
+	QueueValuePtr qvp(createQueueValue());
+	ContainerValuePtr cvp(qvp);
+	AFImplicator impl(as, cvp);
 	impl.satisfy(bl);
 
 	// The result_list contains a list of the grounded expressions.
 	// (The order of the list has no significance, so it's really a set.)
 	// Put the set into a SetLink, cache it, and return that.
-	QueueValuePtr qv(impl.get_result_queue());
-	HandleSeq hs(qv->to_handle_seq());
+	HandleSeq hs(qvp->to_handle_seq());
 	Handle rewr(createUnorderedLink(std::move(hs), SET_LINK));
 	return as->add_atom(rewr);
 }
