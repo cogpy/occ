@@ -42,6 +42,8 @@
 #include <opencog/atoms/core/UnorderedLink.h>
 #include <opencog/atoms/pattern/PatternLink.h>
 #include <opencog/atoms/pattern/GetLink.h>
+#include <opencog/atoms/value/ContainerValue.h>
+#include <opencog/atoms/value/QueueValue.h>
 #include <opencog/query/Satisfier.h>
 
 #include <boost/range/algorithm/transform.hpp>
@@ -470,7 +472,7 @@ unsigned MinerUtils::support(const Handle& pattern,
 	                 { return component_support(cp, db, ms); });
 
 	// Return the product of all frequencies
-	return boost::accumulate(freqs, 1, std::multiplies<unsigned>());
+	return std::accumulate(freqs.begin(), freqs.end(), 1, std::multiplies<unsigned>());
 }
 
 unsigned MinerUtils::component_support(const Handle& component,
@@ -640,12 +642,13 @@ Handle MinerUtils::restricted_satisfying_set(const Handle& pattern,
 		gl = tmp_query_as->add_link(GET_LINK, vardecl, body);
 
 	// Run pattern matcher
-	SatisfyingSet sater(tmp_db_as.get());
+	QueueValuePtr qvp(createQueueValue());
+	ContainerValuePtr cvp(qvp);
+	SatisfyingSet sater(tmp_db_as.get(), cvp);
 	sater.max_results = ms;
 	sater.satisfy(PatternLinkCast(gl));
 
-	QueueValuePtr qv(sater.get_result_queue());
-	HandleSeq hs(qv->to_handle_seq());
+	HandleSeq hs(qvp->to_handle_seq());
 	return Handle(createUnorderedLink(std::move(hs), SET_LINK));
 }
 
@@ -1025,7 +1028,7 @@ HandleSeqSeqSeq MinerUtils::combinatorial_insert(const Handle& h,
 	HandleSeqSeq fst(from, to);
 	fst.push_back(head);
 	rst.push_back(fst);
-	return rst; 
+	return rst;
 }
 
 HandleSeqSeqSeq MinerUtils::partitions(const HandleSeq& hs)
