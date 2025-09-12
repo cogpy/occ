@@ -22,7 +22,10 @@
              (gnu packages boost)
              (gnu packages serialization)
              (gnu packages databases)
-             (gnu packages version-control))
+             (gnu packages version-control)
+             (gnu packages maths)
+             (gnu packages cpp)
+             (gnu packages check))
 
 (define-public opencog-collection
   (package
@@ -30,73 +33,71 @@
     (version "0.1.0")
     (source (local-file "." "opencog-collection-checkout"
                         #:recursive? #t))
-    (build-system python-build-system)
+    (build-system cmake-build-system)
     (arguments
      `(#:tests? #f  ; Disable tests for now as they may require network access
+       #:configure-flags 
+       '("-DCMAKE_BUILD_TYPE=Release"
+         "-DBUILD_COGUTIL=ON"
+         "-DBUILD_ATOMSPACE=ON"
+         "-DBUILD_COGSERVER=ON"
+         "-DBUILD_MATRIX=ON"
+         "-DBUILD_LEARN=ON"
+         "-DBUILD_AGENTS=ON"
+         "-DBUILD_SENSORY=ON"
+         "-DBUILD_ATOMSPACE_STORAGE=OFF"  ; Disable storage for now to reduce complexity
+         "-DBUILD_ATOMSPACE_EXTENSIONS=OFF")
        #:phases
        (modify-phases %standard-phases
-         ;; Skip configure phase as this is primarily a Python application
-         (delete 'configure)
-         (replace 'build
-           (lambda* (#:key outputs #:allow-other-keys)
-             ;; Build the Rust Hyperon component if Cargo.toml exists
-             (when (file-exists? "Cargo.toml")
-               (setenv "CARGO_HOME" (string-append (getcwd) "/.cargo"))
-               (invoke "cargo" "build" "--release"))
+         (add-before 'configure 'set-environment
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             ;; Set up environment for building
+             (setenv "BOOST_ROOT" (assoc-ref inputs "boost"))
+             (setenv "PKG_CONFIG_PATH" 
+                     (string-append (assoc-ref inputs "pkg-config") "/lib/pkgconfig:"
+                                  (getenv "PKG_CONFIG_PATH")))
              #t))
-         (replace 'install
+         (add-after 'install 'install-python-components
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
                     (bin (string-append out "/bin"))
-                    (share (string-append out "/share/opencog-collection"))
                     (python-sitedir (string-append out
                                                   "/lib/python"
-                                                  (python-version (assoc-ref %build-inputs "python"))
+                                                  ,(version-major+minor (package-version python))
                                                   "/site-packages")))
-               ;; Create directories
-               (mkdir-p bin)
-               (mkdir-p share)
+               ;; Install Python demo application
                (mkdir-p python-sitedir)
+               (install-file "app.py" (string-append out "/share/opencog-collection/"))
                
-               ;; Install the complete source tree to share directory
-               (copy-recursively "." share
-                                #:select? (lambda (file stat)
-                                           (not (or (string-contains file "/.git")
-                                                   (string-contains file "/target")
-                                                   (string-contains file "/.cargo")
-                                                   (string-contains file "/__pycache__")))))
-               
-               ;; Create a wrapper script for the Python application
-               (call-with-output-file (string-append bin "/opencog-collection")
+               ;; Create wrapper script for Python demo
+               (call-with-output-file (string-append bin "/opencog-demo")
                  (lambda (port)
                    (format port "#!/bin/sh
 export PYTHONPATH=~a:$PYTHONPATH
 exec ~a ~a/app.py \"$@\"~%"
                            python-sitedir
                            (which "python3")
-                           share)))
-               (chmod (string-append bin "/opencog-collection") #o755)
-               
-               ;; Install Python dependencies to site-packages
-               (copy-file "app.py" (string-append python-sitedir "/opencog_collection.py"))
-               
-               ;; Install Rust binary and library if they were built
-               (when (file-exists? "target/release/hyperon")
-                 (install-file "target/release/hyperon" bin))
-               (when (file-exists? "target/release/libhyperon.so")
-                 (install-file "target/release/libhyperon.so" (string-append out "/lib")))
+                           (string-append out "/share/opencog-collection"))))
+               (chmod (string-append bin "/opencog-demo") #o755)
                #t)))
-         (replace 'check
-           (lambda* (#:key tests? #:allow-other-keys)
-             (when tests?
-               ;; Basic smoke test - try to import numpy and run a simple operation
-               (invoke "python3" "-c" "import numpy as np; print('NumPy version:', np.__version__)"))
-             #t)))))
+         (add-after 'install 'install-rust-components
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               ;; Build and install Rust Hyperon component if present
+               (when (file-exists? "Cargo.toml")
+                 (setenv "CARGO_HOME" (string-append (getcwd) "/.cargo"))
+                 (invoke "cargo" "build" "--release")
+                 (when (file-exists? "target/release/hyperon")
+                   (install-file "target/release/hyperon" (string-append out "/bin")))
+                 (when (file-exists? "target/release/libhyperon.so")
+                   (install-file "target/release/libhyperon.so" (string-append out "/lib"))))
+               #t)))))))
     (native-inputs
      (list pkg-config
            cmake
            rust
-           `(,rust "cargo")))
+           `(,rust "cargo")
+           cxxtest))
     (inputs
      (list python
            python-numpy
@@ -104,7 +105,10 @@ exec ~a ~a/app.py \"$@\"~%"
            python-scikit-learn
            python-matplotlib
            guile-3.0
-           boost))
+           boost
+           blas
+           lapack
+           gsl))
     (propagated-inputs
      (list python-numpy
            python-pandas
@@ -113,18 +117,28 @@ exec ~a ~a/app.py \"$@\"~%"
     (home-page "https://github.com/rzonedevops/occ")
     (synopsis "OpenCog Collection - Machine Learning Integration Environment")
     (description
-     "This package provides a development environment for the integration of
-machine learning into Redox OS using Python, Rust, Prolog, and C.  It includes
-the OpenCog Hyperon system and various machine learning tools and libraries.
-The collection contains multiple OpenCog-related projects and provides both
-Python and Rust interfaces for cognitive computing applications.
+     "This package provides the OpenCog Collection monorepo - an integrated
+development environment for cognitive computing and artificial general intelligence (AGI).
+The collection brings together multiple OpenCog-related projects into a coherent
+whole for cognitive synergy.
 
-The package includes:
+The package includes the core OpenCog components:
 @itemize
-@item A Python-based machine learning demonstration using scikit-learn
+@item CogUtil - Base utilities and configuration system
+@item AtomSpace - Hypergraph database and query engine  
+@item CogServer - Networking and communication layer
+@item Matrix - Sparse vector and graph processing
+@item Learn - Symbolic learning algorithms
+@item Agents - Interactive cognitive agents
+@item Sensory - Dataflow system for external world interaction
+@end itemize
+
+Additionally includes:
+@itemize
+@item Python-based machine learning demonstration using scikit-learn
 @item Rust-based Hyperon cognitive computing framework
-@item Multiple OpenCog subprojects and tools
-@item Development environment setup for cognitive computing research
+@item Complete source for research and development
+@item Development environment for cognitive computing applications
 @end itemize")
     (license license:mit)))
 

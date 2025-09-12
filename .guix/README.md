@@ -1,13 +1,14 @@
 # Guix Packaging for OpenCog Collection
 
-This directory contains GNU Guix packaging files for the OpenCog Collection (OCC) project.
+This directory contains GNU Guix packaging files for the OpenCog Collection (OCC) project - a monorepo integration of OpenCog components for cognitive synergy.
 
 ## Files
 
 - **`.guix/modules/opencog-package.scm`** - Main package definition module
-- **`.guix/manifest.scm`** - Development environment manifest
+- **`.guix/manifest.scm`** - Development environment manifest with all dependencies
 - **`.guix-channel`** - Channel definition for adding this repo as a Guix channel
-- **`guix.scm`** - Top-level package file for building
+- **`guix.scm`** - Top-level package file for building the complete system
+- **`verify.sh`** - Validation script to test the configuration
 
 ## Usage
 
@@ -19,24 +20,53 @@ To enter a development shell with all dependencies:
 guix shell -m .guix/manifest.scm
 ```
 
-This will provide you with:
-- Python 3 with NumPy, Pandas, scikit-learn, and Matplotlib
-- Rust and Cargo for building Hyperon components
-- CMake and build tools
-- Guile Scheme for OpenCog development
-- Various development utilities
+This provides you with:
+- **C++ Development**: GCC, CMake, Boost, GSL, BLAS/LAPACK, CxxTest
+- **Python Stack**: Python 3 with NumPy, Pandas, scikit-learn, Matplotlib, Jupyter
+- **Rust Toolchain**: Rust and Cargo for Hyperon components
+- **Scheme/Guile**: Guile with modules for OpenCog development
+- **Build Tools**: pkg-config, autotools, Git, and development utilities
 
-### Building the package
+### Building the complete package
 
-To build the OpenCog Collection package:
+To build the integrated OpenCog Collection with all C++ components:
 
 ```bash
 guix build -f guix.scm
 ```
 
+This builds:
+- **CogUtil** - Base utilities and configuration
+- **AtomSpace** - Hypergraph database and query engine
+- **CogServer** - Networking and communication layer
+- **Matrix** - Sparse vector and graph processing
+- **Learn** - Symbolic learning algorithms
+- **Sensory** - Dataflow system for external world interaction
+- **Python Demo** - Machine learning demonstration
+- **Rust Hyperon** - Cognitive computing framework (if present)
+
+### Manual CMake build
+
+For development and testing:
+
+```bash
+guix shell -m .guix/manifest.scm
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+```
+
+Build options:
+- `-DBUILD_COGUTIL=ON/OFF` - Build CogUtil library
+- `-DBUILD_ATOMSPACE=ON/OFF` - Build AtomSpace hypergraph database
+- `-DBUILD_COGSERVER=ON/OFF` - Build CogServer networking
+- `-DBUILD_MATRIX=ON/OFF` - Build Matrix sparse vector support
+- `-DBUILD_LEARN=ON/OFF` - Build symbolic learning
+- `-DBUILD_SENSORY=ON/OFF` - Build sensory dataflow system
+
 ### Installing the package
 
-To install the package to your profile:
+To install to your profile:
 
 ```bash
 guix install -f guix.scm
@@ -44,7 +74,7 @@ guix install -f guix.scm
 
 ### Using as a channel
 
-To use this repository as a Guix channel, add it to your `~/.config/guix/channels.scm`:
+Add to your `~/.config/guix/channels.scm`:
 
 ```scheme
 (cons* (channel
@@ -54,7 +84,7 @@ To use this repository as a Guix channel, add it to your `~/.config/guix/channel
        %default-channels)
 ```
 
-Then run:
+Then:
 
 ```bash
 guix pull
@@ -63,42 +93,86 @@ guix install opencog-collection
 
 ## Package Structure
 
-The package includes:
-- Python machine learning demonstration using the iris dataset
-- Rust-based Hyperon cognitive computing framework
-- Complete OpenCog collection source code
-- Development environment setup
+The integrated package provides:
+
+### Core OpenCog Components
+- **CogUtil** - Foundation utilities and macros
+- **AtomSpace** - Hypergraph knowledge representation
+- **CogServer** - Network protocol and shell
+- **Matrix** - Sparse matrix operations for graphs
+- **Learn** - Grammar learning and symbolic AI
+- **Sensory** - I/O and perception framework
+
+### Additional Components
+- **Python Demo** - Machine learning with scikit-learn
+- **Rust Hyperon** - Next-generation cognitive architecture
+- **Development Environment** - Complete toolchain for research
+
+## Validation
+
+Test the configuration:
+
+```bash
+./.guix/verify.sh
+```
+
+This checks:
+- Guix file structure and syntax
+- CMake configuration
+- Component availability
+- Python and Rust components
 
 ## Dependencies
 
-The package automatically handles dependencies including:
-- Python scientific computing stack (NumPy, Pandas, scikit-learn, Matplotlib)
-- Rust toolchain for Hyperon components
-- CMake and build tools
-- Guile Scheme runtime
-- Boost C++ libraries
+Automatically managed:
+- **C++**: Boost, GSL, BLAS/LAPACK, protobuf, zlib, OpenSSL
+- **Python**: NumPy, Pandas, scikit-learn, Matplotlib, Jupyter
+- **Rust**: Cargo and toolchain
+- **Scheme**: Guile 3.0 with modules
+- **Build**: CMake, pkg-config, autotools, GCC
 
-## Running the Application
+## Running Applications
 
-After installation, you can run the main application with:
+After installation:
 
 ```bash
-opencog-collection
+# Run Python demo
+opencog-demo
+
+# Run Hyperon (if built)
+hyperon
+
+# Or manually
+python3 /gnu/store/.../share/opencog-collection/app.py
 ```
 
-Or directly with Python:
+## Development Workflow
 
 ```bash
-python3 app.py
-```
-
-## Development
-
-For development, use the manifest to enter a complete development environment:
-
-```bash
+# Enter development environment
 guix shell -m .guix/manifest.scm
-# Now you have access to all development tools
-cargo build --release  # Build Rust components
-python3 app.py         # Run Python application
+
+# Build everything
+mkdir build && cd build
+cmake .. && make -j$(nproc)
+
+# Build specific components
+cmake .. -DBUILD_ATOMSPACE=ON -DBUILD_COGUTIL=ON -DBUILD_COGSERVER=OFF
+make
+
+# Test Python components
+python3 ../app.py
+
+# Build Rust components
+cd .. && cargo build --release
 ```
+
+## Integration Philosophy
+
+This configuration supports the **cognitive synergy** goal by:
+
+1. **Unified Build System** - Root CMakeLists.txt coordinates all components
+2. **Dependency Management** - Guix ensures reproducible environments
+3. **Modular Architecture** - Components can be built independently or together
+4. **Multi-Language Support** - C++, Python, Rust, and Scheme integration
+5. **Research Friendly** - Complete source available for exploration and modification

@@ -16,17 +16,36 @@
              (gnu packages databases)
              (gnu packages version-control)
              (gnu packages text-editors)
-             (gnu packages base))
+             (gnu packages base)
+             (gnu packages maths)
+             (gnu packages cpp)
+             (gnu packages check)
+             (gnu packages compression)
+             (gnu packages tls))
 
 ;; Development environment manifest with all necessary tools and dependencies
 (specifications->manifest
- '(;; Build tools
+ '(;; Build tools and compilers
    "cmake"
    "pkg-config"
    "rust"
    "rust:cargo"
    "gcc-toolchain"
    "make"
+   "autoconf"
+   "automake"
+   "libtool"
+   
+   ;; C++ development dependencies
+   "boost"
+   "cxxtest"
+   "protobuf"
+   "gsl"
+   "blas"
+   "lapack"
+   "eigen"
+   "zlib"
+   "openssl"
    
    ;; Python and scientific computing
    "python"
@@ -39,18 +58,12 @@
    "python-matplotlib"
    "python-jupyter"
    "python-ipython"
+   "python-pytest"
    
    ;; Guile and Scheme development
    "guile"
    "guile-readline"
    "guile-json"
-   
-   ;; Core libraries often needed by OpenCog
-   "boost"
-   "protobuf"
-   "gsl"
-   "blas"
-   "lapack"
    
    ;; Development utilities
    "git"
@@ -59,6 +72,8 @@
    "sed"
    "coreutils"
    "findutils"
+   "tar"
+   "gzip"
    
    ;; Optional: text editors for development
    "emacs-minimal"
