@@ -15,28 +15,33 @@
 FROM opencog/opencog-deps:latest
 
 # The apt installs below will fail, unless we are at the latest.
-RUN apt-get -y update; apt-get -y upgrade
+# Bump the date, if there are DNS failures!
+ENV LAST_APT_UPDATE=2025-08-08
+RUN apt-get -y update; apt-get -y upgrade; apt-get -y autoremove
 
 # Basic tools that allow this image to be minimally usable.
-RUN apt-get -y install telnet netcat-openbsd tmux byobu
-
-# Basic minimal debug tools.
-RUN apt-get -y install gdb time
-
-# Webserver is needed for visualization.
-RUN apt-get -y install apache2 php
+#  * Networking tools (ping, ifconfig, telnet, netcat)
+#  * Terminal sharing tools (tmux, byobu)
+#  * Debug tools (gdb, xxd)
+#  * Webserver (apache2, php)
+RUN apt-get -y install \
+	net-tools iputils-ping netcat-openbsd traceroute iptraf \
+	rlwrap telnet \
+	tmux byobu \
+	gdb time xxd \
+	apache2 php
 
 # Install cogutil
-ENV LAST_COGUTIL_UPDATE 2024-05-08
+ENV LAST_COGUTIL_UPDATE=2025-09-03
 RUN  /tmp/octool -c && ccache -C
 
-# Update Link Grammar. This avoids having to rebuild the opencog/deps
+# Update Link Grammar.
 # This installs the latest release tarball, and NOT github master.
-ENV LAST_LINK_GRAMMAR_UPDATE 2024-05-02
-RUN  /tmp/octool -l default && ccache -C
+ENV LAST_LINK_GRAMMAR_UPDATE=2024-05-02
+RUN  /tmp/octool -v -l default && ccache -C
 
 # Install core AtomSpace.
-ENV LAST_ATOMSPACE_UPDATE 2024-05-08
+ENV LAST_ATOMSPACE_UPDATE=2025-09-03
 RUN  /tmp/octool -a && ccache -C
 
 USER opencog
@@ -52,12 +57,9 @@ RUN sudo chown -R opencog:opencog .[a-z]*
 # is older than that on
 #    /usr/local/share/guile/site/3.0/opencog.scm
 # So hack around this by forcing a compile.
-RUN guile -c "(use-modules (opencog))"
-RUN guile -c "(use-modules (opencog cogserver))"
-RUN guile -c "(use-modules (opencog matrix))"
-RUN guile -c "(use-modules (opencog persist))"
-RUN guile -c "(use-modules (opencog persist-cog))"
-RUN guile -c "(use-modules (opencog persist-rocks))"
+RUN guile -c "(use-modules (opencog) (opencog exec) (opencog cogserver) (opencog persist) (opencog persist-cog) (opencog persist-rocks))"
+
+# RUN guile -c "(use-modules (opencog persist-pgres))"
 
 CMD /bin/bash
 

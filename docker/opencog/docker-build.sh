@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Notes:
-# 1. Build's all the images for development. You can also pull the
+# 1. Builds all the images for development. You can also pull the
 #    images from docker registry, but they are a bit bulky.
 # 2. If your user is not a member of the docker group you can add it
 #    by running `sudo adduser $USER docker`. Log out and log back in
@@ -14,7 +14,7 @@
 set -e
 
 # Environment Variables
-## Use's cache by default unless the -u options is passed
+## Use cache by default unless the -u options is passed
 CACHE_OPTION=""
 
 ## This file/symlinks name
@@ -30,6 +30,7 @@ while getopts "abcehjlmprstu" flag; do
     a) PULL_DEV_IMAGES=true ;;
     b) BUILD_OPENCOG_BASE_IMAGE=true ;;
     l) BUILD_LEARN_IMAGE=true ;;
+    p) BUILD_ATOMSPACE_PYTHON_IMAGE=true ;;
     s) BUILD_ATOMSPACE_IMAGE=true ;;
     u) CACHE_OPTION=--no-cache ;;
     h) SHOW_USAGE=true ;;
@@ -57,9 +58,13 @@ usage() {
 
   OPTIONS:
     -a Pull all images needed for development from hub.docker.com/u/${DOCKER_NAME}/
-    -b Build ${DOCKER_NAME}/opencog-deps image. This provides all dependencies
+    -b Build ${DOCKER_NAME}/opencog-deps image. Provides all dependencies
        and development tools used by ${DOCKER_NAME}.
-    -s Builds ${DOCKER_NAME}/atomspace image.
+    -s Builds ${DOCKER_NAME}/atomspace image. Builds all core AtomSpace
+       packages.
+    -p Builds ${DOCKER_NAME}/atomspace-py image. Adds additional
+       node.js and Python packages commonly used in machine learning
+       and DL/NN.
     -l Builds ${DOCKER_NAME}/learn image.
 
     -u Ignore the docker image cache when building. This will cause the
@@ -114,7 +119,9 @@ build_atomspace() {
     if [ ! -z "$OCPKG_URL" ]; then
         OCPKG_OPTION="--build-arg OCPKG_URL=$OCPKG_URL"
     fi
-    GITHUB_OPTION="--build-arg GITHUB_NAME=$GITHUB_NAME"
+
+    # GITHUB_NAME is not actually used in the dockerfile...
+    # GITHUB_OPTION="--build-arg GITHUB_NAME=$GITHUB_NAME"
     docker build $CACHE_OPTION $OCPKG_OPTION $GITHUB_OPTION -t ${DOCKER_NAME}/atomspace atomspace
     echo "---- Finished build of ${DOCKER_NAME}/atomspace ----"
 }
@@ -150,6 +157,12 @@ fi
 
 if [ $BUILD_ATOMSPACE_IMAGE ]; then
     build_atomspace
+fi
+
+if [ $BUILD_ATOMSPACE_PYTHON_IMAGE ]; then
+    echo "---- Starting build of ${DOCKER_NAME}/atomspace-py ----"
+    docker build $CACHE_OPTION -t ${DOCKER_NAME}/atomspace-py ${DIR_NAME}/atomspace-py
+    echo "---- Finished build of ${DOCKER_NAME}/atomspace-py ----"
 fi
 
 if [ $BUILD_LEARN_IMAGE ] ; then
