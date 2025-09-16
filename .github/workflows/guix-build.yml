@@ -17,14 +17,20 @@ jobs:
       run: |
         curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh -o /tmp/guix-install.sh
         chmod +x /tmp/guix-install.sh
-        sudo /tmp/guix-install.sh < /dev/null        
+        sudo /tmp/guix-install.sh --yes        
 
     - name: Setup Guix environment
       run: |
         export PATH="/var/guix/profiles/per-user/$USER/current-guix/bin:$PATH"
-        guix pull
+        # Start the guix daemon
+        sudo systemctl start guix-daemon || sudo /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon --build-users-group=guixbuild &
+        # Update guix
+        guix pull --verbosity=1
         
     - name: Build with Guix
       run: |
         export PATH="/var/guix/profiles/per-user/$USER/current-guix/bin:$PATH"
-        guix build -f packaging/opencog.scm
+        # Ensure guix daemon is accessible
+        guix describe
+        # Build the package
+        guix build -f guix.scm --verbosity=1
