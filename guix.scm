@@ -140,7 +140,7 @@ Additionally includes:
 @item Complete source for research and development
 @item Development environment for cognitive computing applications
 @end itemize")
-    (license license:mit)))
+    (license license:mit))
 
 ;; Return the package for building
 opencog-collection
