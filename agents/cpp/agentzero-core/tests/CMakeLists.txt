@@ -22,6 +22,7 @@ if(CXXTEST_FOUND)
             ${COGUTIL_LIBRARIES}
             ${ATOMSPACE_LIBRARIES}
             ${COGSERVER_LIBRARIES}
+            ${Boost_LIBRARIES}
         )
     endif()
     

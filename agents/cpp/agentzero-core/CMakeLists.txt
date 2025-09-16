@@ -72,6 +72,7 @@ if(AGENTZERO_CORE_SOURCES)
         ${COGUTIL_LIBRARIES}
         ${ATOMSPACE_LIBRARIES}
         ${COGSERVER_LIBRARIES}
+        ${Boost_LIBRARIES}
     )
 
     target_include_directories(agentzero-core PUBLIC
@@ -81,10 +82,11 @@ if(AGENTZERO_CORE_SOURCES)
 
     # Installation
     install(TARGETS agentzero-core
-        EXPORT AgentZeroCoreTargets
+        EXPORT AgentZeroCppTargets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
+        INCLUDES DESTINATION include
     )
 
     install(DIRECTORY include/
