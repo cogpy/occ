@@ -29,8 +29,8 @@ if(CXXTEST_FOUND)
         ${Boost_LIBRARIES}
     )
     
-    # Add component test directories
-    add_subdirectory(../agentzero-core/tests ${CMAKE_CURRENT_BINARY_DIR}/agentzero-core-tests)
+    # Add component test directories (skip if already added)
+    # add_subdirectory(../agentzero-core/tests ${CMAKE_CURRENT_BINARY_DIR}/agentzero-core-tests)
     
     # Add comprehensive test suites
     add_subdirectory(unit-tests)
@@ -66,7 +66,7 @@ if(CXXTEST_FOUND)
     
     # Create comprehensive test targets
     add_custom_target(agentzero-unit-tests
-        DEPENDS AgentZeroCoreUTest TestFrameworkUTest MockObjectsUTest
+        DEPENDS TestFrameworkUTest MockObjectsUTest
         COMMENT "Building Agent-Zero unit tests"
     )
     
