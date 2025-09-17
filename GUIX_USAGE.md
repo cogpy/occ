@@ -67,7 +67,7 @@ The repository includes GitHub Actions workflow for automated Guix builds:
 
 - **Workflow**: `.github/workflows/guix-build.yml`
 - **Trigger**: Push to main branch or pull requests
-- **Installation**: Non-interactive Guix installation using `printf '\n' | bash <(curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh)`
+- **Installation**: Non-interactive Guix installation using `curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh -o /tmp/guix-install.sh` followed by `printf '\n' | sudo bash /tmp/guix-install.sh`
 - **Action**: Builds the package using `guix build -f guix.scm`
 
 ## Directory Structure
