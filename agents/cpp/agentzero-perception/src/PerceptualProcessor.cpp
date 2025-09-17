@@ -118,8 +118,8 @@ Handle PerceptualProcessor::createPerceptionAtom(const std::string& perception_t
                                                 double confidence)
 {
     // Create the perception concept
-    Handle perception_concept = _atomspace->add_node(CONCEPT_NODE, 
-        "Perception_" + perception_type + "_" + std::to_string(_processed_count.load()));
+    std::string perception_name = "Perception_" + perception_type + "_" + std::to_string(_processed_count.load());
+    Handle perception_concept = _atomspace->add_node(CONCEPT_NODE, std::move(perception_name));
     
     // Set truth value based on confidence
     TruthValuePtr tv = SimpleTruthValue::createTV(confidence, 0.9);
@@ -171,7 +171,7 @@ Handle PerceptualProcessor::createSensoryAtom(const SensoryInput& input)
 {
     // Create sensory data representation
     std::string data_name = input.sensor_type + "_data_" + input.modality;
-    Handle sensory_atom = _atomspace->add_node(CONCEPT_NODE, data_name);
+    Handle sensory_atom = _atomspace->add_node(CONCEPT_NODE, std::move(data_name));
     
     // Set truth value based on input confidence
     TruthValuePtr tv = SimpleTruthValue::createTV(input.confidence, 0.8);
@@ -271,8 +271,8 @@ Handle PerceptualProcessor::processGenericInput(const SensoryInput& input)
     Handle sensory_atom = createSensoryAtom(input);
     
     // Create generic perception concept
-    Handle generic_concept = _atomspace->add_node(CONCEPT_NODE, 
-        input.sensor_type + "Perception");
+    std::string concept_name = input.sensor_type + "Perception";
+    Handle generic_concept = _atomspace->add_node(CONCEPT_NODE, std::move(concept_name));
     
     std::vector<Handle> components;
     components.push_back(sensory_atom);

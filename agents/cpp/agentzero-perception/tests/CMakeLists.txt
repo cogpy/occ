@@ -35,6 +35,14 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
         ${Boost_LIBRARIES}
     )
     
+    # Add additional required libraries for tests
+    target_link_libraries(${TEST_NAME}_test
+        /usr/local/lib/opencog/libatombase.so
+        /usr/local/lib/opencog/libatom_types.so
+        /usr/local/lib/opencog/libvalue.so
+        /usr/local/lib/opencog/libtruthvalue.so
+    )
+    
     # Set include directories
     target_include_directories(${TEST_NAME}_test PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/../include

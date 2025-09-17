@@ -523,7 +523,7 @@ bool TaskManager::processTaskManagement()
                 Handle end_time_eval = _atomspace->add_link(EVALUATION_LINK, {end_time_pred, _current_task, end_time_value});
                 
                 completeTask(_current_task, success);
-                logger().debug() << "[TaskManager] Completed task: " << _current_task 
+                logger().debug() << "[TaskManager] Completed task: " << _current_task->to_string() 
                                 << " (success: " << (success ? "true" : "false") << ")";
                 
                 // If task failed, may need to retry or create alternative tasks
@@ -734,7 +734,7 @@ TruthValuePtr TaskManager::calculateGoalAchievement(const Handle& goal_atom)
         
         // Find all subgoals for this goal using INHERITANCE_LINK
         HandleSeq subgoals;
-        HandleSeq all_links = _atomspace->get_incoming_set(goal_atom);
+        HandleSeq all_links = goal_atom->getIncomingSet();
         
         for (const Handle& link : all_links) {
             HandleSeq link_outgoing = link->getOutgoingSet();
@@ -807,8 +807,9 @@ Handle TaskManager::findTaskForGoal(const Handle& goal_atom)
     }
     
     try {
-        // Look for EVALUATION_LINK connecting task to goal
-        HandleSeq all_eval_links = _atomspace->get_handles_by_type(EVALUATION_LINK);
+        // Look for EVALUATION_LINK connecting task to goal  
+        HandleSeq all_eval_links;
+        _atomspace->get_handles_by_type(all_eval_links, EVALUATION_LINK, true, false, _atomspace.get());
         
         for (const Handle& eval_link : all_eval_links) {
             HandleSeq outgoing = eval_link->getOutgoingSet();
@@ -823,7 +824,7 @@ Handle TaskManager::findTaskForGoal(const Handle& goal_atom)
         if (goal_name.find("Goal_") == 0) {
             std::string task_name = "Task_" + goal_name.substr(5); // Remove "Goal_" prefix
             HandleSeq task_candidates;
-            Handle task_node = _atomspace->get_node(CONCEPT_NODE, task_name);
+            Handle task_node = _atomspace->get_node(CONCEPT_NODE, std::move(task_name));
             if (task_node != Handle::UNDEFINED) {
                 task_candidates.push_back(task_node);
             }
