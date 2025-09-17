@@ -232,6 +232,37 @@ std::string AgentZeroCore::getStatusInfo() const
     return status.str();
 }
 
+void AgentZeroCore::setAtomSpace(AtomSpacePtr atomspace)
+{
+    logger().info() << "[AgentZeroCore] Setting AtomSpace for agent '" << _agent_name << "'";
+    
+    _atomspace = atomspace;
+    
+    // Re-initialize core atoms with new atomspace
+    if (_atomspace) {
+        setupCoreAtoms();
+        
+        // Re-initialize cognitive loop with new atomspace
+        if (_cognitive_loop) {
+            _cognitive_loop.reset();
+            _cognitive_loop = std::make_unique<CognitiveLoop>(this, _atomspace);
+        }
+        
+        // Re-initialize other components if needed
+        if (_task_manager) {
+            _task_manager.reset();
+            _task_manager = std::make_unique<TaskManager>(this, _atomspace);
+        }
+        
+        if (_knowledge_integrator) {
+            _knowledge_integrator.reset();
+            _knowledge_integrator = std::make_unique<KnowledgeIntegrator>(this, _atomspace);
+        }
+        
+        logger().debug() << "[AgentZeroCore] AtomSpace and components re-initialized";
+    }
+}
+
 bool AgentZeroCore::processCognitiveStep()
 {
     if (!_initialized.load()) {

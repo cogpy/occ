@@ -178,6 +178,12 @@ public:
     std::string getStatusInfo() const;
     
     /**
+     * Set the AtomSpace for this agent (primarily for testing)
+     * @param atomspace Shared pointer to AtomSpace
+     */
+    void setAtomSpace(AtomSpacePtr atomspace);
+    
+    /**
      * Process one step of the cognitive cycle
      * Called by the cognitive loop or manually for debugging
      * @return true if step completed successfully

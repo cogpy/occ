@@ -39,6 +39,27 @@ if (COGSERVER_FOUND)
     link_directories(${COGSERVER_LIBRARY_DIRS})
 endif()
 
+# Find attention module
+pkg_check_modules(ATTENTION attention)
+if (ATTENTION_FOUND)
+    message(STATUS "Found attention version ${ATTENTION_VERSION}")
+    include_directories(${ATTENTION_INCLUDE_DIRS})
+    link_directories(${ATTENTION_LIBRARY_DIRS})
+else()
+    message(STATUS "Attention module not found via pkg-config, looking for system includes")
+    # Look for attention headers in system paths
+    find_path(ATTENTION_INCLUDE_PATH
+        NAMES opencog/attentionbank/bank/AttentionBank.h
+        PATHS /usr/local/include /usr/include
+        PATH_SUFFIXES opencog
+    )
+    if(ATTENTION_INCLUDE_PATH)
+        message(STATUS "Found attention headers at ${ATTENTION_INCLUDE_PATH}")
+        include_directories(${ATTENTION_INCLUDE_PATH})
+        set(ATTENTION_FOUND TRUE)
+    endif()
+endif()
+
 # Include directories
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -74,6 +95,16 @@ if(AGENTZERO_CORE_SOURCES)
         ${COGSERVER_LIBRARIES}
         ${Boost_LIBRARIES}
     )
+    
+    # Link attention libraries if available
+    if(ATTENTION_FOUND AND ATTENTION_LIBRARIES)
+        target_link_libraries(agentzero-core ${ATTENTION_LIBRARIES})
+        target_compile_definitions(agentzero-core PRIVATE HAVE_ATTENTION_BANK=1)
+        message(STATUS "Linking attention libraries: ${ATTENTION_LIBRARIES}")
+    elseif(ATTENTION_FOUND)
+        target_compile_definitions(agentzero-core PRIVATE HAVE_ATTENTION_BANK=1) 
+        message(STATUS "Attention headers found, compiling with attention support")
+    endif()
 
     target_include_directories(agentzero-core PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
