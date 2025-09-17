@@ -24,12 +24,12 @@
            (commit "HEAD")))
   (build-system cmake-build-system)
   (arguments
-   `(#:tests? #f  ; Disable tests for now
+   (#:tests? #f  ; Disable tests for now
      #:configure-flags 
-     '("-DCMAKE_BUILD_TYPE=Release"
-       "-DBUILD_COGUTIL=ON"
-       "-DBUILD_ATOMSPACE=ON"
-       "-DBUILD_COGSERVER=ON")
+     (list "-DCMAKE_BUILD_TYPE=Release"
+           "-DBUILD_COGUTIL=ON"
+           "-DBUILD_ATOMSPACE=ON"
+           "-DBUILD_COGSERVER=ON")
      #:phases
      (modify-phases %standard-phases
        (add-before 'configure 'set-environment
