@@ -17,7 +17,7 @@ jobs:
       run: |
         curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh -o /tmp/guix-install.sh
         chmod +x /tmp/guix-install.sh
-        sudo /tmp/guix-install.sh --yes        
+        sudo yes | /tmp/guix-install.sh        
 
     - name: Setup Guix environment
       run: |
