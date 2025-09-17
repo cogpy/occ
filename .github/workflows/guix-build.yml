@@ -15,7 +15,7 @@ jobs:
 
       - name: Install GNU Guix non-interactively
         run: |
-          printf '\n' | bash <(curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh)
+          printf '\n' | bash <(sudo curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh)
 
       - name: Setup Guix environment
         run: |
