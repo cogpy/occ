@@ -18,7 +18,7 @@ This guide explains how to use the GNU Guix Shepherd devcontainer for OpenCog de
 
 3. **Build OpenCog Package**
    ```bash
-   guix build -f packaging/opencog.scm
+   guix build -f guix.scm
    ```
 
 4. **Start Shepherd Services**
@@ -37,10 +37,10 @@ guix install cmake boost python guile
 ### Local Development
 ```bash
 # Build locally with Guix
-guix build -f packaging/opencog.scm
+guix build -f guix.scm
 
 # Install locally
-guix install -f packaging/opencog.scm
+guix install -f guix.scm
 ```
 
 ## Service Management
@@ -67,8 +67,8 @@ The repository includes GitHub Actions workflow for automated Guix builds:
 
 - **Workflow**: `.github/workflows/guix-build.yml`
 - **Trigger**: Push to main branch or pull requests
-- **Installation**: Non-interactive Guix installation using `curl | bash -s -- --yes`
-- **Action**: Builds the package using `guix build -f packaging/opencog.scm`
+- **Installation**: Non-interactive Guix installation using `printf '\n' | bash <(curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh)`
+- **Action**: Builds the package using `guix build -f guix.scm`
 
 ## Directory Structure
 
@@ -77,8 +77,7 @@ The repository includes GitHub Actions workflow for automated Guix builds:
 ├── .devcontainer/
 │   ├── Dockerfile              # Debian + Guix + Shepherd
 │   └── devcontainer.json       # VSCode devcontainer config
-├── packaging/
-│   └── opencog.scm            # Guix package definition
+├── guix.scm                    # Guix package definition
 ├── .config/
 │   └── shepherd/init.scm      # Shepherd service config
 └── src/...                    # Source code
