@@ -116,7 +116,7 @@ This repository includes a **GNU Guix Shepherd devcontainer** setup for reproduc
 Automate CI using GitHub Actions with the included Guix build workflow:
 ```yaml
 - name: Build with Guix
-  run: guix build packaging/opencog.scm
+  run: guix build -f guix.scm
 ```
 
 ### Features
