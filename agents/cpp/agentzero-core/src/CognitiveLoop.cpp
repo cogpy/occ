@@ -22,6 +22,7 @@
 #ifdef HAVE_ATTENTION_BANK
 #include <opencog/attentionbank/bank/AttentionBank.h>
 #include <opencog/attentionbank/avalue/AttentionValue.h>
+#include <opencog/attentionbank/bank/AVUtils.h>
 // Function to get attention bank
 namespace opencog { 
     AttentionBank& attentionbank(AtomSpace* as);
@@ -479,8 +480,8 @@ void CognitiveLoop::allocateAttentionToPercepts(const HandleSeq& percepts)
         for (const Handle& percept : percepts) {
             if (percept == Handle::UNDEFINED) continue;
             
-            // Get current attention value
-            AttentionValuePtr current_av = percept->getAttentionValue();
+            // Get current attention value using AVUtils
+            AttentionValuePtr current_av = get_av(percept);
             
             // Calculate new importance based on perception factors
             // This is a simplified heuristic - in a full system this would be more sophisticated
@@ -500,8 +501,8 @@ void CognitiveLoop::allocateAttentionToPercepts(const HandleSeq& percepts)
                 current_av ? current_av->getVLTI() : 0                      // VLTI (very long-term importance)
             );
             
-            // Update the atom's attention value
-            percept->setAttentionValue(new_av);
+            // Update the atom's attention value using AVUtils
+            set_av(_atomspace.get(), percept, new_av);
             
             logger().debug() << "[CognitiveLoop] Set attention for percept: " 
                            << percept->to_short_string() 
@@ -555,10 +556,10 @@ HandleSeq CognitiveLoop::getHighImportanceAtoms(double threshold) const
 #ifdef HAVE_ATTENTION_BANK
         // Get atoms from attention bank above threshold
         HandleSeq all_atoms;
-        _atomspace->get_handleset_by_type(all_atoms, ATOM, true);
+        _atomspace->get_handles_by_type(all_atoms, ATOM, true);
         
         for (const Handle& atom : all_atoms) {
-            AttentionValuePtr av = atom->getAttentionValue();
+            AttentionValuePtr av = get_av(atom);
             if (av && av->getSTI() >= threshold * 100.0) {
                 high_importance_atoms.push_back(atom);
             }
