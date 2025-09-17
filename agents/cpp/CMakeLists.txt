@@ -144,11 +144,8 @@ link_directories(
 add_subdirectory(agentzero-core)
 
 # Phase 2: Perception & Action (depends on core)
-if(SENSORY_FOUND)
-    add_subdirectory(agentzero-perception)
-else()
-    message(STATUS "Skipping agentzero-perception: sensory dependency not found")
-endif()
+# Note: agentzero-perception has its own integration with optional OpenCog perception components
+add_subdirectory(agentzero-perception)
 
 # Phase 3: Knowledge & Reasoning (depends on core)
 if(PLN_FOUND AND URE_FOUND)

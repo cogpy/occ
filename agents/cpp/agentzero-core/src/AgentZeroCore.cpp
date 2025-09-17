@@ -126,10 +126,7 @@ bool AgentZeroCore::config(const char* config_string)
     return true;
 }
 
-const char* AgentZeroCore::id()
-{
-    return "AgentZeroCore";
-}
+
 
 bool AgentZeroCore::start()
 {
@@ -193,7 +190,7 @@ bool AgentZeroCore::setGoal(const Handle& goal_atom)
         return false;
     }
     
-    logger().info() << "[AgentZeroCore] Setting new goal: " << goal_atom;
+    logger().info() << "[AgentZeroCore] Setting new goal: " << goal_atom->to_string();
     
     _current_goal_atom = goal_atom;
     
@@ -289,7 +286,7 @@ void AgentZeroCore::createAgentSelfRepresentation()
     TruthValuePtr agent_tv = SimpleTruthValue::createTV(1.0, 1.0);
     _agent_self_atom->setTruthValue(agent_tv);
     
-    logger().debug() << "[AgentZeroCore] Agent self-representation created: " << _agent_self_atom;
+    logger().debug() << "[AgentZeroCore] Agent self-representation created: " << _agent_self_atom->to_string();
 }
 
 void AgentZeroCore::setupCoreAtoms()
