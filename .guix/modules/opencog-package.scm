@@ -35,18 +35,18 @@
                         #:recursive? #t))
     (build-system cmake-build-system)
     (arguments
-     `(#:tests? #f  ; Disable tests for now 
-       #:configure-flags 
-       '("-DCMAKE_BUILD_TYPE=Release"
-         "-DBUILD_COGUTIL=ON"
-         "-DBUILD_ATOMSPACE=ON"
-         "-DBUILD_COGSERVER=ON"
-         "-DBUILD_MATRIX=ON"
-         "-DBUILD_LEARN=ON"
-         "-DBUILD_AGENTS=ON"
-         "-DBUILD_SENSORY=ON"
-         "-DBUILD_ATOMSPACE_STORAGE=OFF"
-         "-DBUILD_ATOMSPACE_EXTENSIONS=OFF")
+     (#:tests? #f  ; Disable tests for now 
+      #:configure-flags 
+      (list "-DCMAKE_BUILD_TYPE=Release"
+            "-DBUILD_COGUTIL=ON"
+            "-DBUILD_ATOMSPACE=ON"
+            "-DBUILD_COGSERVER=ON"
+            "-DBUILD_MATRIX=ON"
+            "-DBUILD_LEARN=ON"
+            "-DBUILD_AGENTS=ON"
+            "-DBUILD_SENSORY=ON"
+            "-DBUILD_ATOMSPACE_STORAGE=OFF"
+            "-DBUILD_ATOMSPACE_EXTENSIONS=OFF")
        #:phases
        (modify-phases %standard-phases
          (add-before 'configure 'set-environment
