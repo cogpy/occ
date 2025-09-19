@@ -38,10 +38,9 @@
                         #:recursive? #t))
     (build-system cmake-build-system)
     (arguments
-     `(#:tests? #f  ; Disable tests for now as they may require network access
+      `(#:tests? #f  ; Disable tests for now as they may require network access
        #:configure-flags
        ,(list "-DCMAKE_BUILD_TYPE=Release"
-              "-DCMAKE_INSTALL_PREFIX=/var/www/opencog-collection"  ; SSR server-side deployment path
               "-DBUILD_COGUTIL=ON"
               "-DBUILD_ATOMSPACE=ON"
               "-DBUILD_COGSERVER=ON"
@@ -65,22 +64,14 @@
             (lambda* (#:key outputs #:allow-other-keys)
               (let* ((out (assoc-ref outputs "out"))
                      (bin (string-append out "/bin"))
-                     (python-sitedir (string-append out
-                                                   "/lib/python3.10"
-                                                   "/site-packages")))
-                ;; Install Python demo application
-                (mkdir-p python-sitedir)
-                (install-file "app.py" (string-append out "/share/opencog-collection/"))
-
-                ;; Create wrapper script for Python demo
+                     (share (string-append out "/share/opencog-collection")))
+                (mkdir-p share)
+                (install-file "app.py" share)
+                (mkdir-p bin)
                 (call-with-output-file (string-append bin "/opencog-demo")
                   (lambda (port)
-                    (format port "#!/bin/sh
-export PYTHONPATH=~a:$PYTHONPATH
-exec ~a ~a/app.py \"$@\"~%"
-                            python-sitedir
-                            (which "python3")
-                            (string-append out "/share/opencog-collection"))))
+                    (format port "#!/bin/sh~%exec python3 ~a/app.py \"$@\"~%"
+                            share)))
                 (chmod (string-append bin "/opencog-demo") #o755)
                 #t)))
           (add-after 'install 'install-rust-components
