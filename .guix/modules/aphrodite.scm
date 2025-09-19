@@ -36,7 +36,7 @@
     (arguments
      `(#:tests? #f  ; Disable tests for integration build
        #:phases
-       (modify-phases %standard-phases
+       ,(modify-phases %standard-phases
          (add-before 'build 'setup-opencog-integration
            (lambda* (#:key inputs outputs #:allow-other-keys)
              ;; Prepare OpenCog integration environment

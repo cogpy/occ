@@ -42,7 +42,7 @@
          "-DENABLE_BINRELOC=OFF"
          "-DGNUCASH_BUILD_ID=opencog-integration")
        #:phases
-       (modify-phases %standard-phases
+       ,(modify-phases %standard-phases
          (add-before 'configure 'set-environment
            (lambda* (#:key inputs outputs #:allow-other-keys)
              ;; Set up environment for OpenCog integration

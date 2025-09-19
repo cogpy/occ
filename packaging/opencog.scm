@@ -24,19 +24,19 @@
            (commit "HEAD")))
   (build-system cmake-build-system)
   (arguments
-   (#:tests? #f  ; Disable tests for now
+   `(#:tests? #f  ; Disable tests for now
      #:configure-flags 
-     (list "-DCMAKE_BUILD_TYPE=Release"
-           "-DCMAKE_INSTALL_PREFIX=/var/www/opencog-collection"  ; SSR server-side deployment path
-           "-DBUILD_COGUTIL=ON"
-           "-DBUILD_ATOMSPACE=ON"
-           "-DBUILD_COGSERVER=ON")
+     ,(list "-DCMAKE_BUILD_TYPE=Release"
+            "-DCMAKE_INSTALL_PREFIX=/var/www/opencog-collection"  ; SSR server-side deployment path
+            "-DBUILD_COGUTIL=ON"
+            "-DBUILD_ATOMSPACE=ON"
+            "-DBUILD_COGSERVER=ON")
      #:phases
-     (modify-phases %standard-phases
-       (add-before 'configure 'set-environment
-         (lambda* (#:key inputs outputs #:allow-other-keys)
-           (setenv "BOOST_ROOT" (assoc-ref inputs "boost"))
-           #t)))))
+     ,(modify-phases %standard-phases
+        (add-before 'configure 'set-environment
+          (lambda* (#:key inputs outputs #:allow-other-keys)
+            (setenv "BOOST_ROOT" (assoc-ref inputs "boost"))
+            #t)))))
   (native-inputs
    (list pkg-config
          cmake
