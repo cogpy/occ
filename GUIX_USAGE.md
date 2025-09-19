@@ -29,6 +29,26 @@ This guide explains how to use the GNU Guix Shepherd devcontainer for OpenCog de
 
 ## Package Management
 
+### OpenCog Component Packages
+
+The repository now includes a comprehensive GNU Guix packages definition file at `gnu/packages/opencog.scm` that provides individual OpenCog components:
+
+- **cogutil**: Low-level C++ programming utilities
+- **atomspace**: Hypergraph database, query system and rule engine  
+- **cogserver**: Network and job server
+- **attention**: Attention allocation subsystem
+- **opencog**: Main framework integrating all components
+- **agi-bio**: Genomic and proteomic data exploration tools
+
+### Install Individual Components
+```bash
+# Install specific OpenCog components
+guix install -L gnu/packages cogutil
+guix install -L gnu/packages atomspace
+guix install -L gnu/packages cogserver
+guix install -L gnu/packages opencog
+```
+
 ### Install Dependencies
 ```bash
 guix install cmake boost python guile
@@ -41,6 +61,10 @@ guix build -f guix.scm
 
 # Install locally
 guix install -f guix.scm
+
+# Build specific OpenCog components
+guix build -L gnu/packages cogutil
+guix build -L gnu/packages atomspace
 ```
 
 ## Service Management
@@ -77,6 +101,9 @@ The repository includes GitHub Actions workflow for automated Guix builds:
 ├── .devcontainer/
 │   ├── Dockerfile              # Debian + Guix + Shepherd
 │   └── devcontainer.json       # VSCode devcontainer config
+├── gnu/
+│   └── packages/
+│       └── opencog.scm         # GNU Guix OpenCog packages definition
 ├── guix.scm                    # Guix package definition
 ├── .config/
 │   └── shepherd/init.scm      # Shepherd service config
