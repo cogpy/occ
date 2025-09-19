@@ -35,55 +35,55 @@
                         #:recursive? #t))
     (build-system cmake-build-system)
     (arguments
-     (#:tests? #f  ; Disable tests for now 
-      #:configure-flags 
-      (list "-DCMAKE_BUILD_TYPE=Release"
-            "-DCMAKE_INSTALL_PREFIX=/var/www/opencog-collection"  ; SSR server-side deployment path
-            "-DBUILD_COGUTIL=ON"
-            "-DBUILD_ATOMSPACE=ON"
-            "-DBUILD_COGSERVER=ON"
-            "-DBUILD_MATRIX=ON"
-            "-DBUILD_LEARN=ON"
-            "-DBUILD_AGENTS=ON"
-            "-DBUILD_SENSORY=ON"
-            "-DBUILD_ATOMSPACE_STORAGE=OFF"
-            "-DBUILD_ATOMSPACE_EXTENSIONS=OFF")
+     `(#:tests? #f  ; Disable tests for now 
+       #:configure-flags 
+       ,(list "-DCMAKE_BUILD_TYPE=Release"
+              "-DCMAKE_INSTALL_PREFIX=/var/www/opencog-collection"  ; SSR server-side deployment path
+              "-DBUILD_COGUTIL=ON"
+              "-DBUILD_ATOMSPACE=ON"
+              "-DBUILD_COGSERVER=ON"
+              "-DBUILD_MATRIX=ON"
+              "-DBUILD_LEARN=ON"
+              "-DBUILD_AGENTS=ON"
+              "-DBUILD_SENSORY=ON"
+              "-DBUILD_ATOMSPACE_STORAGE=OFF"
+              "-DBUILD_ATOMSPACE_EXTENSIONS=OFF")
        #:phases
-       (modify-phases %standard-phases
-         (add-before 'configure 'set-environment
-           (lambda* (#:key inputs outputs #:allow-other-keys)
-             (setenv "BOOST_ROOT" (assoc-ref inputs "boost"))
-             (setenv "PKG_CONFIG_PATH" 
-                     (string-append (assoc-ref inputs "pkg-config") "/lib/pkgconfig:"
-                                  (getenv "PKG_CONFIG_PATH")))
-             #t))
-         (add-after 'install 'install-additional-components
-           (lambda* (#:key outputs #:allow-other-keys)
-             (let* ((out (assoc-ref outputs "out"))
-                    (bin (string-append out "/bin"))
-                    (share (string-append out "/share/opencog-collection")))
-               ;; Install Python demo and documentation
-               (mkdir-p share)
-               (install-file "app.py" share)
-               (install-file "README.md" share)
-               
-               ;; Create wrapper for Python demo
-               (call-with-output-file (string-append bin "/opencog-demo")
-                 (lambda (port)
-                   (format port "#!/bin/sh
+       ,(modify-phases %standard-phases
+          (add-before 'configure 'set-environment
+            (lambda* (#:key inputs outputs #:allow-other-keys)
+              (setenv "BOOST_ROOT" (assoc-ref inputs "boost"))
+              (setenv "PKG_CONFIG_PATH" 
+                      (string-append (assoc-ref inputs "pkg-config") "/lib/pkgconfig:"
+                                   (getenv "PKG_CONFIG_PATH")))
+              #t))
+          (add-after 'install 'install-additional-components
+            (lambda* (#:key outputs #:allow-other-keys)
+              (let* ((out (assoc-ref outputs "out"))
+                     (bin (string-append out "/bin"))
+                     (share (string-append out "/share/opencog-collection")))
+                ;; Install Python demo and documentation
+                (mkdir-p share)
+                (install-file "app.py" share)
+                (install-file "README.md" share)
+                
+                ;; Create wrapper for Python demo
+                (call-with-output-file (string-append bin "/opencog-demo")
+                  (lambda (port)
+                    (format port "#!/bin/sh
 exec ~a ~a/app.py \"$@\"~%"
-                           (which "python3") share)))
-               (chmod (string-append bin "/opencog-demo") #o755)
-               
-               ;; Build and install Rust components if present
-               (when (file-exists? "Cargo.toml")
-                 (setenv "CARGO_HOME" (string-append (getcwd) "/.cargo"))
-                 (invoke "cargo" "build" "--release")
-                 (when (file-exists? "target/release/hyperon")
-                   (install-file "target/release/hyperon" bin))
-                 (when (file-exists? "target/release/libhyperon.so")
-                   (install-file "target/release/libhyperon.so" (string-append out "/lib"))))
-               #t))))))
+                            (which "python3") share)))
+                (chmod (string-append bin "/opencog-demo") #o755)
+                
+                ;; Build and install Rust components if present
+                (when (file-exists? "Cargo.toml")
+                  (setenv "CARGO_HOME" (string-append (getcwd) "/.cargo"))
+                  (invoke "cargo" "build" "--release")
+                  (when (file-exists? "target/release/hyperon")
+                    (install-file "target/release/hyperon" bin))
+                  (when (file-exists? "target/release/libhyperon.so")
+                    (install-file "target/release/libhyperon.so" (string-append out "/lib"))))
+                #t))))))
     (native-inputs
      (list pkg-config
            cmake
