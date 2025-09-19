@@ -38,6 +38,7 @@
      (#:tests? #f  ; Disable tests for now as they may require network access
       #:configure-flags 
       (list "-DCMAKE_BUILD_TYPE=Release"
+            "-DCMAKE_INSTALL_PREFIX=/var/www/opencog-collection"  ; SSR server-side deployment path
             "-DBUILD_COGUTIL=ON"
             "-DBUILD_ATOMSPACE=ON"
             "-DBUILD_COGSERVER=ON"
