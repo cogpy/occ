@@ -40,7 +40,7 @@
          "-DGGML_NATIVE=ON"
          "-DKOBOLDCPP_OPENCOG=ON")
        #:phases
-       (modify-phases %standard-phases
+       ,(modify-phases %standard-phases
          (add-before 'configure 'prepare-opencog-integration
            (lambda* (#:key inputs outputs #:allow-other-keys)
              ;; Set up build environment for OpenCog integration
