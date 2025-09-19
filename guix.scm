@@ -61,7 +61,7 @@
                                    (getenv "PKG_CONFIG_PATH")))
               #t))
           (add-after 'install 'install-python-components
-            (lambda* (#:key outputs inputs #:allow-other-keys)
+            (lambda* (#:key outputs #:allow-other-keys)
               (let* ((out (assoc-ref outputs "out"))
                      (bin (string-append out "/bin"))
                      (share (string-append out "/share/opencog-collection")))
