@@ -78,7 +78,7 @@
       (home-page "https://github.com/opencog/cogutil/")
       (synopsis "Low-level C++ programming utilities used by OpenCog components")
       (description "The OpenCog utilities is a miscellaneous collection of C++
-utilities use for typical programming tasks in multiple OpenCog projects.")
+utilities used for typical programming tasks in multiple OpenCog projects.")
       ;; Either of these licenses.
       (license (list license:agpl3 license:asl2.0)))))
 
