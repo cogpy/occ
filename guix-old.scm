@@ -4,19 +4,16 @@
 (use-modules (guix packages)
              (guix download)
              (guix git-download)
-             (guix gexp)
              (guix build-system python)
              (guix build-system cargo)
              (guix build-system cmake)
              (guix build-system gnu)
              (guix build-system trivial)
-             (guix build utils)
              ((guix licenses) #:prefix license:)
              (gnu packages)
              (gnu packages python)
              (gnu packages python-xyz)
              (gnu packages python-science)
-             (gnu packages machine-learning)
              (gnu packages rust)
              (gnu packages crates-io)
              (gnu packages cmake)
@@ -39,7 +36,7 @@
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f  ; Disable tests for now as they may require network access
-       #:configure-flags
+       #:configure-flags 
        ,(list "-DCMAKE_BUILD_TYPE=Release"
               "-DCMAKE_INSTALL_PREFIX=/var/www/opencog-collection"  ; SSR server-side deployment path
               "-DBUILD_COGUTIL=ON"
@@ -57,7 +54,7 @@
             (lambda* (#:key inputs outputs #:allow-other-keys)
               ;; Set up environment for building
               (setenv "BOOST_ROOT" (assoc-ref inputs "boost"))
-              (setenv "PKG_CONFIG_PATH"
+              (setenv "PKG_CONFIG_PATH" 
                       (string-append (assoc-ref inputs "pkg-config") "/lib/pkgconfig:"
                                    (getenv "PKG_CONFIG_PATH")))
               #t))
@@ -66,12 +63,13 @@
               (let* ((out (assoc-ref outputs "out"))
                      (bin (string-append out "/bin"))
                      (python-sitedir (string-append out
-                                                   "/lib/python3.10"
+                                                   "/lib/python"
+                                                   ,(version-major+minor (package-version python))
                                                    "/site-packages")))
                 ;; Install Python demo application
                 (mkdir-p python-sitedir)
                 (install-file "app.py" (string-append out "/share/opencog-collection/"))
-
+                
                 ;; Create wrapper script for Python demo
                 (call-with-output-file (string-append bin "/opencog-demo")
                   (lambda (port)
@@ -108,7 +106,10 @@ exec ~a ~a/app.py \"$@\"~%"
            python-scikit-learn
            python-matplotlib
            guile-3.0
-           boost))
+           boost
+           blas
+           lapack
+           gsl))
     (propagated-inputs
      (list python-numpy
            python-pandas
@@ -125,7 +126,7 @@ whole for cognitive synergy.
 The package includes the core OpenCog components:
 @itemize
 @item CogUtil - Base utilities and configuration system
-@item AtomSpace - Hypergraph database and query engine
+@item AtomSpace - Hypergraph database and query engine  
 @item CogServer - Networking and communication layer
 @item Matrix - Sparse vector and graph processing
 @item Learn - Symbolic learning algorithms
@@ -140,7 +141,7 @@ Additionally includes:
 @item Complete source for research and development
 @item Development environment for cognitive computing applications
 @end itemize")
-    (license license:gpl3+)))
+    (license license:mit)))
 
 ;; Return the package for building
-opencog-collection
+(opencog-collection)

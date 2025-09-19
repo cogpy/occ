@@ -23,6 +23,7 @@
 #define TEMPLATE_OCTREE_NODE_H
 
 #include <iostream>
+#include <memory>
 #include <octomap/OcTreeNode.h>
 //#include <opencog/util/oc_assert.h>
 
