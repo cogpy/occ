@@ -104,7 +104,9 @@ std::string FloatValue::to_string(const std::string& indent, Type t) const
 std::vector<double> opencog::plus(double scalar, const std::vector<double>& fv)
 {
 	size_t len = fv.size();
-	std::vector<double> sum(len);
+	std::vector<double> sum;
+	sum.reserve(len);
+	sum.resize(len);
 	for (size_t i=0; i<len; i++)
 		sum[i] = scalar + fv[i];
 
@@ -115,7 +117,9 @@ std::vector<double> opencog::plus(double scalar, const std::vector<double>& fv)
 std::vector<double> opencog::minus(double scalar, const std::vector<double>& fv)
 {
 	size_t len = fv.size();
-	std::vector<double> diff(len);
+	std::vector<double> diff;
+	diff.reserve(len);
+	diff.resize(len);
 	for (size_t i=0; i<len; i++)
 		diff[i] = scalar - fv[i];
 
@@ -125,7 +129,9 @@ std::vector<double> opencog::minus(double scalar, const std::vector<double>& fv)
 std::vector<double> opencog::minus(const std::vector<double>& fv, double scalar)
 {
 	size_t len = fv.size();
-	std::vector<double> diff(len);
+	std::vector<double> diff;
+	diff.reserve(len);
+	diff.resize(len);
 	for (size_t i=0; i<len; i++)
 		diff[i] = fv[i] - scalar;
 
@@ -136,7 +142,9 @@ std::vector<double> opencog::minus(const std::vector<double>& fv, double scalar)
 std::vector<double> opencog::times(double scalar, const std::vector<double>& fv)
 {
 	size_t len = fv.size();
-	std::vector<double> prod(len);
+	std::vector<double> prod;
+	prod.reserve(len);
+	prod.resize(len);
 	for (size_t i=0; i<len; i++)
 		prod[i] = scalar * fv[i];
 
@@ -147,7 +155,9 @@ std::vector<double> opencog::times(double scalar, const std::vector<double>& fv)
 std::vector<double> opencog::divide(double scalar, const std::vector<double>& fv)
 {
 	size_t len = fv.size();
-	std::vector<double> ratio(len);
+	std::vector<double> ratio;
+	ratio.reserve(len);
+	ratio.resize(len);
 	for (size_t i=0; i<len; i++)
 		ratio[i] = scalar / fv[i];
 
@@ -168,7 +178,10 @@ std::vector<double> opencog::plus(const std::vector<double>& fva,
 	if (1 == lenb)
 		return plus(fvb[0], fva);
 
-	std::vector<double> sum(std::max(lena, lenb));
+	std::vector<double> sum;
+	size_t max_len = std::max(lena, lenb);
+	sum.reserve(max_len);
+	sum.resize(max_len);
 	if (lena < lenb)
 	{
 		size_t i=0;
@@ -202,7 +215,10 @@ std::vector<double> opencog::minus(const std::vector<double>& fva,
 	if (1 == lenb)
 		return minus(fva, fvb[0]);
 
-	std::vector<double> diff(std::max(lena, lenb));
+	std::vector<double> diff;
+	size_t max_len = std::max(lena, lenb);
+	diff.reserve(max_len);
+	diff.resize(max_len);
 	if (lena < lenb)
 	{
 		size_t i=0;
@@ -235,7 +251,10 @@ std::vector<double> opencog::times(const std::vector<double>& fva,
 	size_t lena = fva.size();
 	size_t lenb = fvb.size();
 
-	std::vector<double> prod(std::max(lena, lenb));
+	std::vector<double> prod;
+	size_t max_len = std::max(lena, lenb);
+	prod.reserve(max_len);
+	prod.resize(max_len);
 	if (1 == lena)
 	{
 		double f = fva[0];
@@ -279,7 +298,10 @@ std::vector<double> opencog::divide(const std::vector<double>& fva,
 	size_t lena = fva.size();
 	size_t lenb = fvb.size();
 
-	std::vector<double> ratio(std::max(lena, lenb));
+	std::vector<double> ratio;
+	size_t max_len = std::max(lena, lenb);
+	ratio.reserve(max_len);
+	ratio.resize(max_len);
 	if (1 == lena)
 	{
 		double f = fva[0];
