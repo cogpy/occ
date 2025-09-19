@@ -292,7 +292,7 @@ tasks.")
              cogutil
              gmp
              guile-3.0
-             `(,util-linux "lib")
+             (list util-linux "lib")
              link-grammar))
       (native-inputs
        (list cxxtest
