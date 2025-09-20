@@ -1,4 +1,4 @@
-(define-module (opencog-package))
+;;; OpenCog package definition for packaging
 (use-modules (guix packages)
              (guix git-download)
              (guix build-system gnu)
@@ -14,42 +14,47 @@
              (gnu packages guile)
              (gnu packages boost)
              (gnu packages rust)
-             (gnu packages crates-io))
+             (gnu packages crates-io)
+             (gnu packages maths)
+             (gnu packages check))
 
-(package
-  (name "opencog")
-  (version "latest-git")
-  (source (git-checkout
-           (url "https://github.com/rzonedevops/occ.git")
-           (commit "HEAD")))
-  (build-system cmake-build-system)
-  (arguments
-   `(#:tests? #f  ; Disable tests for now
-     #:configure-flags 
-     ,(list "-DCMAKE_BUILD_TYPE=Release"
-            "-DCMAKE_INSTALL_PREFIX=/var/www/opencog-collection"  ; SSR server-side deployment path
-            "-DBUILD_COGUTIL=ON"
-            "-DBUILD_ATOMSPACE=ON"
-            "-DBUILD_COGSERVER=ON")
-     #:phases
-     ,(modify-phases %standard-phases
-        (add-before 'configure 'set-environment
-          (lambda* (#:key inputs outputs #:allow-other-keys)
-            (setenv "BOOST_ROOT" (assoc-ref inputs "boost"))
-            #t)))))
-  (native-inputs
-   (list pkg-config
-         cmake
-         rust
-         `(,rust "cargo")))
-  (inputs
-   (list python
-         guile-3.0
-         boost))
-  (synopsis "OpenCog AGI Framework")
-  (description "The OpenCog cognitive architecturing toolkit for AGI research and development.")
-  (home-page "https://github.com/rzonedevops/occ")
-  (license license:mit))
+(define-public opencog
+  (package
+    (name "opencog")
+    (version "latest-git")
+    (source (git-checkout
+             (url "https://github.com/rzonedevops/occ.git")
+             (commit "HEAD")))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f  ; Disable tests for now
+       #:configure-flags 
+       ,(list "-DCMAKE_BUILD_TYPE=Release"
+              "-DCMAKE_INSTALL_PREFIX=/var/www/opencog-collection"  ; SSR server-side deployment path
+              "-DBUILD_COGUTIL=ON"
+              "-DBUILD_ATOMSPACE=ON"
+              "-DBUILD_COGSERVER=ON")
+       #:phases
+       ,(modify-phases %standard-phases
+          (add-before 'configure 'set-environment
+            (lambda* (#:key inputs outputs #:allow-other-keys)
+              (setenv "BOOST_ROOT" (assoc-ref inputs "boost"))
+              #t)))))
+    (native-inputs
+     (list pkg-config
+           cmake
+           rust))
+    (inputs
+     (list python
+           guile-3.0
+           boost
+           blas
+           lapack
+           gsl))
+    (synopsis "OpenCog AGI Framework")
+    (description "The OpenCog cognitive architecturing toolkit for AGI research and development.")
+    (home-page "https://github.com/rzonedevops/occ")
+    (license license:mit)))
 
 ;; Return the package for building
 opencog

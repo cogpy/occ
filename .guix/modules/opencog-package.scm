@@ -88,7 +88,6 @@ exec ~a ~a/app.py \"$@\"~%"
      (list pkg-config
            cmake
            rust
-           `(,rust "cargo")
            cxxtest))
     (inputs
      (list python

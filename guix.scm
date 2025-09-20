@@ -91,7 +91,6 @@
      (list pkg-config
            cmake
            rust
-           `(,rust "cargo")
            cxxtest))
     (inputs
      (list python
@@ -100,7 +99,10 @@
            python-scikit-learn
            python-matplotlib
            guile-3.0
-           boost))
+           boost
+           blas
+           lapack
+           gsl))
     (propagated-inputs
      (list python-numpy
            python-pandas
