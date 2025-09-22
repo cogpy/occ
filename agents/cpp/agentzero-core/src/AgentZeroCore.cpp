@@ -188,7 +188,11 @@ bool AgentZeroCore::setGoal(const Handle& goal_atom)
         return false;
     }
     
+// <<<<<<< copilot/fix-27
     logger().info() << "[AgentZeroCore] Setting new goal: " << goal_atom->to_short_string();
+// =======
+//    logger().info() << "[AgentZeroCore] Setting new goal: " << goal_atom->to_string();
+// >>>>>>> main
     
     _current_goal_atom = goal_atom;
     
@@ -315,7 +319,11 @@ void AgentZeroCore::createAgentSelfRepresentation()
     TruthValuePtr agent_tv = SimpleTruthValue::createTV(1.0, 1.0);
     _agent_self_atom->setTruthValue(agent_tv);
     
+// <<<<<<< copilot/fix-27
     logger().debug() << "[AgentZeroCore] Agent self-representation created: " << _agent_self_atom->to_short_string();
+// =======
+//    logger().debug() << "[AgentZeroCore] Agent self-representation created: " << _agent_self_atom->to_string();
+// >>>>>>> main
 }
 
 void AgentZeroCore::setupCoreAtoms()

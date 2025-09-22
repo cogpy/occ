@@ -1,0 +1,626 @@
+/*
+// <<<<<<< copilot/fix-26
+ * tests/MultiModalSensorUTest.cxxtest
+ *
+ * Copyright (C) 2024 OpenCog Foundation
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ * Unit tests for MultiModalSensor
+ * Part of the AGENT-ZERO-GENESIS project - Task AZ-PERC-001/002
+ */
+
+#include <cxxtest/TestSuite.h>
+
+#include "opencog/agentzero/MultiModalSensor.h"
+
+// =======
+ * MultiModalSensorUTest.cxxtest
+ *
+ * Unit tests for MultiModalSensor interface
+ * Copyright (C) 2024 OpenCog Foundation
+ */
+
+#include <opencog/agentzero/perception/TextualSensor.h>
+#include <opencog/atomspace/AtomSpace.h>
+#include <opencog/atoms/value/StringValue.h>
+#include <opencog/atoms/value/FloatValue.h>
+#include <cxxtest/TestSuite.h>
+
+// >>>>>>> main
+using namespace opencog;
+using namespace opencog::agentzero;
+
+class MultiModalSensorUTest : public CxxTest::TestSuite
+{
+private:
+// <<<<<<< copilot/fix-26
+    std::unique_ptr<MockSensor> sensor;
+    SensorInfo test_sensor_info;
+
+public:
+    void setUp()
+    {
+        test_sensor_info = SensorInfo("TestSensor", "Test sensor for unit testing",
+                                     SensorCapability::VISUAL, 10.0);
+        sensor = std::make_unique<MockSensor>(test_sensor_info);
+// =======
+    AtomSpace* _as;
+    std::unique_ptr<TextualSensor> _sensor;
+
+public:
+    MultiModalSensorUTest()
+    {
+        logger().set_level(Logger::WARN); // Reduce log noise during testing
+    }
+
+    void setUp()
+    {
+        _as = new AtomSpace();
+        _sensor = std::make_unique<TextualSensor>(_as, "test_sensor", "test_source");
+// >>>>>>> main
+    }
+
+    void tearDown()
+    {
+// <<<<<<< copilot/fix-26
+        if (sensor && sensor->isActive()) {
+            sensor->stop();
+        }
+        sensor.reset();
+    }
+
+    void testConstructor()
+    {
+        TS_ASSERT(sensor != nullptr);
+        TS_ASSERT_EQUALS(sensor->getSensorInfo().name, "TestSensor");
+        TS_ASSERT_EQUALS(sensor->getSensorInfo().description, "Test sensor for unit testing");
+        TS_ASSERT_EQUALS(sensor->getSensorInfo().sampling_rate, 10.0);
+        TS_ASSERT(!sensor->isActive());
+        TS_ASSERT(sensor->hasCapability(SensorCapability::VISUAL));
+        TS_ASSERT(!sensor->hasCapability(SensorCapability::AUDITORY));
+    }
+
+    void testInitialization()
+    {
+        // Initially not initialized
+        TS_ASSERT(!sensor->isInitialized());
+        
+        // Initialize
+        bool init_result = sensor->initialize();
+        TS_ASSERT(init_result);
+        TS_ASSERT(sensor->isInitialized());
+    }
+
+    void testStartStop()
+    {
+        // Cannot start without initialization
+        bool start_result = sensor->start();
+        TS_ASSERT(!start_result);
+        TS_ASSERT(!sensor->isActive());
+        
+        // Initialize first
+        sensor->initialize();
+        
+        // Now can start
+        start_result = sensor->start();
+        TS_ASSERT(start_result);
+        TS_ASSERT(sensor->isActive());
+        
+        // Stop
+        bool stop_result = sensor->stop();
+        TS_ASSERT(stop_result);
+        TS_ASSERT(!sensor->isActive());
+    }
+
+    void testCapabilities()
+    {
+        // Test single capability
+        SensorInfo visual_info("VisualSensor", "Visual sensor", 
+                              SensorCapability::VISUAL, 30.0);
+        MockSensor visual_sensor(visual_info);
+        
+        TS_ASSERT(visual_sensor.hasCapability(SensorCapability::VISUAL));
+        TS_ASSERT(!visual_sensor.hasCapability(SensorCapability::AUDITORY));
+        
+        // Test multiple capabilities
+        SensorCapability multi_caps = static_cast<SensorCapability>(
+            static_cast<uint32_t>(SensorCapability::VISUAL) | 
+            static_cast<uint32_t>(SensorCapability::AUDITORY));
+        
+        SensorInfo multi_info("MultiSensor", "Multi-modal sensor", 
+                             multi_caps, 20.0);
+        MockSensor multi_sensor(multi_info);
+        
+        TS_ASSERT(multi_sensor.hasCapability(SensorCapability::VISUAL));
+        TS_ASSERT(multi_sensor.hasCapability(SensorCapability::AUDITORY));
+        TS_ASSERT(!multi_sensor.hasCapability(SensorCapability::TACTILE));
+    }
+
+    void testCallbacks()
+    {
+        bool callback_called = false;
+        SensoryInput received_input("", "", {}, 0.0);
+        
+        // Register callback
+        sensor->registerCallback([&callback_called, &received_input](const SensoryInput& input) {
+            callback_called = true;
+            received_input = input;
+        });
+        
+        // Initialize and start sensor
+        sensor->initialize();
+        sensor->start();
+        
+        // Add test data
+        std::vector<double> test_data = {1.0, 2.0, 3.0, 4.0, 5.0};
+        sensor->addTestData(test_data);
+        
+        // Generate sample - this should trigger callback
+        bool generated = sensor->generateNextSample();
+        TS_ASSERT(generated);
+        TS_ASSERT(callback_called);
+        TS_ASSERT_EQUALS(received_input.data, test_data);
+        TS_ASSERT_EQUALS(received_input.sensor_type, "visual"); // Based on capability
+    }
+
+    void testMultipleCallbacks()
+    {
+        int callback_count = 0;
+        
+        // Register multiple callbacks
+        for (int i = 0; i < 3; ++i) {
+            sensor->registerCallback([&callback_count](const SensoryInput&) {
+                callback_count++;
+            });
+        }
+        
+        sensor->initialize();
+        sensor->start();
+        
+        // Generate sample
+        sensor->generateNextSample();
+        
+        // All callbacks should be called
+        TS_ASSERT_EQUALS(callback_count, 3);
+    }
+
+    void testClearCallbacks()
+    {
+        bool callback_called = false;
+        
+        // Register callback
+        sensor->registerCallback([&callback_called](const SensoryInput&) {
+            callback_called = true;
+        });
+        
+        // Clear callbacks
+        sensor->clearCallbacks();
+        
+        sensor->initialize();
+        sensor->start();
+        
+        // Generate sample
+        sensor->generateNextSample();
+        
+        // Callback should not be called
+        TS_ASSERT(!callback_called);
+    }
+
+    void testAddTestData()
+    {
+        std::vector<double> test_data1 = {1.0, 2.0, 3.0};
+        std::vector<double> test_data2 = {4.0, 5.0, 6.0};
+        
+        sensor->addTestData(test_data1);
+        sensor->addTestData(test_data2);
+        
+        sensor->initialize();
+        sensor->start();
+        
+        // Track received data
+        std::vector<std::vector<double>> received_data;
+        sensor->registerCallback([&received_data](const SensoryInput& input) {
+            received_data.push_back(input.data);
+        });
+        
+        // Generate samples
+        sensor->generateNextSample();
+        sensor->generateNextSample();
+        sensor->generateNextSample(); // Should cycle back to first
+        
+        TS_ASSERT_EQUALS(received_data.size(), 3);
+        TS_ASSERT_EQUALS(received_data[0], test_data1);
+        TS_ASSERT_EQUALS(received_data[1], test_data2);
+        TS_ASSERT_EQUALS(received_data[2], test_data1); // Cycled back
+    }
+
+    void testGenerateWithoutStart()
+    {
+        sensor->initialize();
+        // Don't start the sensor
+        
+        bool generated = sensor->generateNextSample();
+        TS_ASSERT(!generated);
+    }
+
+    void testStatusInfo()
+    {
+        std::string initial_status = sensor->getStatusInfo();
+        TS_ASSERT(initial_status.find("\"name\":\"TestSensor\"") != std::string::npos);
+        TS_ASSERT(initial_status.find("\"is_active\":false") != std::string::npos);
+        TS_ASSERT(initial_status.find("\"is_initialized\":false") != std::string::npos);
+        
+        sensor->initialize();
+        sensor->start();
+        
+        std::string active_status = sensor->getStatusInfo();
+        TS_ASSERT(active_status.find("\"is_active\":true") != std::string::npos);
+        TS_ASSERT(active_status.find("\"is_initialized\":true") != std::string::npos);
+    }
+
+    void testSensorTypeMappingAuditory()
+    {
+        SensorInfo auditory_info("AudioSensor", "Audio sensor",
+                                SensorCapability::AUDITORY, 44100.0);
+        MockSensor auditory_sensor(auditory_info);
+        
+        std::string received_type;
+        auditory_sensor.registerCallback([&received_type](const SensoryInput& input) {
+            received_type = input.sensor_type;
+        });
+        
+        auditory_sensor.initialize();
+        auditory_sensor.start();
+        auditory_sensor.generateNextSample();
+        
+        TS_ASSERT_EQUALS(received_type, "auditory");
+    }
+
+    void testSensorTypeMappingTactile()
+    {
+        SensorInfo tactile_info("TouchSensor", "Touch sensor",
+                               SensorCapability::TACTILE, 1000.0);
+        MockSensor tactile_sensor(tactile_info);
+        
+        std::string received_type;
+        tactile_sensor.registerCallback([&received_type](const SensoryInput& input) {
+            received_type = input.sensor_type;
+        });
+        
+        tactile_sensor.initialize();
+        tactile_sensor.start();
+        tactile_sensor.generateNextSample();
+        
+        TS_ASSERT_EQUALS(received_type, "tactile");
+    }
+
+    void testCallbackException()
+    {
+        // Register callback that throws exception
+        sensor->registerCallback([](const SensoryInput&) {
+            throw std::runtime_error("Test exception");
+        });
+        
+        // Register normal callback
+        bool normal_callback_called = false;
+        sensor->registerCallback([&normal_callback_called](const SensoryInput&) {
+            normal_callback_called = true;
+        });
+        
+        sensor->initialize();
+        sensor->start();
+        
+        // Generate sample - should not crash despite exception in first callback
+        bool generated = sensor->generateNextSample();
+        TS_ASSERT(generated);
+        TS_ASSERT(normal_callback_called); // Second callback should still execute
+// =======
+        _sensor.reset();
+        delete _as;
+    }
+
+    // === Constructor Tests ===
+    
+    void test_constructor_valid()
+    {
+        TS_ASSERT(_sensor != nullptr);
+        TS_ASSERT_EQUALS(_sensor->get_sensor_id(), "test_sensor");
+        TS_ASSERT_EQUALS(_sensor->get_primary_modality(), SensorModality::TEXTUAL);
+        TS_ASSERT(_sensor->get_atomspace() == _as);
+    }
+
+    void test_constructor_invalid_atomspace()
+    {
+        TS_ASSERT_THROWS(TextualSensor(nullptr, "test", "source"), std::invalid_argument);
+    }
+
+    void test_constructor_empty_id()
+    {
+        TS_ASSERT_THROWS(TextualSensor(_as, "", "source"), std::invalid_argument);
+    }
+
+    // === Initialization Tests ===
+
+    void test_initialization()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->get_sensor_node() != Handle::UNDEFINED);
+    }
+
+    void test_start_stop()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(!_sensor->is_active());
+        
+        TS_ASSERT(_sensor->start());
+        TS_ASSERT(_sensor->is_active());
+        
+        TS_ASSERT(_sensor->stop());
+        TS_ASSERT(!_sensor->is_active());
+    }
+
+    // === Modality Management Tests ===
+
+    void test_initial_modalities()
+    {
+        auto modalities = _sensor->get_modalities();
+        TS_ASSERT_EQUALS(modalities.size(), 1);
+        TS_ASSERT_EQUALS(modalities[0], SensorModality::TEXTUAL);
+    }
+
+    void test_add_modality()
+    {
+        TS_ASSERT(_sensor->add_modality(SensorModality::TEMPORAL));
+        
+        auto modalities = _sensor->get_modalities();
+        TS_ASSERT_EQUALS(modalities.size(), 2);
+        
+        // Should not add duplicate
+        TS_ASSERT(!_sensor->add_modality(SensorModality::TEXTUAL));
+        TS_ASSERT_EQUALS(_sensor->get_modalities().size(), 2);
+    }
+
+    // === Parameter Management Tests ===
+
+    void test_parameter_management()
+    {
+        // Set parameters
+        ValuePtr string_param = createStringValue(std::vector<std::string>{"test_value"});
+        ValuePtr float_param = createFloatValue(std::vector<double>{42.5});
+        
+        TS_ASSERT(_sensor->set_parameter("string_param", string_param));
+        TS_ASSERT(_sensor->set_parameter("float_param", float_param));
+        
+        // Get parameters
+        ValuePtr retrieved_string = _sensor->get_parameter("string_param");
+        ValuePtr retrieved_float = _sensor->get_parameter("float_param");
+        ValuePtr nonexistent = _sensor->get_parameter("nonexistent");
+        
+        TS_ASSERT(retrieved_string != nullptr);
+        TS_ASSERT(retrieved_float != nullptr);
+        TS_ASSERT(nonexistent == nullptr);
+        
+        TS_ASSERT_EQUALS(retrieved_string->to_string(), string_param->to_string());
+        TS_ASSERT_EQUALS(retrieved_float->to_string(), float_param->to_string());
+    }
+
+    void test_parameter_validation()
+    {
+        // Invalid parameters should fail
+        TS_ASSERT(!_sensor->set_parameter("", createStringValue(std::vector<std::string>{"value"})));
+        TS_ASSERT(!_sensor->set_parameter("param", nullptr));
+    }
+
+    // === Text Processing Tests ===
+
+    void test_text_mode_management()
+    {
+        // Initial mode should be "sentences"
+        TS_ASSERT_EQUALS(_sensor->get_text_mode(), "sentences");
+        
+        // Valid modes
+        _sensor->set_text_mode("words");
+        TS_ASSERT_EQUALS(_sensor->get_text_mode(), "words");
+        
+        _sensor->set_text_mode("documents");
+        TS_ASSERT_EQUALS(_sensor->get_text_mode(), "documents");
+        
+        _sensor->set_text_mode("stream");
+        TS_ASSERT_EQUALS(_sensor->get_text_mode(), "stream");
+        
+        // Invalid mode should not change current mode
+        _sensor->set_text_mode("invalid");
+        TS_ASSERT_EQUALS(_sensor->get_text_mode(), "stream");
+    }
+
+    void test_text_input_queue()
+    {
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 0);
+        
+        TS_ASSERT(_sensor->add_text_input("First text"));
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 1);
+        
+        TS_ASSERT(_sensor->add_text_input("Second text"));
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 2);
+        
+        // Empty text should fail
+        TS_ASSERT(!_sensor->add_text_input(""));
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 2);
+    }
+
+    // === Data Processing Tests ===
+
+    void test_data_processing()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        _sensor->add_text_input("Hello world test");
+        
+        Handle result = _sensor->read_data(true);
+        TS_ASSERT(result != Handle::UNDEFINED);
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 0);
+    }
+
+    void test_process_text_line()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        Handle result = _sensor->process_text_line("Test sentence for processing.", true);
+        TS_ASSERT(result != Handle::UNDEFINED);
+    }
+
+    void test_different_processing_modes()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        std::string test_text = "Hello world! How are you?";
+        std::vector<std::string> modes = {"words", "sentences", "documents", "stream"};
+        
+        for (const auto& mode : modes) {
+            _sensor->set_text_mode(mode);
+            Handle result = _sensor->process_text_line(test_text, true);
+            TS_ASSERT_MESSAGE(result != Handle::UNDEFINED, 
+                              ("Processing failed for mode: " + mode).c_str());
+        }
+    }
+
+    // === AtomSpace Integration Tests ===
+
+    void test_atomspace_integration()
+    {
+        size_t initial_size = _as->get_size();
+        
+        TS_ASSERT(_sensor->initialize());
+        
+        // Should create sensor atoms
+        size_t after_init_size = _as->get_size();
+        TS_ASSERT(after_init_size > initial_size);
+        
+        // Sensor node should exist
+        Handle sensor_node = _sensor->get_sensor_node();
+        TS_ASSERT(sensor_node != Handle::UNDEFINED);
+        TS_ASSERT(_as->get_atom(sensor_node) == sensor_node);
+    }
+
+    void test_sensor_fusion()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        // Create test data
+        _sensor->add_text_input("First input");
+        Handle data1 = _sensor->read_data(true);
+        
+        _sensor->add_text_input("Second input");  
+        Handle data2 = _sensor->read_data(true);
+        
+        std::vector<Handle> sensor_data = {data1, data2};
+        
+        Handle fused = _sensor->fuse_modalities(sensor_data, "weighted_average");
+        TS_ASSERT(fused != Handle::UNDEFINED);
+        
+        // Test with empty data
+        Handle empty_fused = _sensor->fuse_modalities({}, "weighted_average");
+        TS_ASSERT(empty_fused == Handle::UNDEFINED);
+    }
+
+    // === Metrics Tests ===
+
+    void test_metrics_calculation()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        // Process some text to generate metrics
+        _sensor->process_text_line("Test text for metrics calculation", true);
+        
+        SensorMetrics metrics = _sensor->get_metrics();
+        TS_ASSERT(metrics.signal_strength >= 0.0 && metrics.signal_strength <= 1.0);
+        TS_ASSERT(metrics.noise_level >= 0.0 && metrics.noise_level <= 1.0);
+        TS_ASSERT(metrics.confidence >= 0.0 && metrics.confidence <= 1.0);
+        TS_ASSERT(metrics.data_size > 0);
+    }
+
+    void test_attention_calculation()
+    {
+        SensorMetrics good_metrics;
+        good_metrics.signal_strength = 0.8;
+        good_metrics.noise_level = 0.1;
+        good_metrics.confidence = 0.9;
+        
+        double attention = _sensor->calculate_attention(good_metrics);
+        TS_ASSERT(attention >= 0.0 && attention <= 1.0);
+        TS_ASSERT(attention > 0.5); // Should be high for good metrics
+        
+        SensorMetrics poor_metrics;
+        poor_metrics.signal_strength = 0.2;
+        poor_metrics.noise_level = 0.8;
+        poor_metrics.confidence = 0.1;
+        
+        double low_attention = _sensor->calculate_attention(poor_metrics);
+        TS_ASSERT(low_attention >= 0.0 && low_attention <= 1.0);
+        TS_ASSERT(low_attention < attention); // Should be lower for poor metrics
+    }
+
+    // === Status and Description Tests ===
+
+    void test_status_and_description()
+    {
+        std::string status = _sensor->get_status();
+        TS_ASSERT(!status.empty());
+        TS_ASSERT(status.find(_sensor->get_sensor_id()) != std::string::npos);
+        
+        std::string description = _sensor->describe();
+        TS_ASSERT(!description.empty());
+        TS_ASSERT(description.find("MultiModalSensor") != std::string::npos);
+    }
+
+    // === Error Handling Tests ===
+
+    void test_inactive_sensor_data_reading()
+    {
+        // Sensor should not read data when inactive
+        Handle result = _sensor->read_data(true);
+        TS_ASSERT(result == Handle::UNDEFINED);
+    }
+
+    void test_invalid_data_processing()
+    {
+        TS_ASSERT(_sensor->initialize());
+        
+        // Null data
+        Handle result1 = _sensor->process_data(nullptr, true);
+        TS_ASSERT(result1 == Handle::UNDEFINED);
+        
+        // Wrong data type
+        ValuePtr float_data = createFloatValue(std::vector<double>{42.0});
+        Handle result2 = _sensor->process_data(float_data, true);
+        TS_ASSERT(result2 == Handle::UNDEFINED);
+    }
+
+    // === Performance Tests ===
+
+    void test_performance_basic()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        auto start_time = std::chrono::high_resolution_clock::now();
+        
+        // Process multiple inputs
+        for (int i = 0; i < 100; ++i) {
+            _sensor->add_text_input("Test input number " + std::to_string(i));
+            _sensor->read_data(true);
+        }
+        
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        
+        // Should complete within reasonable time (less than 1 second for 100 inputs)
+        TS_ASSERT(duration.count() < 1000);
+// >>>>>>> main
+    }
+};
