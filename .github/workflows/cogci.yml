@@ -279,10 +279,110 @@ jobs:
           sudo make install
           sudo ldconfig
 
-  # ==== Logic ====
-  ure:
+  # ==== AtomSpace Rocks ====
+  atomspace-rocks:
     runs-on: ubuntu-latest
-    needs: [atomspace]
+    needs: [atomspace-storage]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev librocksdb-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
+
+      - name: Install Cython
+        run: python3 -m pip install --upgrade pip cython
+
+      - name: Verify Cython Installation
+        run: python3 -m cython --version
+
+      - name: Restore cogutil cache
+        uses: actions/cache@v4
+        with:
+          path: cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            cogutil-${{ runner.os }}-
+
+      - name: Restore atomspace cache
+        uses: actions/cache@v4
+        with:
+          path: atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+
+      - name: Build and install cogutil
+        run: |
+          cd cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build and install atomspace
+        run: |
+          cd atomspace
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build and install atomspace-storage
+        run: |
+          cd atomspace-storage
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build AtomSpace Rocks
+        run: |
+          cd atomspace-rocks
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$(which python3)
+          make -j$(nproc)
+
+      - name: Test AtomSpace Rocks
+        run: |
+          cd atomspace-rocks/build
+          make test || true
+
+      - name: Install AtomSpace Rocks
+        run: |
+          cd atomspace-rocks/build
+          sudo make install
+          sudo ldconfig
+
+  # ==== Logic ====
+  unify:
+    runs-on: ubuntu-latest
+    needs: [atomspace-rocks]
     steps:
       - uses: actions/checkout@v4
 
@@ -341,11 +441,166 @@ jobs:
           sudo make install
           sudo ldconfig
 
+      - name: Build and install atomspace-storage
+        run: |
+          cd atomspace-storage
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build and install atomspace-rocks
+        run: |
+          cd atomspace-rocks
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build Unify
+        run: |
+          cd unify
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$(which python3)
+          make -j$(nproc)
+
+      - name: Test Unify
+        run: |
+          cd unify/build
+          make test || true
+
+      - name: Install Unify
+        run: |
+          cd unify/build
+          sudo make install
+          sudo ldconfig
+
+      - name: Cache unify build
+        uses: actions/cache@v4
+        with:
+          path: unify/build
+          key: unify-${{ runner.os }}-${{ github.sha }}
+
+  ure:
+    runs-on: ubuntu-latest
+    needs: [unify]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libboost-all-dev guile-3.0-dev cython3 python3-nose valgrind doxygen
+
+      - name: Install Cython
+        run: python3 -m pip install --upgrade pip cython
+
+      - name: Verify Cython Installation
+        run: python3 -m cython --version
+
+      - name: Restore cogutil cache
+        uses: actions/cache@v4
+        with:
+          path: cogutil/build
+          key: cogutil-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            cogutil-${{ runner.os }}-
+
+      - name: Restore atomspace cache
+        uses: actions/cache@v4
+        with:
+          path: atomspace/build
+          key: atomspace-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            atomspace-${{ runner.os }}-
+
+      - name: Build and install cogutil
+        run: |
+          cd cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build and install atomspace
+        run: |
+          cd atomspace
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build and install atomspace-storage
+        run: |
+          cd atomspace-storage
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build and install atomspace-rocks
+        run: |
+          cd atomspace-rocks
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
       - name: Build and install unify
         run: |
-          git clone --depth 1 https://github.com/opencog/unify /tmp/unify
-          cd /tmp/unify
-          mkdir -p build && cd build
+          cd unify
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
           sudo make install
@@ -437,11 +692,49 @@ jobs:
           sudo make install
           sudo ldconfig
 
+      - name: Build and install atomspace-storage
+        run: |
+          cd atomspace-storage
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build and install atomspace-rocks
+        run: |
+          cd atomspace-rocks
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
       - name: Build and install unify
         run: |
-          git clone --depth 1 https://github.com/opencog/unify /tmp/unify
-          cd /tmp/unify
-          mkdir -p build && cd build
+          cd unify
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
           sudo make install
@@ -450,6 +743,10 @@ jobs:
       - name: Build and install URE
         run: |
           cd ure
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
           if [ ! -d "build" ]; then
             mkdir -p build
           fi
@@ -487,10 +784,22 @@ jobs:
           cd pln/build
           make test || true
 
+      - name: Install PLN
+        run: |
+          cd pln/build
+          sudo make install
+          sudo ldconfig
+
+      - name: Cache pln build
+        uses: actions/cache@v4
+        with:
+          path: pln/build
+          key: pln-${{ runner.os }}-${{ github.sha }}
+
   # ==== Server Infrastructure ====
   cogserver:
     runs-on: ubuntu-latest
-    needs: [atomspace-storage]
+    needs: [atomspace-rocks]
     steps:
       - uses: actions/checkout@v4
       
@@ -549,6 +858,38 @@ jobs:
           sudo make install
           sudo ldconfig
           
+      - name: Build and install atomspace-storage  
+        run: |
+          cd atomspace-storage
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install atomspace-rocks  
+        run: |
+          cd atomspace-rocks
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
       - name: Build and install cogserver
         run: |
           cd cogserver
@@ -572,7 +913,7 @@ jobs:
   # ==== Spatiotemporal ====
   spacetime:
     runs-on: ubuntu-latest
-    needs: [atomspace]
+    needs: [atomspace-storage]
     steps:
       - uses: actions/checkout@v4
 
@@ -592,6 +933,38 @@ jobs:
       - name: Build and install cogutil
         run: |
           cd cogutil
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install atomspace  
+        run: |
+          cd atomspace
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+          
+      - name: Build and install atomspace-storage  
+        run: |
+          cd atomspace-storage
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
           if [ ! -d "build" ]; then
             mkdir -p build
           fi
@@ -690,6 +1063,22 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
+          
+      - name: Build and install atomspace-storage  
+        run: |
+          cd atomspace-storage
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          if [ ! -d "build" ]; then
+            mkdir -p build
+          fi
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
 
       - name: Build Attention
         run: |
@@ -706,7 +1095,7 @@ jobs:
   # ==== Final Summary Job ====
   build-summary:
     runs-on: ubuntu-latest
-    needs: [cogutil, atomspace, atomspace-storage, ure, pln, cogserver, spacetime, attention]
+    needs: [cogutil, atomspace, atomspace-storage, atomspace-rocks, unify, ure, pln, cogserver, spacetime, attention]
     if: always()
     steps:
       - name: Build Summary
@@ -716,6 +1105,8 @@ jobs:
           echo "cogutil: ${{ needs.cogutil.result }}"
           echo "atomspace: ${{ needs.atomspace.result }}"
           echo "atomspace-storage: ${{ needs.atomspace-storage.result }}"
+          echo "atomspace-rocks: ${{ needs.atomspace-rocks.result }}"
+          echo "unify: ${{ needs.unify.result }}"
           echo "ure: ${{ needs.ure.result }}"
           echo "pln: ${{ needs.pln.result }}"
           echo "cogserver: ${{ needs.cogserver.result }}"
