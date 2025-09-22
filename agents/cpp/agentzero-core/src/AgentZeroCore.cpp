@@ -126,8 +126,6 @@ bool AgentZeroCore::config(const char* config_string)
     return true;
 }
 
-
-
 bool AgentZeroCore::start()
 {
     if (!_initialized.load()) {
@@ -190,7 +188,11 @@ bool AgentZeroCore::setGoal(const Handle& goal_atom)
         return false;
     }
     
-    logger().info() << "[AgentZeroCore] Setting new goal: " << goal_atom->to_string();
+// <<<<<<< copilot/fix-27
+    logger().info() << "[AgentZeroCore] Setting new goal: " << goal_atom->to_short_string();
+// =======
+//    logger().info() << "[AgentZeroCore] Setting new goal: " << goal_atom->to_string();
+// >>>>>>> main
     
     _current_goal_atom = goal_atom;
     
@@ -227,6 +229,37 @@ std::string AgentZeroCore::getStatusInfo() const
     
     status << "}";
     return status.str();
+}
+
+void AgentZeroCore::setAtomSpace(AtomSpacePtr atomspace)
+{
+    logger().info() << "[AgentZeroCore] Setting AtomSpace for agent '" << _agent_name << "'";
+    
+    _atomspace = atomspace;
+    
+    // Re-initialize core atoms with new atomspace
+    if (_atomspace) {
+        setupCoreAtoms();
+        
+        // Re-initialize cognitive loop with new atomspace
+        if (_cognitive_loop) {
+            _cognitive_loop.reset();
+            _cognitive_loop = std::make_unique<CognitiveLoop>(this, _atomspace);
+        }
+        
+        // Re-initialize other components if needed
+        if (_task_manager) {
+            _task_manager.reset();
+            _task_manager = std::make_unique<TaskManager>(this, _atomspace);
+        }
+        
+        if (_knowledge_integrator) {
+            _knowledge_integrator.reset();
+            _knowledge_integrator = std::make_unique<KnowledgeIntegrator>(this, _atomspace);
+        }
+        
+        logger().debug() << "[AgentZeroCore] AtomSpace and components re-initialized";
+    }
 }
 
 bool AgentZeroCore::processCognitiveStep()
@@ -286,7 +319,11 @@ void AgentZeroCore::createAgentSelfRepresentation()
     TruthValuePtr agent_tv = SimpleTruthValue::createTV(1.0, 1.0);
     _agent_self_atom->setTruthValue(agent_tv);
     
-    logger().debug() << "[AgentZeroCore] Agent self-representation created: " << _agent_self_atom->to_string();
+// <<<<<<< copilot/fix-27
+    logger().debug() << "[AgentZeroCore] Agent self-representation created: " << _agent_self_atom->to_short_string();
+// =======
+//    logger().debug() << "[AgentZeroCore] Agent self-representation created: " << _agent_self_atom->to_string();
+// >>>>>>> main
 }
 
 void AgentZeroCore::setupCoreAtoms()

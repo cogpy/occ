@@ -21,6 +21,13 @@
 #include <opencog/atoms/base/Handle.h>
 #include <opencog/util/Logger.h>
 
+// Forward declarations for attention system
+namespace opencog {
+    class AttentionBank;
+    class AttentionValue;
+    typedef std::shared_ptr<const AttentionValue> AttentionValuePtr;
+}
+
 namespace opencog {
 namespace agentzero {
 
@@ -67,6 +74,13 @@ private:
     bool _enable_planning;
     bool _enable_action;
     bool _enable_reflection;
+    bool _enable_attention_allocation;
+    
+    // Attention system integration
+    AttentionBank* _attention_bank;
+    Handle _attention_context;
+    double _perception_importance_threshold;
+    double _attention_spreading_factor;
     
     // Internal methods
     void runMainLoop();
@@ -76,6 +90,12 @@ private:
     bool executeReflectionPhase();
     void updateCycleMetrics(const std::chrono::steady_clock::time_point& start_time);
     void handleLoopException(const std::exception& e);
+    
+    // Attention allocation methods
+    void initializeAttentionSystem();
+    void allocateAttentionToPercepts(const HandleSeq& percepts);
+    void updateAttentionContext();
+    HandleSeq getHighImportanceAtoms(double threshold = -1.0) const;
 
 public:
     /**
@@ -172,6 +192,14 @@ public:
      */
     void configurePhases(bool perception, bool planning, bool action, bool reflection);
     
+    /**
+     * Configure attention allocation for perception phase
+     * @param enable Enable/disable attention allocation
+     * @param importance_threshold Minimum importance threshold for attention
+     * @param spreading_factor Factor for attention spreading (0.0-1.0)
+     */
+    void configureAttention(bool enable, double importance_threshold = 0.5, double spreading_factor = 0.1);
+    
     // AtomSpace integration
     /**
      * Get the perception context atom
@@ -196,6 +224,12 @@ public:
      * @return Handle to reflection context
      */
     Handle getReflectionContext() const { return _reflection_context; }
+    
+    /**
+     * Get the attention context atom
+     * @return Handle to attention context
+     */
+    Handle getAttentionContext() const { return _attention_context; }
     
     /**
      * Get status information for debugging

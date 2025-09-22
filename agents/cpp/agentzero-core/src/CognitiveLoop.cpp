@@ -18,6 +18,17 @@
 #include <opencog/atoms/base/Link.h>
 #include <opencog/atoms/truthvalue/SimpleTruthValue.h>
 
+// Attention system includes (conditionally available)
+#ifdef HAVE_ATTENTION_BANK
+#include <opencog/attentionbank/bank/AttentionBank.h>
+#include <opencog/attentionbank/avalue/AttentionValue.h>
+#include <opencog/attentionbank/bank/AVUtils.h>
+// Function to get attention bank
+namespace opencog { 
+    AttentionBank& attentionbank(AtomSpace* as);
+}
+#endif
+
 #include "opencog/agentzero/CognitiveLoop.h"
 #include "opencog/agentzero/AgentZeroCore.h"
 #include "opencog/agentzero/TaskManager.h"
@@ -42,6 +53,11 @@ CognitiveLoop::CognitiveLoop(AgentZeroCore* agent_core, AtomSpacePtr atomspace)
     , _enable_planning(true)
     , _enable_action(true)
     , _enable_reflection(true)
+    , _enable_attention_allocation(false)
+    , _attention_bank(nullptr)
+    , _attention_context(Handle::UNDEFINED)
+    , _perception_importance_threshold(0.5)
+    , _attention_spreading_factor(0.1)
 {
     logger().info() << "[CognitiveLoop] Constructor: Initializing cognitive loop";
     
@@ -51,6 +67,10 @@ CognitiveLoop::CognitiveLoop(AgentZeroCore* agent_core, AtomSpacePtr atomspace)
     _planning_context = _atomspace->add_node(CONCEPT_NODE, agent_name + "_Planning");
     _action_context = _atomspace->add_node(CONCEPT_NODE, agent_name + "_Action");
     _reflection_context = _atomspace->add_node(CONCEPT_NODE, agent_name + "_Reflection");
+    _attention_context = _atomspace->add_node(CONCEPT_NODE, agent_name + "_Attention");
+    
+    // Initialize attention system if available
+    initializeAttentionSystem();
     
     logger().debug() << "[CognitiveLoop] Context atoms created";
 }
@@ -202,6 +222,21 @@ void CognitiveLoop::configurePhases(bool perception, bool planning, bool action,
     _enable_reflection = reflection;
 }
 
+void CognitiveLoop::configureAttention(bool enable, double importance_threshold, double spreading_factor)
+{
+    logger().info() << "[CognitiveLoop] Configuring attention: enable=" << enable
+                   << ", importance_threshold=" << importance_threshold
+                   << ", spreading_factor=" << spreading_factor;
+    
+    _enable_attention_allocation = enable;
+    _perception_importance_threshold = importance_threshold;
+    _attention_spreading_factor = spreading_factor;
+    
+    if (enable && !_attention_bank) {
+        initializeAttentionSystem();
+    }
+}
+
 std::string CognitiveLoop::getStatusInfo() const
 {
     std::ostringstream status;
@@ -214,7 +249,9 @@ std::string CognitiveLoop::getStatusInfo() const
     status << "\"perception_enabled\":" << (_enable_perception ? "true" : "false") << ",";
     status << "\"planning_enabled\":" << (_enable_planning ? "true" : "false") << ",";
     status << "\"action_enabled\":" << (_enable_action ? "true" : "false") << ",";
-    status << "\"reflection_enabled\":" << (_enable_reflection ? "true" : "false");
+    status << "\"reflection_enabled\":" << (_enable_reflection ? "true" : "false") << ",";
+    status << "\"attention_allocation_enabled\":" << (_enable_attention_allocation ? "true" : "false") << ",";
+    status << "\"attention_bank_available\":" << (_attention_bank ? "true" : "false");
     status << "}";
     return status.str();
 }
@@ -265,11 +302,34 @@ bool CognitiveLoop::executePerceptionPhase()
         // - Detect changes and events
         // - Update attention allocation
         
-        // For now, just record that perception occurred
+        // Create some example percepts for demonstration
+        HandleSeq percepts;
+        
+        // Record that perception occurred
         HandleSeq perception_link;
         perception_link.push_back(_agent_core->getAgentSelfAtom());
         perception_link.push_back(_perception_context);
-        _atomspace->add_link(EVALUATION_LINK, std::move(perception_link));
+        Handle perception_event = _atomspace->add_link(EVALUATION_LINK, std::move(perception_link));
+        percepts.push_back(perception_event);
+        
+        // Add perception context to percepts for attention allocation
+        percepts.push_back(_perception_context);
+        
+        // Integrate ECAN attention allocation for perceived items
+        if (_enable_attention_allocation) {
+            logger().debug() << "[CognitiveLoop] Allocating attention to " << percepts.size() << " percepts";
+            allocateAttentionToPercepts(percepts);
+            
+            // Get high-importance atoms to focus cognitive processing
+            HandleSeq important_atoms = getHighImportanceAtoms();
+            if (!important_atoms.empty()) {
+                logger().debug() << "[CognitiveLoop] Found " << important_atoms.size() 
+                               << " high-importance atoms for focused processing";
+                
+                // In a full implementation, these important atoms would guide
+                // further perception processing and attention spreading
+            }
+        }
         
         return true;
         
@@ -380,4 +440,137 @@ void CognitiveLoop::handleLoopException(const std::exception& e)
     // - Attempt recovery actions
     // - Notify monitoring systems
     // - Adjust loop parameters
+}
+
+// Attention allocation implementation
+
+void CognitiveLoop::initializeAttentionSystem()
+{
+    logger().debug() << "[CognitiveLoop] Initializing attention system";
+    
+    try {
+#ifdef HAVE_ATTENTION_BANK
+        // Try to get the attention bank for this atomspace
+        _attention_bank = &opencog::attentionbank(_atomspace.get());
+        if (_attention_bank) {
+            logger().info() << "[CognitiveLoop] Attention bank initialized successfully";
+            _enable_attention_allocation = true;
+        }
+#else
+        logger().warn() << "[CognitiveLoop] Attention system not available - compiled without attention support";
+#endif
+    } catch (const std::exception& e) {
+        logger().warn() << "[CognitiveLoop] Failed to initialize attention system: " << e.what();
+        _attention_bank = nullptr;
+        _enable_attention_allocation = false;
+    }
+}
+
+void CognitiveLoop::allocateAttentionToPercepts(const HandleSeq& percepts)
+{
+    if (!_enable_attention_allocation || !_attention_bank || percepts.empty()) {
+        return;
+    }
+    
+    logger().debug() << "[CognitiveLoop] Allocating attention to " << percepts.size() << " percepts";
+    
+    try {
+#ifdef HAVE_ATTENTION_BANK
+        // Calculate attention values for percepts based on novelty and importance
+        for (const Handle& percept : percepts) {
+            if (percept == Handle::UNDEFINED) continue;
+            
+            // Get current attention value using AVUtils
+            AttentionValuePtr current_av = get_av(percept);
+            
+            // Calculate new importance based on perception factors
+            // This is a simplified heuristic - in a full system this would be more sophisticated
+            double base_importance = current_av ? current_av->getSTI() : 0.0;
+            double novelty_boost = 10.0; // New percepts get importance boost
+            double perception_importance = base_importance + novelty_boost;
+            
+            // Ensure we're above the threshold
+            if (perception_importance < _perception_importance_threshold * 100.0) {
+                perception_importance = _perception_importance_threshold * 100.0;
+            }
+            
+            // Create new attention value
+            AttentionValuePtr new_av = AttentionValue::createAV(
+                static_cast<AttentionValue::sti_t>(perception_importance),  // STI (short-term importance)
+                current_av ? current_av->getLTI() : 0,                      // LTI (long-term importance)  
+                current_av ? current_av->getVLTI() : 0                      // VLTI (very long-term importance)
+            );
+            
+            // Update the atom's attention value using AVUtils
+            set_av(_atomspace.get(), percept, new_av);
+            
+            logger().debug() << "[CognitiveLoop] Set attention for percept: " 
+                           << percept->to_short_string() 
+                           << " STI=" << perception_importance;
+        }
+        
+        // Update attention context
+        updateAttentionContext();
+#endif
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[CognitiveLoop] Error in attention allocation: " << e.what();
+    }
+}
+
+void CognitiveLoop::updateAttentionContext()
+{
+    if (!_enable_attention_allocation || _attention_context == Handle::UNDEFINED) {
+        return;
+    }
+    
+    try {
+        // Update the attention context with current attention metrics
+        TruthValuePtr attention_tv = SimpleTruthValue::createTV(0.9, 0.95);
+        _attention_context->setTruthValue(attention_tv);
+        
+        // Record that attention allocation occurred
+        HandleSeq attention_link;
+        attention_link.push_back(_agent_core->getAgentSelfAtom());
+        attention_link.push_back(_attention_context);
+        _atomspace->add_link(EVALUATION_LINK, std::move(attention_link));
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[CognitiveLoop] Error updating attention context: " << e.what();
+    }
+}
+
+HandleSeq CognitiveLoop::getHighImportanceAtoms(double threshold) const
+{
+    HandleSeq high_importance_atoms;
+    
+    if (!_enable_attention_allocation || !_attention_bank) {
+        return high_importance_atoms;
+    }
+    
+    if (threshold < 0.0) {
+        threshold = _perception_importance_threshold;
+    }
+    
+    try {
+#ifdef HAVE_ATTENTION_BANK
+        // Get atoms from attention bank above threshold
+        HandleSeq all_atoms;
+        _atomspace->get_handles_by_type(all_atoms, ATOM, true);
+        
+        for (const Handle& atom : all_atoms) {
+            AttentionValuePtr av = get_av(atom);
+            if (av && av->getSTI() >= threshold * 100.0) {
+                high_importance_atoms.push_back(atom);
+            }
+        }
+        
+        logger().debug() << "[CognitiveLoop] Found " << high_importance_atoms.size() 
+                        << " high importance atoms above threshold " << threshold;
+#endif
+    } catch (const std::exception& e) {
+        logger().error() << "[CognitiveLoop] Error getting high importance atoms: " << e.what();
+    }
+    
+    return high_importance_atoms;
 }
