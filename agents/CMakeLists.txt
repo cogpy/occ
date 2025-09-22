@@ -10,6 +10,9 @@ message(STATUS "Configuring OpenCog Agents Project")
 # Add C++ Agent-Zero implementation
 add_subdirectory(cpp)
 
+# Add specific Agent-Zero components
+add_subdirectory(cpp/agentzero-perception)
+
 # Future: Add other agent implementations here
 # add_subdirectory(python)  # For Python-based agents
 # add_subdirectory(scheme)  # For pure Scheme agents

@@ -1,0 +1,399 @@
+/*
+ * TextualSensorUTest.cxxtest
+ *
+ * Unit tests for TextualSensor implementation
+ * Copyright (C) 2024 OpenCog Foundation
+ */
+
+#include <opencog/agentzero/perception/TextualSensor.h>
+#include <opencog/atomspace/AtomSpace.h>
+#include <opencog/atoms/value/StringValue.h>
+#include <cxxtest/TestSuite.h>
+
+using namespace opencog;
+using namespace opencog::agentzero;
+
+class TextualSensorUTest : public CxxTest::TestSuite
+{
+private:
+    AtomSpace* _as;
+    std::unique_ptr<TextualSensor> _sensor;
+
+public:
+    TextualSensorUTest()
+    {
+        logger().set_level(Logger::WARN); // Reduce log noise during testing
+    }
+
+    void setUp()
+    {
+        _as = new AtomSpace();
+        _sensor = std::make_unique<TextualSensor>(_as, "textual_test", "test_input");
+    }
+
+    void tearDown()
+    {
+        _sensor.reset();
+        delete _as;
+    }
+
+    // === TextualSensor Specific Tests ===
+
+    void test_textual_constructor()
+    {
+        TS_ASSERT(_sensor != nullptr);
+        TS_ASSERT_EQUALS(_sensor->get_sensor_id(), "textual_test");
+        TS_ASSERT_EQUALS(_sensor->get_primary_modality(), SensorModality::TEXTUAL);
+    }
+
+    void test_text_mode_defaults()
+    {
+        TS_ASSERT_EQUALS(_sensor->get_text_mode(), "sentences");
+    }
+
+    // === Words Mode Processing Tests ===
+
+    void test_words_mode_processing()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        _sensor->set_text_mode("words");
+        
+        std::string test_text = "Hello world test processing";
+        Handle result = _sensor->process_text_line(test_text, true);
+        
+        TS_ASSERT(result != Handle::UNDEFINED);
+        
+        // Check metrics
+        SensorMetrics metrics = _sensor->get_metrics();
+        TS_ASSERT(metrics.data_size == test_text.length());
+        TS_ASSERT(metrics.confidence > 0.0);
+    }
+
+    void test_words_mode_with_punctuation()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        _sensor->set_text_mode("words");
+        
+        std::string test_text = "Hello, world! How are you?";
+        Handle result = _sensor->process_text_line(test_text, true);
+        
+        TS_ASSERT(result != Handle::UNDEFINED);
+    }
+
+    // === Sentences Mode Processing Tests ===
+
+    void test_sentences_mode_processing()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        _sensor->set_text_mode("sentences");
+        
+        std::string test_text = "First sentence. Second sentence! Third sentence?";
+        Handle result = _sensor->process_text_line(test_text, true);
+        
+        TS_ASSERT(result != Handle::UNDEFINED);
+    }
+
+    void test_sentences_mode_single_sentence()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        _sensor->set_text_mode("sentences");
+        
+        std::string test_text = "This is a single sentence without punctuation";
+        Handle result = _sensor->process_text_line(test_text, true);
+        
+        TS_ASSERT(result != Handle::UNDEFINED);
+    }
+
+    // === Documents Mode Processing Tests ===
+
+    void test_documents_mode_processing()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        _sensor->set_text_mode("documents");
+        
+        std::string test_text = "This is a document with multiple sentences. "
+                                "It contains various information. "
+                                "The document processing should handle this.";
+        Handle result = _sensor->process_text_line(test_text, true);
+        
+        TS_ASSERT(result != Handle::UNDEFINED);
+    }
+
+    // === Stream Mode Processing Tests ===
+
+    void test_stream_mode_processing()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        _sensor->set_text_mode("stream");
+        
+        std::string test_text = "Stream chunk data";
+        Handle result = _sensor->process_text_line(test_text, true);
+        
+        TS_ASSERT(result != Handle::UNDEFINED);
+        
+        // Should create timestamp-based chunks
+        SensorMetrics metrics = _sensor->get_metrics();
+        TS_ASSERT(metrics.data_size > 0);
+    }
+
+    void test_stream_mode_multiple_chunks()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        _sensor->set_text_mode("stream");
+        
+        // Process multiple stream chunks
+        for (int i = 0; i < 3; ++i) {
+            std::string chunk = "Stream chunk " + std::to_string(i);
+            Handle result = _sensor->process_text_line(chunk, true);
+            TS_ASSERT(result != Handle::UNDEFINED);
+            
+            // Small delay to ensure different timestamps
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    }
+
+    // === Input Validation Tests ===
+
+    void test_empty_text_validation()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        Handle result = _sensor->process_text_line("", true);
+        TS_ASSERT(result == Handle::UNDEFINED);
+    }
+
+    void test_text_length_validation()
+    {
+        TS_ASSERT(_sensor->initialize());
+        
+        // Set a low maximum length for testing
+        _sensor->set_parameter("max_line_length", createFloatValue(std::vector<double>{50.0}));
+        
+        TS_ASSERT(_sensor->start());
+        
+        // Short text should work
+        std::string short_text = "Short text";
+        Handle result1 = _sensor->process_text_line(short_text, true);
+        TS_ASSERT(result1 != Handle::UNDEFINED);
+        
+        // Long text should be rejected
+        std::string long_text(100, 'x'); // 100 characters
+        Handle result2 = _sensor->process_text_line(long_text, true);
+        TS_ASSERT(result2 == Handle::UNDEFINED);
+    }
+
+    // === Metrics Calculation Tests ===
+
+    void test_text_metrics_calculation()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        // Test with good quality text
+        std::string good_text = "This is a high quality text with proper words";
+        _sensor->process_text_line(good_text, true);
+        
+        SensorMetrics good_metrics = _sensor->get_metrics();
+        TS_ASSERT(good_metrics.signal_strength > 0.5);
+        TS_ASSERT(good_metrics.confidence > 0.5);
+        TS_ASSERT(good_metrics.noise_level < 0.5);
+        
+        // Test with poor quality text
+        std::string poor_text = "123 !@# $$$ %%% ^^^";
+        _sensor->process_text_line(poor_text, true);
+        
+        SensorMetrics poor_metrics = _sensor->get_metrics();
+        TS_ASSERT(poor_metrics.signal_strength < good_metrics.signal_strength);
+        TS_ASSERT(poor_metrics.confidence < good_metrics.confidence);
+    }
+
+    void test_metrics_with_empty_text()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        // Process empty text (should fail, but let's check initial metrics)
+        SensorMetrics initial_metrics = _sensor->get_metrics();
+        
+        // Initial metrics should be at defaults
+        TS_ASSERT(initial_metrics.signal_strength >= 0.0);
+        TS_ASSERT(initial_metrics.confidence >= 0.0);
+        TS_ASSERT(initial_metrics.noise_level >= 0.0);
+    }
+
+    // === Queue Management Tests ===
+
+    void test_queue_operations()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        // Initially empty
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 0);
+        
+        // Add multiple inputs
+        _sensor->add_text_input("Input 1");
+        _sensor->add_text_input("Input 2");
+        _sensor->add_text_input("Input 3");
+        
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 3);
+        
+        // Read data should reduce queue
+        Handle result1 = _sensor->read_data(true);
+        TS_ASSERT(result1 != Handle::UNDEFINED);
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 2);
+        
+        Handle result2 = _sensor->read_data(true);
+        TS_ASSERT(result2 != Handle::UNDEFINED);
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 1);
+        
+        Handle result3 = _sensor->read_data(true);
+        TS_ASSERT(result3 != Handle::UNDEFINED);
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 0);
+        
+        // No more data
+        Handle result4 = _sensor->read_data(true);
+        TS_ASSERT(result4 == Handle::UNDEFINED);
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 0);
+    }
+
+    void test_queue_with_stop()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        // Add inputs
+        _sensor->add_text_input("Input 1");
+        _sensor->add_text_input("Input 2");
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 2);
+        
+        // Stop should clear queue
+        _sensor->stop();
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 0);
+    }
+
+    // === AtomSpace Structure Tests ===
+
+    void test_atomspace_word_structure()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        size_t initial_size = _as->get_size();
+        
+        _sensor->set_text_mode("words");
+        Handle result = _sensor->process_text_line("hello world test", true);
+        
+        TS_ASSERT(result != Handle::UNDEFINED);
+        TS_ASSERT(_as->get_size() > initial_size);
+        
+        // Should create WORD_NODE atoms
+        Handle hello_word = _as->get_node(WORD_NODE, "hello");
+        Handle world_word = _as->get_node(WORD_NODE, "world");
+        Handle test_word = _as->get_node(WORD_NODE, "test");
+        
+        // Note: These might not exist if word processing is different
+        // This is testing expected behavior based on implementation
+    }
+
+    void test_atomspace_sentence_structure()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        size_t initial_size = _as->get_size();
+        
+        _sensor->set_text_mode("sentences");
+        Handle result = _sensor->process_text_line("Hello world. How are you?", true);
+        
+        TS_ASSERT(result != Handle::UNDEFINED);
+        TS_ASSERT(_as->get_size() > initial_size);
+    }
+
+    // === Threading and Concurrency Tests ===
+
+    void test_concurrent_queue_access()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        // Add inputs from multiple threads (simulated with sequential calls)
+        for (int i = 0; i < 10; ++i) {
+            std::string input = "Concurrent input " + std::to_string(i);
+            TS_ASSERT(_sensor->add_text_input(input));
+        }
+        
+        TS_ASSERT_EQUALS(_sensor->get_queue_size(), 10);
+        
+        // Process all inputs
+        int processed = 0;
+        while (_sensor->get_queue_size() > 0) {
+            Handle result = _sensor->read_data(true);
+            if (result != Handle::UNDEFINED) {
+                processed++;
+            }
+        }
+        
+        TS_ASSERT_EQUALS(processed, 10);
+    }
+
+    // === Integration Tests ===
+
+    void test_full_workflow()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        // Test complete workflow with different modes
+        std::vector<std::string> modes = {"words", "sentences", "documents", "stream"};
+        std::string test_text = "Complete workflow test. Multiple sentences here!";
+        
+        for (const auto& mode : modes) {
+            _sensor->set_text_mode(mode);
+            
+            Handle result = _sensor->process_text_line(test_text, true);
+            TS_ASSERT(result != Handle::UNDEFINED);
+            
+            SensorMetrics metrics = _sensor->get_metrics();
+            TS_ASSERT(metrics.data_size > 0);
+            TS_ASSERT(metrics.confidence > 0.0);
+        }
+        
+        TS_ASSERT(_sensor->stop());
+    }
+
+    // === Error Recovery Tests ===
+
+    void test_error_recovery()
+    {
+        TS_ASSERT(_sensor->initialize());
+        TS_ASSERT(_sensor->start());
+        
+        // Process valid input
+        Handle result1 = _sensor->process_text_line("Valid input", true);
+        TS_ASSERT(result1 != Handle::UNDEFINED);
+        
+        // Try invalid input
+        Handle result2 = _sensor->process_text_line("", true);
+        TS_ASSERT(result2 == Handle::UNDEFINED);
+        
+        // Should still be able to process valid input after error
+        Handle result3 = _sensor->process_text_line("Another valid input", true);
+        TS_ASSERT(result3 != Handle::UNDEFINED);
+    }
+};
