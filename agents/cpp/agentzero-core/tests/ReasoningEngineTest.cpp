@@ -10,8 +10,8 @@
 
 #include <gtest/gtest.h>
 #include <opencog/atomspace/AtomSpace.h>
-#include <opencog/atoms/base/NodeTypes.h>
-#include <opencog/atoms/base/LinkTypes.h>
+#include <opencog/atoms/atom_types/atom_types.h>
+#include <opencog/atoms/atom_types/types.h>
 #include <opencog/atoms/truthvalue/SimpleTruthValue.h>
 
 #include "../include/opencog/agentzero/ReasoningEngine.h"
