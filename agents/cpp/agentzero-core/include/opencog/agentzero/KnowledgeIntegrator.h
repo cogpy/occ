@@ -100,6 +100,36 @@ private:
     void consolidateMemory();
     std::vector<Handle> findRelatedKnowledge(const Handle& query_atom);
     
+// <<<<<<< copilot/fix-33
+    // Advanced concept formation methods
+    std::vector<Handle> formConceptsByPatterns(const std::vector<Handle>& experience_atoms);
+    std::vector<Handle> formConceptsByClustering(const std::vector<Handle>& experience_atoms);
+    std::vector<Handle> formHierarchicalConcepts(const std::vector<Handle>& experience_atoms);
+    std::vector<Handle> formConceptsByFrequency(const std::vector<Handle>& experience_atoms);
+    void validateAndRefineNewConcepts(std::vector<Handle>& new_concepts, 
+                                     const std::vector<Handle>& experience_atoms);
+    
+    // Helper methods for concept formation
+    std::string createStructureSignature(const Handle& atom);
+    void calculateSemanticSimilarityMatrix(const std::vector<Handle>& atoms, 
+                                         std::vector<std::vector<double>>& matrix);
+    double calculateAtomSimilarity(const Handle& atom1, const Handle& atom2);
+    double calculateStringSimilarity(const std::string& str1, const std::string& str2);
+    std::vector<std::vector<int>> performSimpleClustering(
+        const std::vector<std::vector<double>>& similarity_matrix, double threshold);
+    double calculateClusterCohesion(const std::vector<int>& cluster, 
+                                   const std::vector<std::vector<double>>& similarity_matrix);
+    std::vector<std::string> extractHierarchyLevels(const Handle& atom);
+    std::vector<std::string> tokenizeWithContext(const std::string& text);
+    std::string extractTermContext(const std::string& text, const std::string& term);
+    double calculateSemanticWeight(const std::string& term);
+    double calculateDynamicThreshold(const std::map<std::string, double>& term_significance,
+                                    size_t experience_count);
+    double evaluateConceptQuality(const Handle& concept, const std::vector<Handle>& experience_atoms);
+    double evaluateConceptUniqueness(const Handle& concept);
+    void refineConceptRelationships(Handle& concept, const std::vector<Handle>& all_concepts);
+    void updateConceptConfidenceAfterValidation(Handle& concept, double quality_score);
+// =======
     // Enhanced AtomSpace operations for Agent-Zero
     void initializeAdvancedReasoning();
     void initializePatternMining();
@@ -155,6 +185,7 @@ private:
     std::vector<Handle> extractTemporalPatterns(const std::vector<Handle>& sequence);
     std::vector<Handle> extractCausalPatterns(const std::vector<Handle>& sequence);
     std::vector<Handle> extractStatisticalPatterns(const std::vector<Handle>& data);
+// >>>>>>> main
 
 public:
     /**
