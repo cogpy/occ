@@ -5,6 +5,7 @@ ADD_LIBRARY(miner SHARED
 	HandleTree.cc
 	Valuations.cc
 	Surprisingness.cc
+	PatternDiscovery.cc
 )
 
 TARGET_LINK_LIBRARIES(miner
@@ -23,6 +24,7 @@ INSTALL (FILES
 	HandleTree.h
 	Valuations.h
 	Surprisingness.h
+	PatternDiscovery.h
 	DESTINATION "include/opencog/miner"
 )
 
