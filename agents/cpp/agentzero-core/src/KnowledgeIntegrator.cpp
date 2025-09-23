@@ -408,55 +408,318 @@ std::vector<Handle> KnowledgeIntegrator::formConceptsFrom(const std::vector<Hand
     }
     
     try {
-        // Simple concept formation: look for patterns in the experience atoms
-        std::map<std::string, int> term_frequency;
+        // Multi-strategy concept formation approach
         
-        // Extract terms from experience atoms
-        for (const Handle& atom : experience_atoms) {
-            std::string atom_name = atom->get_name();
-            
-            // Simple tokenization by spaces and common delimiters
-            std::istringstream iss(atom_name);
-            std::string term;
-            while (iss >> term) {
-                // Clean up term (remove punctuation, convert to lowercase)
-                std::string clean_term;
-                for (char c : term) {
-                    if (std::isalnum(c)) {
-                        clean_term += std::tolower(c);
-                    }
-                }
-                
-                if (clean_term.length() > 2) { // Ignore very short terms
-                    term_frequency[clean_term]++;
-                }
-            }
-        }
+        // 1. Pattern-based concept formation using structural similarities
+        auto pattern_concepts = formConceptsByPatterns(experience_atoms);
+        new_concepts.insert(new_concepts.end(), pattern_concepts.begin(), pattern_concepts.end());
         
-        // Form concepts from frequently occurring terms
-        int min_frequency = std::max(2, static_cast<int>(experience_atoms.size() * 0.3));
+        // 2. Semantic clustering based concept formation
+        auto cluster_concepts = formConceptsByClustering(experience_atoms);
+        new_concepts.insert(new_concepts.end(), cluster_concepts.begin(), cluster_concepts.end());
         
-        for (const auto& pair : term_frequency) {
-            if (pair.second >= min_frequency) {
-                std::string concept_name = "Concept_" + pair.first;
-                
-                // Check if concept already exists
-                if (!hasKnowledgeAbout(concept_name)) {
-                    Handle new_concept = registerConcept(concept_name, 
-                        "Auto-formed concept from experience patterns");
-                    new_concepts.push_back(new_concept);
-                    
-                    logger().info() << "[KnowledgeIntegrator] Formed new concept: " << concept_name 
-                                   << " (frequency: " << pair.second << ")";
-                }
-            }
-        }
+        // 3. Hierarchical concept formation with inheritance relationships
+        auto hierarchical_concepts = formHierarchicalConcepts(experience_atoms);
+        new_concepts.insert(new_concepts.end(), hierarchical_concepts.begin(), hierarchical_concepts.end());
+        
+        // 4. Traditional frequency-based concept formation (enhanced)
+        auto frequency_concepts = formConceptsByFrequency(experience_atoms);
+        new_concepts.insert(new_concepts.end(), frequency_concepts.begin(), frequency_concepts.end());
+        
+        // 5. Post-process concepts to establish relationships and validate
+        validateAndRefineNewConcepts(new_concepts, experience_atoms);
+        
+        logger().info() << "[KnowledgeIntegrator] Formed " << new_concepts.size() 
+                       << " new concepts using advanced algorithms";
         
     } catch (const std::exception& e) {
         logger().error() << "[KnowledgeIntegrator] Error forming concepts: " << e.what();
     }
     
     return new_concepts;
+}
+
+// Advanced concept formation methods
+
+std::vector<Handle> KnowledgeIntegrator::formConceptsByPatterns(const std::vector<Handle>& experience_atoms)
+{
+    logger().debug() << "[KnowledgeIntegrator] Forming concepts by structural patterns";
+    
+    std::vector<Handle> pattern_concepts;
+    
+    try {
+        // Group atoms by structural similarity using LinkType patterns
+        std::map<Type, std::vector<Handle>> type_groups;
+        std::map<std::string, std::vector<Handle>> structure_groups;
+        
+        for (const Handle& atom : experience_atoms) {
+            Type atom_type = atom->get_type();
+            type_groups[atom_type].push_back(atom);
+            
+            // Create structure signature for grouping
+            std::string structure_sig = createStructureSignature(atom);
+            if (!structure_sig.empty()) {
+                structure_groups[structure_sig].push_back(atom);
+            }
+        }
+        
+        // Form concepts from significant structural patterns
+        for (const auto& group : structure_groups) {
+            if (group.second.size() >= 3) { // Minimum 3 instances to form a pattern concept
+                std::string concept_name = "PatternConcept_" + std::to_string(std::hash<std::string>{}(group.first) % 10000);
+                
+                if (!hasKnowledgeAbout(concept_name)) {
+                    Handle pattern_concept = registerConcept(concept_name, 
+                        "Concept formed from structural pattern: " + group.first);
+                    
+                    // Set confidence based on pattern frequency and consistency
+                    double pattern_strength = std::min(1.0, group.second.size() / 10.0);
+                    TruthValuePtr pattern_tv = SimpleTruthValue::createTV(pattern_strength, 0.8);
+                    pattern_concept->setTruthValue(pattern_tv);
+                    
+                    // Link pattern instances to the concept
+                    for (const Handle& instance : group.second) {
+                        establishConceptRelation(instance, pattern_concept, "instanceof");
+                    }
+                    
+                    pattern_concepts.push_back(pattern_concept);
+                    
+                    logger().info() << "[KnowledgeIntegrator] Formed pattern concept: " << concept_name
+                                   << " with " << group.second.size() << " instances";
+                }
+            }
+        }
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error in pattern-based concept formation: " << e.what();
+    }
+    
+    return pattern_concepts;
+}
+
+std::vector<Handle> KnowledgeIntegrator::formConceptsByClustering(const std::vector<Handle>& experience_atoms)
+{
+    logger().debug() << "[KnowledgeIntegrator] Forming concepts by semantic clustering";
+    
+    std::vector<Handle> cluster_concepts;
+    
+    try {
+        // Calculate semantic similarity matrix between atoms
+        std::vector<std::vector<double>> similarity_matrix;
+        calculateSemanticSimilarityMatrix(experience_atoms, similarity_matrix);
+        
+        // Perform clustering using simple agglomerative clustering
+        std::vector<std::vector<int>> clusters = performSimpleClustering(similarity_matrix, 0.6); // 60% similarity threshold
+        
+        int cluster_id = 0;
+        for (const auto& cluster : clusters) {
+            if (cluster.size() >= 2) { // Minimum 2 atoms to form a cluster concept
+                std::string concept_name = "ClusterConcept_" + std::to_string(cluster_id++);
+                
+                if (!hasKnowledgeAbout(concept_name)) {
+                    Handle cluster_concept = registerConcept(concept_name,
+                        "Concept formed from semantic clustering with " + std::to_string(cluster.size()) + " members");
+                    
+                    // Set confidence based on cluster cohesion
+                    double avg_similarity = calculateClusterCohesion(cluster, similarity_matrix);
+                    TruthValuePtr cluster_tv = SimpleTruthValue::createTV(avg_similarity, 0.7);
+                    cluster_concept->setTruthValue(cluster_tv);
+                    
+                    // Link cluster members to the concept
+                    for (int atom_idx : cluster) {
+                        if (atom_idx < experience_atoms.size()) {
+                            establishConceptRelation(experience_atoms[atom_idx], cluster_concept, "memberof");
+                        }
+                    }
+                    
+                    cluster_concepts.push_back(cluster_concept);
+                    
+                    logger().info() << "[KnowledgeIntegrator] Formed cluster concept: " << concept_name
+                                   << " with " << cluster.size() << " members (cohesion: " << avg_similarity << ")";
+                }
+            }
+        }
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error in clustering-based concept formation: " << e.what();
+    }
+    
+    return cluster_concepts;
+}
+
+std::vector<Handle> KnowledgeIntegrator::formHierarchicalConcepts(const std::vector<Handle>& experience_atoms)
+{
+    logger().debug() << "[KnowledgeIntegrator] Forming hierarchical concepts";
+    
+    std::vector<Handle> hierarchical_concepts;
+    
+    try {
+        // Extract hierarchical relationships from atom structures
+        std::map<std::string, std::set<std::string>> taxonomy;
+        
+        for (const Handle& atom : experience_atoms) {
+            // Extract potential hierarchical information from atom names and structures
+            std::vector<std::string> hierarchy_levels = extractHierarchyLevels(atom);
+            
+            if (hierarchy_levels.size() > 1) {
+                for (size_t i = 0; i < hierarchy_levels.size() - 1; ++i) {
+                    taxonomy[hierarchy_levels[i]].insert(hierarchy_levels[i + 1]);
+                }
+            }
+        }
+        
+        // Create hierarchical concepts
+        for (const auto& parent_children : taxonomy) {
+            const std::string& parent_name = parent_children.first;
+            const std::set<std::string>& children_names = parent_children.second;
+            
+            if (children_names.size() >= 2) { // At least 2 children to justify a parent concept
+                std::string parent_concept_name = "HierarchicalConcept_" + parent_name;
+                
+                if (!hasKnowledgeAbout(parent_concept_name)) {
+                    Handle parent_concept = registerConcept(parent_concept_name,
+                        "Hierarchical parent concept with " + std::to_string(children_names.size()) + " children");
+                    
+                    // Set confidence based on number of children and consistency
+                    double hierarchy_strength = std::min(1.0, children_names.size() / 5.0);
+                    TruthValuePtr hierarchy_tv = SimpleTruthValue::createTV(hierarchy_strength, 0.85);
+                    parent_concept->setTruthValue(hierarchy_tv);
+                    
+                    // Create child concepts and establish inheritance relationships
+                    for (const std::string& child_name : children_names) {
+                        std::string child_concept_name = "HierarchicalConcept_" + child_name;
+                        Handle child_concept = findOrCreateConcept(child_concept_name);
+                        
+                        // Establish inheritance relationship
+                        establishConceptRelation(child_concept, parent_concept, "isa");
+                    }
+                    
+                    hierarchical_concepts.push_back(parent_concept);
+                    
+                    logger().info() << "[KnowledgeIntegrator] Formed hierarchical concept: " << parent_concept_name
+                                   << " with " << children_names.size() << " children";
+                }
+            }
+        }
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error in hierarchical concept formation: " << e.what();
+    }
+    
+    return hierarchical_concepts;
+}
+
+std::vector<Handle> KnowledgeIntegrator::formConceptsByFrequency(const std::vector<Handle>& experience_atoms)
+{
+    logger().debug() << "[KnowledgeIntegrator] Forming concepts by enhanced frequency analysis";
+    
+    std::vector<Handle> frequency_concepts;
+    
+    try {
+        // Enhanced frequency analysis with context awareness
+        std::map<std::string, int> term_frequency;
+        std::map<std::string, std::set<std::string>> term_contexts;
+        std::map<std::string, double> term_significance;
+        
+        // Extract terms with context information
+        for (const Handle& atom : experience_atoms) {
+            std::string atom_name = atom->get_name();
+            std::vector<std::string> terms = tokenizeWithContext(atom_name);
+            
+            for (const std::string& term : terms) {
+                if (term.length() > 2) {
+                    term_frequency[term]++;
+                    
+                    // Extract context (surrounding terms)
+                    std::string context = extractTermContext(atom_name, term);
+                    if (!context.empty()) {
+                        term_contexts[term].insert(context);
+                    }
+                }
+            }
+        }
+        
+        // Calculate term significance (frequency + context diversity + semantic weight)
+        for (const auto& term_freq : term_frequency) {
+            const std::string& term = term_freq.first;
+            int frequency = term_freq.second;
+            int context_diversity = term_contexts[term].size();
+            
+            double semantic_weight = calculateSemanticWeight(term);
+            double significance = (frequency * 0.5) + (context_diversity * 0.3) + (semantic_weight * 0.2);
+            term_significance[term] = significance;
+        }
+        
+        // Form concepts from significant terms
+        double min_significance = calculateDynamicThreshold(term_significance, experience_atoms.size());
+        
+        for (const auto& term_sig : term_significance) {
+            const std::string& term = term_sig.first;
+            double significance = term_sig.second;
+            
+            if (significance >= min_significance) {
+                std::string concept_name = "FrequencyConcept_" + term;
+                
+                if (!hasKnowledgeAbout(concept_name)) {
+                    Handle freq_concept = registerConcept(concept_name,
+                        "Concept formed from frequency analysis (significance: " + std::to_string(significance) + ")");
+                    
+                    // Set confidence based on significance and context diversity
+                    double confidence = std::min(0.95, significance / (min_significance * 2.0));
+                    TruthValuePtr freq_tv = SimpleTruthValue::createTV(confidence, 0.75);
+                    freq_concept->setTruthValue(freq_tv);
+                    
+                    frequency_concepts.push_back(freq_concept);
+                    
+                    logger().info() << "[KnowledgeIntegrator] Formed frequency concept: " << concept_name
+                                   << " (significance: " << significance << ", contexts: " << term_contexts[term].size() << ")";
+                }
+            }
+        }
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error in frequency-based concept formation: " << e.what();
+    }
+    
+    return frequency_concepts;
+}
+
+void KnowledgeIntegrator::validateAndRefineNewConcepts(std::vector<Handle>& new_concepts, 
+                                                      const std::vector<Handle>& experience_atoms)
+{
+    logger().debug() << "[KnowledgeIntegrator] Validating and refining " << new_concepts.size() << " new concepts";
+    
+    try {
+        std::vector<Handle> validated_concepts;
+        validated_concepts.reserve(new_concepts.size());
+        
+        for (Handle& concept : new_concepts) {
+            if (concept != Handle::UNDEFINED) {
+                // Validate concept quality and utility
+                double concept_quality = evaluateConceptQuality(concept, experience_atoms);
+                
+                if (concept_quality > 0.3) { // Keep concepts with reasonable quality
+                    // Refine concept relationships
+                    refineConceptRelationships(concept, new_concepts);
+                    
+                    // Update concept confidence based on validation
+                    updateConceptConfidenceAfterValidation(concept, concept_quality);
+                    
+                    validated_concepts.push_back(concept);
+                } else {
+                    logger().debug() << "[KnowledgeIntegrator] Removing low-quality concept: " << concept->get_name()
+                                    << " (quality: " << concept_quality << ")";
+                }
+            }
+        }
+        
+        new_concepts = std::move(validated_concepts);
+        
+        logger().info() << "[KnowledgeIntegrator] Validated concepts: " << new_concepts.size() << " concepts retained";
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error validating concepts: " << e.what();
+    }
 }
 
 std::vector<Handle> KnowledgeIntegrator::validateKnowledgeConsistency()
@@ -743,5 +1006,379 @@ TruthValuePtr KnowledgeIntegrator::assessKnowledgeReliability(const Handle& know
     } catch (const std::exception& e) {
         logger().error() << "[KnowledgeIntegrator] Error assessing reliability: " << e.what();
         return SimpleTruthValue::createTV(0.0, 0.0);
+    }
+}
+
+// Helper methods for advanced concept formation
+
+std::string KnowledgeIntegrator::createStructureSignature(const Handle& atom)
+{
+    if (atom == Handle::UNDEFINED) return "";
+    
+    std::ostringstream signature;
+    signature << atom->get_type_name();
+    
+    if (atom->is_link()) {
+        const HandleSeq& outgoing = atom->getOutgoingSet();
+        signature << "[";
+        for (size_t i = 0; i < outgoing.size(); ++i) {
+            if (i > 0) signature << ",";
+            signature << outgoing[i]->get_type_name();
+        }
+        signature << "]";
+    }
+    
+    return signature.str();
+}
+
+void KnowledgeIntegrator::calculateSemanticSimilarityMatrix(const std::vector<Handle>& atoms, 
+                                                          std::vector<std::vector<double>>& matrix)
+{
+    size_t n = atoms.size();
+    matrix.assign(n, std::vector<double>(n, 0.0));
+    
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = i; j < n; ++j) {
+            double similarity = calculateAtomSimilarity(atoms[i], atoms[j]);
+            matrix[i][j] = similarity;
+            matrix[j][i] = similarity; // Symmetric matrix
+        }
+    }
+}
+
+double KnowledgeIntegrator::calculateAtomSimilarity(const Handle& atom1, const Handle& atom2)
+{
+    if (atom1 == atom2) return 1.0;
+    if (atom1 == Handle::UNDEFINED || atom2 == Handle::UNDEFINED) return 0.0;
+    
+    // Type similarity
+    double type_sim = (atom1->get_type() == atom2->get_type()) ? 0.4 : 0.0;
+    
+    // Name similarity (for nodes)
+    double name_sim = 0.0;
+    if (atom1->is_node() && atom2->is_node()) {
+        name_sim = calculateStringSimilarity(atom1->get_name(), atom2->get_name()) * 0.4;
+    }
+    
+    // Structure similarity (for links)
+    double struct_sim = 0.0;
+    if (atom1->is_link() && atom2->is_link()) {
+        const HandleSeq& out1 = atom1->getOutgoingSet();
+        const HandleSeq& out2 = atom2->getOutgoingSet();
+        
+        if (out1.size() == out2.size()) {
+            double avg_child_sim = 0.0;
+            for (size_t i = 0; i < out1.size(); ++i) {
+                avg_child_sim += calculateAtomSimilarity(out1[i], out2[i]);
+            }
+            struct_sim = (avg_child_sim / out1.size()) * 0.2;
+        }
+    }
+    
+    return type_sim + name_sim + struct_sim;
+}
+
+double KnowledgeIntegrator::calculateStringSimilarity(const std::string& str1, const std::string& str2)
+{
+    // Simple Levenshtein distance-based similarity
+    if (str1.empty() && str2.empty()) return 1.0;
+    if (str1.empty() || str2.empty()) return 0.0;
+    
+    size_t len1 = str1.length();
+    size_t len2 = str2.length();
+    std::vector<std::vector<int>> dp(len1 + 1, std::vector<int>(len2 + 1));
+    
+    for (size_t i = 0; i <= len1; ++i) dp[i][0] = i;
+    for (size_t j = 0; j <= len2; ++j) dp[0][j] = j;
+    
+    for (size_t i = 1; i <= len1; ++i) {
+        for (size_t j = 1; j <= len2; ++j) {
+            int cost = (str1[i-1] == str2[j-1]) ? 0 : 1;
+            dp[i][j] = std::min({dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + cost});
+        }
+    }
+    
+    int max_len = std::max(len1, len2);
+    return 1.0 - (static_cast<double>(dp[len1][len2]) / max_len);
+}
+
+std::vector<std::vector<int>> KnowledgeIntegrator::performSimpleClustering(
+    const std::vector<std::vector<double>>& similarity_matrix, double threshold)
+{
+    size_t n = similarity_matrix.size();
+    std::vector<std::vector<int>> clusters;
+    std::vector<bool> assigned(n, false);
+    
+    for (size_t i = 0; i < n; ++i) {
+        if (!assigned[i]) {
+            std::vector<int> cluster;
+            cluster.push_back(i);
+            assigned[i] = true;
+            
+            // Find similar atoms to add to this cluster
+            for (size_t j = i + 1; j < n; ++j) {
+                if (!assigned[j] && similarity_matrix[i][j] >= threshold) {
+                    cluster.push_back(j);
+                    assigned[j] = true;
+                }
+            }
+            
+            clusters.push_back(cluster);
+        }
+    }
+    
+    return clusters;
+}
+
+double KnowledgeIntegrator::calculateClusterCohesion(const std::vector<int>& cluster, 
+                                                   const std::vector<std::vector<double>>& similarity_matrix)
+{
+    if (cluster.size() < 2) return 1.0;
+    
+    double total_similarity = 0.0;
+    int pair_count = 0;
+    
+    for (size_t i = 0; i < cluster.size(); ++i) {
+        for (size_t j = i + 1; j < cluster.size(); ++j) {
+            total_similarity += similarity_matrix[cluster[i]][cluster[j]];
+            pair_count++;
+        }
+    }
+    
+    return (pair_count > 0) ? (total_similarity / pair_count) : 0.0;
+}
+
+std::vector<std::string> KnowledgeIntegrator::extractHierarchyLevels(const Handle& atom)
+{
+    std::vector<std::string> levels;
+    
+    if (atom == Handle::UNDEFINED) return levels;
+    
+    std::string name = atom->get_name();
+    
+    // Look for hierarchical patterns in the name
+    // Pattern 1: "Category_Subcategory_Item"
+    size_t pos = 0;
+    while (pos < name.length()) {
+        size_t next_pos = name.find('_', pos);
+        if (next_pos == std::string::npos) {
+            levels.push_back(name.substr(pos));
+            break;
+        } else {
+            levels.push_back(name.substr(pos, next_pos - pos));
+            pos = next_pos + 1;
+        }
+    }
+    
+    // Pattern 2: Look for type hierarchy in links
+    if (atom->is_link() && atom->get_type() == INHERITANCE_LINK) {
+        const HandleSeq& outgoing = atom->getOutgoingSet();
+        if (outgoing.size() >= 2) {
+            levels.push_back(outgoing[0]->get_name()); // child
+            levels.push_back(outgoing[1]->get_name()); // parent
+        }
+    }
+    
+    return levels;
+}
+
+std::vector<std::string> KnowledgeIntegrator::tokenizeWithContext(const std::string& text)
+{
+    std::vector<std::string> tokens;
+    std::istringstream iss(text);
+    std::string token;
+    
+    while (iss >> token) {
+        // Clean up token
+        std::string clean_token;
+        for (char c : token) {
+            if (std::isalnum(c)) {
+                clean_token += std::tolower(c);
+            }
+        }
+        
+        if (clean_token.length() > 2) {
+            tokens.push_back(clean_token);
+        }
+    }
+    
+    return tokens;
+}
+
+std::string KnowledgeIntegrator::extractTermContext(const std::string& text, const std::string& term)
+{
+    size_t pos = text.find(term);
+    if (pos == std::string::npos) return "";
+    
+    // Extract words before and after the term
+    std::ostringstream context;
+    std::istringstream iss(text);
+    std::string word;
+    std::vector<std::string> words;
+    
+    while (iss >> word) {
+        words.push_back(word);
+    }
+    
+    // Find term position in words and extract context
+    for (size_t i = 0; i < words.size(); ++i) {
+        if (words[i].find(term) != std::string::npos) {
+            if (i > 0) context << words[i-1] << " ";
+            if (i + 1 < words.size()) context << words[i+1];
+            break;
+        }
+    }
+    
+    return context.str();
+}
+
+double KnowledgeIntegrator::calculateSemanticWeight(const std::string& term)
+{
+    // Simple semantic weight based on term characteristics
+    double weight = 0.5; // Base weight
+    
+    // Longer terms tend to be more specific and meaningful
+    if (term.length() > 6) weight += 0.2;
+    if (term.length() > 10) weight += 0.1;
+    
+    // Check for common semantic indicators
+    if (term.find("concept") != std::string::npos || 
+        term.find("pattern") != std::string::npos ||
+        term.find("relation") != std::string::npos) {
+        weight += 0.2;
+    }
+    
+    // Penalize very common words
+    if (term == "the" || term == "and" || term == "for" || term == "with") {
+        weight -= 0.4;
+    }
+    
+    return std::max(0.1, std::min(1.0, weight));
+}
+
+double KnowledgeIntegrator::calculateDynamicThreshold(const std::map<std::string, double>& term_significance,
+                                                    size_t experience_count)
+{
+    if (term_significance.empty()) return 1.0;
+    
+    // Calculate statistics
+    double sum = 0.0, sum_squared = 0.0;
+    for (const auto& pair : term_significance) {
+        sum += pair.second;
+        sum_squared += pair.second * pair.second;
+    }
+    
+    double mean = sum / term_significance.size();
+    double variance = (sum_squared / term_significance.size()) - (mean * mean);
+    double std_dev = std::sqrt(variance);
+    
+    // Dynamic threshold based on mean + standard deviation, adjusted for experience count
+    double base_threshold = mean + (0.5 * std_dev);
+    double experience_factor = std::min(1.0, experience_count / 10.0);
+    
+    return base_threshold * experience_factor;
+}
+
+double KnowledgeIntegrator::evaluateConceptQuality(const Handle& concept, 
+                                                 const std::vector<Handle>& experience_atoms)
+{
+    if (concept == Handle::UNDEFINED) return 0.0;
+    
+    double quality = 0.0;
+    
+    try {
+        // Factor 1: Truth value confidence
+        TruthValuePtr tv = concept->getTruthValue();
+        quality += tv->get_confidence() * 0.3;
+        
+        // Factor 2: Connectivity (number of relationships)
+        const IncomingSet& incoming = concept->getIncomingSet();
+        double connectivity_score = std::min(1.0, incoming.size() / 5.0);
+        quality += connectivity_score * 0.3;
+        
+        // Factor 3: Coherence with experience atoms
+        int coherence_count = 0;
+        for (const Handle& exp_atom : experience_atoms) {
+            if (calculateAtomSimilarity(concept, exp_atom) > 0.4) {
+                coherence_count++;
+            }
+        }
+        double coherence_score = std::min(1.0, coherence_count / 3.0);
+        quality += coherence_score * 0.2;
+        
+        // Factor 4: Uniqueness (not too similar to existing concepts)
+        double uniqueness_score = evaluateConceptUniqueness(concept);
+        quality += uniqueness_score * 0.2;
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error evaluating concept quality: " << e.what();
+        return 0.0;
+    }
+    
+    return std::min(1.0, quality);
+}
+
+double KnowledgeIntegrator::evaluateConceptUniqueness(const Handle& concept)
+{
+    double max_similarity = 0.0;
+    
+    for (const auto& existing_concept : _concept_registry) {
+        if (existing_concept.second != concept) {
+            double similarity = calculateAtomSimilarity(concept, existing_concept.second);
+            max_similarity = std::max(max_similarity, similarity);
+        }
+    }
+    
+    return 1.0 - max_similarity; // Higher uniqueness = lower max similarity
+}
+
+void KnowledgeIntegrator::refineConceptRelationships(Handle& concept, const std::vector<Handle>& all_concepts)
+{
+    try {
+        // Look for potential relationships with other new concepts
+        for (const Handle& other_concept : all_concepts) {
+            if (other_concept != concept && other_concept != Handle::UNDEFINED) {
+                double similarity = calculateAtomSimilarity(concept, other_concept);
+                
+                // Establish relationships based on similarity
+                if (similarity > 0.7) {
+                    establishConceptRelation(concept, other_concept, "similar");
+                } else if (similarity > 0.5) {
+                    establishConceptRelation(concept, other_concept, "related");
+                }
+                
+                // Look for hierarchical relationships based on names
+                std::string concept_name = concept->get_name();
+                std::string other_name = other_concept->get_name();
+                
+                if (concept_name.find(other_name) != std::string::npos && concept_name != other_name) {
+                    establishConceptRelation(concept, other_concept, "isa");
+                } else if (other_name.find(concept_name) != std::string::npos && concept_name != other_name) {
+                    establishConceptRelation(other_concept, concept, "isa");
+                }
+            }
+        }
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error refining concept relationships: " << e.what();
+    }
+}
+
+void KnowledgeIntegrator::updateConceptConfidenceAfterValidation(Handle& concept, double quality_score)
+{
+    try {
+        TruthValuePtr current_tv = concept->getTruthValue();
+        double current_strength = current_tv->get_mean();
+        double current_confidence = current_tv->get_confidence();
+        
+        // Adjust confidence based on quality score
+        double new_confidence = std::min(0.95, current_confidence * quality_score);
+        double new_strength = std::min(1.0, current_strength + (quality_score * 0.1));
+        
+        TruthValuePtr new_tv = SimpleTruthValue::createTV(new_strength, new_confidence);
+        concept->setTruthValue(new_tv);
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error updating concept confidence: " << e.what();
     }
 }
