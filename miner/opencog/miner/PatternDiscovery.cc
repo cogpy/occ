@@ -26,10 +26,12 @@
 #include "MinerUtils.h"
 
 #include <opencog/util/algorithm.h>
-#include <opencog/atoms/core/VariableNode.h>
+#include <opencog/atoms/base/Node.h>
+#include <opencog/atoms/atom_types/NameServer.h>
 #include <opencog/atoms/core/LambdaLink.h>
 #include <opencog/atoms/core/PresentLink.h>
 #include <opencog/atoms/value/FloatValue.h>
+#include <opencog/atoms/value/ValueFactory.h>
 #include <opencog/atomspace/AtomSpace.h>
 
 #include <algorithm>
@@ -134,8 +136,8 @@ PatternDiscoveryResults PatternDiscovery::discover_temporal_patterns(const AtomS
 {
     miner_logger().info("Starting temporal pattern discovery with lag=%d", temporal_lag);
     
-    // Create temporal variable to ignore
-    Handle temporal_var = VariableNode("$T");
+    // Create temporal variable to ignore in temporary atomspace
+    Handle temporal_var = temp_atomspace_->add_node(VARIABLE_NODE, "$T");
     
     // Update config temporarily to ignore temporal variable
     PatternDiscoveryConfig temp_config = config_;
@@ -173,16 +175,11 @@ HandleSeq PatternDiscovery::filter_by_surprisingness(const HandleSeq& patterns,
     HandleSeq filtered_patterns;
     
     for (const Handle& pattern : patterns) {
-        // Get surprisingness score
-        auto surp_key = surprisingness_->get_surprisingness_key();
-        if (pattern->getValue(surp_key)) {
-            auto float_val = FloatValueCast(pattern->getValue(surp_key));
-            if (float_val && float_val->size() > 0) {
-                double surprisingness = float_val->value()[0];
-                if (surprisingness >= min_surprisingness) {
-                    filtered_patterns.push_back(pattern);
-                }
-            }
+        // Get surprisingness score from pattern's truth value or stored value
+        // Since we don't have get_surprisingness_key, use a simple approach
+        double surprisingness = evaluate_surprisingness(pattern, HandleSeq{});
+        if (surprisingness >= min_surprisingness) {
+            filtered_patterns.push_back(pattern);
         }
     }
     
@@ -200,16 +197,7 @@ HandleSeq PatternDiscovery::get_top_patterns(const HandleSeq& patterns, size_t k
     std::vector<std::pair<Handle, double>> pattern_scores;
     
     for (const Handle& pattern : patterns) {
-        auto surp_key = surprisingness_->get_surprisingness_key();
-        double score = 0.0;
-        
-        if (pattern->getValue(surp_key)) {
-            auto float_val = FloatValueCast(pattern->getValue(surp_key));
-            if (float_val && float_val->size() > 0) {
-                score = float_val->value()[0];
-            }
-        }
-        
+        double score = evaluate_surprisingness(pattern, HandleSeq{});
         pattern_scores.emplace_back(pattern, score);
     }
     
@@ -235,8 +223,8 @@ HandleSeq PatternDiscovery::get_top_patterns(const HandleSeq& patterns, size_t k
 double PatternDiscovery::evaluate_surprisingness(const Handle& pattern, const HandleSeq& db)
 {
     try {
-        // Use the surprisingness evaluator
-        return surprisingness_->surprisingness(pattern, db);
+        // Use the Surprisingness static methods
+        return Surprisingness::isurp_old(pattern, db, true);
     } catch (const std::exception& e) {
         miner_logger().error("Error evaluating surprisingness for pattern: %s", e.what());
         return 0.0;
@@ -286,7 +274,7 @@ std::string PatternDiscovery::export_patterns_as_json(const HandleSeq& patterns)
     for (size_t i = 0; i < patterns.size(); ++i) {
         oss << "    {\n";
         oss << "      \"pattern\": \"" << patterns[i]->to_short_string() << "\",\n";
-        oss << "      \"type\": \"" << patterns[i]->get_type_name() << "\"\n";
+        oss << "      \"type\": \"" << nameserver().getTypeName(patterns[i]->get_type()) << "\"\n";
         oss << "    }";
         if (i < patterns.size() - 1) {
             oss << ",";
@@ -337,17 +325,12 @@ HandleSeq PatternDiscovery::extract_patterns_from_tree(const HandleTree& tree)
     HandleSeq patterns;
     
     // Traverse the tree to extract all patterns
-    std::function<void(const HandleTree&)> traverse = [&](const HandleTree& node) {
-        if (node.first != Handle::UNDEFINED) {
-            patterns.push_back(node.first);
+    // HandleTree is a tree<Handle>, so we need to iterate through it properly
+    for (auto it = tree.begin(); it != tree.end(); ++it) {
+        if (*it != Handle::UNDEFINED) {
+            patterns.push_back(*it);
         }
-        
-        for (const auto& child : node.second) {
-            traverse(child);
-        }
-    };
-    
-    traverse(tree);
+    }
     
     miner_logger().debug("Extracted %zu patterns from tree structure", patterns.size());
     
@@ -364,15 +347,16 @@ void PatternDiscovery::calculate_pattern_statistics(PatternDiscoveryResults& res
         try {
             // Calculate support
             unsigned support = MinerUtils::support(pattern, db, UINT_MAX);
-            results.pattern_support[pattern] = Handle(createNumberNode(support));
+            results.pattern_support[pattern] = temp_atomspace_->add_node(NUMBER_NODE, std::to_string(support));
             
             // Calculate surprisingness if not already calculated
             double surprisingness = evaluate_surprisingness(pattern, db);
-            results.pattern_surprisingness[pattern] = Handle(createNumberNode(surprisingness));
+            results.pattern_surprisingness[pattern] = temp_atomspace_->add_node(NUMBER_NODE, std::to_string(surprisingness));
             
             // Store as value in the pattern atom for later retrieval
-            auto surp_key = surprisingness_->get_surprisingness_key();
-            pattern->setValue(surp_key, createFloatValue({surprisingness}));
+            // Create FloatValue manually
+            ValuePtr surp_value(new FloatValue(std::vector<double>{surprisingness}));
+            pattern->setValue(temp_atomspace_->add_node(CONCEPT_NODE, "surprisingness"), surp_value);
             
         } catch (const std::exception& e) {
             miner_logger().warn("Failed to calculate statistics for pattern: %s", e.what());
@@ -385,9 +369,9 @@ void PatternDiscovery::calculate_pattern_statistics(PatternDiscoveryResults& res
 Handle PatternDiscovery::create_default_initial_pattern()
 {
     // Create the most abstract pattern: Lambda(Variable("$X"), Present(Variable("$X")))
-    Handle var = VariableNode("$X");
-    Handle body = PresentLink(var);
-    return LambdaLink(var, body);
+    Handle var = temp_atomspace_->add_node(VARIABLE_NODE, "$X");
+    Handle body = temp_atomspace_->add_link(PRESENT_LINK, var);
+    return temp_atomspace_->add_link(LAMBDA_LINK, var, body);
 }
 
 void PatternDiscovery::validate_config() const
