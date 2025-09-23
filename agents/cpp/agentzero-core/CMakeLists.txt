@@ -129,6 +129,7 @@ set(AGENTZERO_CORE_SOURCES
     src/ReasoningEngine.cpp
     src/ActionExecutor.cpp
     src/ActionScheduler.cpp
+    src/MetaPlanner.cpp
 )
 
 # Header files
@@ -140,6 +141,7 @@ set(AGENTZERO_CORE_HEADERS
     include/opencog/agentzero/ReasoningEngine.h
     include/opencog/agentzero/ActionExecutor.h
     include/opencog/agentzero/ActionScheduler.h
+    include/opencog/agentzero/MetaPlanner.h
 )
 
 # Create library (when source files exist)
