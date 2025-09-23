@@ -77,6 +77,35 @@ if(GTEST_FOUND)
         test_action_executor.cpp
         test_action_scheduler.cpp
     )
+    
+    # ReasoningEngine tests
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/ReasoningEngineTest.cpp")
+        add_executable(ReasoningEngineTest ReasoningEngineTest.cpp)
+        
+        target_link_libraries(ReasoningEngineTest
+            agentzero-core
+            ${COGUTIL_LIBRARIES}
+            ${ATOMSPACE_LIBRARIES}
+            ${PLN_LIBRARIES}
+            ${URE_LIBRARIES}
+            ${GTEST_LIBRARIES}
+            ${GTEST_MAIN_LIBRARIES}
+            Threads::Threads
+        )
+        
+        target_compile_features(ReasoningEngineTest PRIVATE cxx_std_17)
+        
+        # Add the test to CTest
+        add_test(NAME ReasoningEngineTest COMMAND ReasoningEngineTest)
+        
+        set_tests_properties(ReasoningEngineTest
+            PROPERTIES
+            TIMEOUT 120
+            LABELS "reasoning;pln;ure"
+        )
+        
+        message(STATUS "ReasoningEngine tests configured")
+    endif()
 
     # Create test executable for action framework
     add_executable(test_agentzero_action_framework

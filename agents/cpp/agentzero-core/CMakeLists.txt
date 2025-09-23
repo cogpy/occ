@@ -63,6 +63,57 @@ else()
     endif()
 endif()
 
+# Find PLN (Probabilistic Logic Networks) module
+pkg_check_modules(PLN pln)
+if (PLN_FOUND)
+    message(STATUS "Found PLN version ${PLN_VERSION}")
+    include_directories(${PLN_INCLUDE_DIRS})
+    link_directories(${PLN_LIBRARY_DIRS})
+else()
+    message(STATUS "PLN module not found via pkg-config, looking for system includes")
+    find_path(PLN_INCLUDE_PATH
+        NAMES opencog/pln/PLN.h
+        PATHS /usr/local/include /usr/include
+        PATH_SUFFIXES opencog
+    )
+    if(PLN_INCLUDE_PATH)
+        message(STATUS "Found PLN headers at ${PLN_INCLUDE_PATH}")
+        include_directories(${PLN_INCLUDE_PATH})
+        set(PLN_FOUND TRUE)
+    endif()
+endif()
+
+# Find URE (Unified Rule Engine) module
+pkg_check_modules(URE ure)
+if (URE_FOUND)
+    message(STATUS "Found URE version ${URE_VERSION}")
+    include_directories(${URE_INCLUDE_DIRS})
+    link_directories(${URE_LIBRARY_DIRS})
+else()
+    message(STATUS "URE module not found via pkg-config, looking for system includes")
+    find_path(URE_INCLUDE_PATH
+        NAMES opencog/ure/Rule.h
+        PATHS /usr/local/include /usr/include
+        PATH_SUFFIXES opencog
+    )
+    if(URE_INCLUDE_PATH)
+        message(STATUS "Found URE headers at ${URE_INCLUDE_PATH}")
+        include_directories(${URE_INCLUDE_PATH})
+        set(URE_FOUND TRUE)
+    endif()
+endif()
+
+# Find Miner module for pattern discovery
+pkg_check_modules(MINER miner)
+if (MINER_FOUND)
+    message(STATUS "Found miner version ${MINER_VERSION}")
+    include_directories(${MINER_INCLUDE_DIRS})
+    link_directories(${MINER_LIBRARY_DIRS})
+else()
+    message(STATUS "Miner module not found - pattern discovery features may be limited")
+    set(MINER_FOUND FALSE)
+endif()
+
 # Include directories
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -75,6 +126,7 @@ set(AGENTZERO_CORE_SOURCES
     src/CognitiveLoop.cpp  
     src/TaskManager.cpp
     src/KnowledgeIntegrator.cpp
+    src/ReasoningEngine.cpp
     src/ActionExecutor.cpp
     src/ActionScheduler.cpp
 )
@@ -85,6 +137,7 @@ set(AGENTZERO_CORE_HEADERS
     include/opencog/agentzero/CognitiveLoop.h
     include/opencog/agentzero/TaskManager.h
     include/opencog/agentzero/KnowledgeIntegrator.h
+    include/opencog/agentzero/ReasoningEngine.h
     include/opencog/agentzero/ActionExecutor.h
     include/opencog/agentzero/ActionScheduler.h
 )
@@ -117,6 +170,33 @@ if(AGENTZERO_CORE_SOURCES)
     elseif(ATTENTION_FOUND)
         target_compile_definitions(agentzero-core PRIVATE HAVE_ATTENTION_BANK=1) 
         message(STATUS "Attention headers found, compiling with attention support")
+    endif()
+    
+    # Link PLN libraries if available
+    if(PLN_FOUND AND PLN_LIBRARIES)
+        target_link_libraries(agentzero-core ${PLN_LIBRARIES})
+        target_compile_definitions(agentzero-core PRIVATE HAVE_PLN=1)
+        message(STATUS "Linking PLN libraries: ${PLN_LIBRARIES}")
+    elseif(PLN_FOUND)
+        target_compile_definitions(agentzero-core PRIVATE HAVE_PLN=1)
+        message(STATUS "PLN headers found, compiling with PLN support")
+    endif()
+    
+    # Link URE libraries if available
+    if(URE_FOUND AND URE_LIBRARIES)
+        target_link_libraries(agentzero-core ${URE_LIBRARIES})
+        target_compile_definitions(agentzero-core PRIVATE HAVE_URE=1)
+        message(STATUS "Linking URE libraries: ${URE_LIBRARIES}")
+    elseif(URE_FOUND)
+        target_compile_definitions(agentzero-core PRIVATE HAVE_URE=1)
+        message(STATUS "URE headers found, compiling with URE support")
+    endif()
+    
+    # Link Miner libraries if available
+    if(MINER_FOUND AND MINER_LIBRARIES)
+        target_link_libraries(agentzero-core ${MINER_LIBRARIES})
+        target_compile_definitions(agentzero-core PRIVATE HAVE_MINER=1)
+        message(STATUS "Linking miner libraries: ${MINER_LIBRARIES}")
     endif()
 
     target_include_directories(agentzero-core PUBLIC

@@ -24,6 +24,7 @@
 #include "opencog/agentzero/CognitiveLoop.h"
 #include "opencog/agentzero/TaskManager.h"
 #include "opencog/agentzero/KnowledgeIntegrator.h"
+#include "opencog/agentzero/ReasoningEngine.h"
 
 using namespace opencog;
 using namespace opencog::agentzero;
@@ -43,6 +44,7 @@ AgentZeroCore::AgentZeroCore(CogServer& cogserver, const std::string& agent_name
     , _enable_cognitive_loop(true)
     , _enable_goal_processing(true)
     , _enable_knowledge_integration(true)
+    , _enable_reasoning_engine(true)
 {
     logger().info() << "[AgentZeroCore] Constructor: Creating agent '" << _agent_name << "'";
 }
@@ -85,6 +87,11 @@ void AgentZeroCore::init()
         if (_enable_knowledge_integration) {
             _knowledge_integrator = std::make_unique<KnowledgeIntegrator>(this, _atomspace);
             logger().info() << "[AgentZeroCore] KnowledgeIntegrator component initialized";
+        }
+        
+        if (_enable_reasoning_engine) {
+            _reasoning_engine = std::make_unique<ReasoningEngine>(this, _atomspace);
+            logger().info() << "[AgentZeroCore] ReasoningEngine component initialized";
         }
         
         _initialized = true;
@@ -284,6 +291,11 @@ bool AgentZeroCore::processCognitiveStep()
         // Process knowledge integration
         if (_knowledge_integrator) {
             step_success &= _knowledge_integrator->processKnowledgeIntegration();
+        }
+        
+        // Process reasoning
+        if (_reasoning_engine) {
+            step_success &= _reasoning_engine->processReasoningCycle();
         }
         
         return step_success;
