@@ -48,7 +48,7 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ccache pkg-config cmake build-essential git
+          sudo apt-get install -y ccache pkg-config cmake build-essential git libboost-all-dev librocksdb-dev liboctomap-dev libssl-dev guile-3.0-dev cython3 python3-nose python3-dev valgrind doxygen
 
       # 02. Build and Install cogutil
       - name: Build and Install cogutil
