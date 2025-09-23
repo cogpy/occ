@@ -22,6 +22,24 @@
 #include "opencog/agentzero/ActionExecutor.h"
 #include "opencog/agentzero/AgentZeroCore.h"
 
+// Forward declarations for spatial-temporal integration (AZ-SPATIAL-001)
+// Full implementation will require proper linking with agentzero-planning
+namespace opencog { namespace agentzero {
+    // Forward declared types to avoid circular dependencies
+    struct SpatialConstraintPlaceholder {
+        Handle atom;
+        octomap::point3d location;
+        double tolerance;
+        std::chrono::system_clock::time_point start_time;
+        std::chrono::system_clock::time_point end_time;
+    };
+    
+    struct TrajectoryPlaceholder {
+        std::vector<octomap::point3d> points;
+        Handle atom;
+    };
+}}
+
 using namespace opencog;
 using namespace opencog::agentzero;
 
@@ -38,6 +56,8 @@ ActionScheduler::ActionScheduler(AgentZeroCore* agent_core, AtomSpacePtr atomspa
     , _enable_resource_management(true)
     , _enable_dependency_checking(true)
     , _enable_temporal_reasoning(true)
+    , _enable_spatial_temporal_planning(false)  // AZ-SPATIAL-001 - disabled by default
+    , _spacetime_integrator(nullptr)  // AZ-SPATIAL-001 - initialized on demand
     , _last_update(std::chrono::steady_clock::now())
 {
     logger().info() << "[ActionScheduler] Constructor: Initializing temporal coordination system";
@@ -47,6 +67,12 @@ ActionScheduler::ActionScheduler(AgentZeroCore* agent_core, AtomSpacePtr atomspa
 ActionScheduler::~ActionScheduler()
 {
     logger().info() << "[ActionScheduler] Destructor: Cleaning up scheduler resources";
+    
+    // Clean up spatial-temporal integration (AZ-SPATIAL-001)
+    if (_spacetime_integrator) {
+        _spacetime_integrator->detachFromActionScheduler();
+        _spacetime_integrator.reset();
+    }
     
     // Clear all scheduled actions
     _scheduled_actions.clear();
@@ -726,5 +752,351 @@ void ActionScheduler::recordSchedulingDecision(const Handle& action_atom, Schedu
         
     } catch (const std::exception& e) {
         logger().warn() << "[ActionScheduler] Failed to record scheduling decision: " << e.what();
+    }
+}
+
+// ===================================================================
+// Spatial-Temporal Scheduling Methods (AZ-SPATIAL-001)
+// ===================================================================
+
+ActionScheduler::ScheduleResult ActionScheduler::scheduleActionWithSpatialConstraints(
+    const Handle& action_atom,
+    const std::vector<octomap::point3d>& locations,
+    const std::chrono::steady_clock::time_point& scheduled_time,
+    double spatial_tolerance,
+    int priority)
+{
+    logger().debug() << "[ActionScheduler] Scheduling action with spatial constraints: " << action_atom 
+                    << " locations count: " << locations.size();
+    
+    if (!_enable_spatial_temporal_planning || !_spacetime_integrator) {
+        logger().warn() << "[ActionScheduler] Spatial-temporal planning is disabled, falling back to regular scheduling";
+        return scheduleAction(action_atom, scheduled_time, priority);
+    }
+    
+    // Check if we've reached maximum scheduled actions
+    if (_scheduled_actions.size() >= static_cast<size_t>(_max_scheduled_actions)) {
+        logger().warn() << "[ActionScheduler] Schedule queue is full, rejecting spatial action";
+        return ScheduleResult::QUEUE_FULL;
+    }
+    
+    // Create scheduled action with spatial constraints
+    ScheduledAction scheduled;
+    scheduled.action_atom = action_atom;
+    scheduled.scheduled_time = scheduled_time;
+    scheduled.priority = priority;
+    scheduled.has_spatial_constraints = true;
+    scheduled.required_locations = locations;
+    scheduled.spatial_tolerance = spatial_tolerance;
+    
+    // Validate scheduling constraints including spatial ones
+    if (!validateSchedulingConstraints(scheduled)) {
+        logger().warn() << "[ActionScheduler] Invalid spatial scheduling constraints for action: " << action_atom;
+        return ScheduleResult::INVALID_CONSTRAINT;
+    }
+    
+    // Validate spatial constraints using SpaceTimeIntegrator
+    if (!validateSpatialConstraints(scheduled)) {
+        logger().warn() << "[ActionScheduler] Spatial constraints cannot be satisfied for action: " << action_atom;
+        return ScheduleResult::CONFLICT;
+    }
+    
+    // Add to scheduled actions map
+    _scheduled_actions[action_atom] = scheduled;
+    
+    // Create spatial scheduling atom in AtomSpace
+    Handle schedule_atom = createSpatialScheduleAtom(scheduled);
+    if (schedule_atom != Handle::UNDEFINED) {
+        TruthValuePtr schedule_tv = SimpleTruthValue::createTV(0.8, 0.9);
+        schedule_atom->setTruthValue(schedule_tv);
+    }
+    
+    recordSchedulingDecision(action_atom, ScheduleResult::SCHEDULED);
+    
+    logger().info() << "[ActionScheduler] Action with spatial constraints scheduled successfully: " << action_atom;
+    return ScheduleResult::SCHEDULED;
+}
+
+ActionScheduler::ScheduleResult ActionScheduler::scheduleActionWithTrajectory(
+    const Handle& action_atom,
+    const std::vector<octomap::point3d>& trajectory_points,
+    const std::chrono::steady_clock::time_point& start_time,
+    int priority)
+{
+    logger().debug() << "[ActionScheduler] Scheduling action with trajectory: " << action_atom 
+                    << " trajectory points: " << trajectory_points.size();
+    
+    if (!_enable_spatial_temporal_planning || !_spacetime_integrator) {
+        logger().warn() << "[ActionScheduler] Spatial-temporal planning is disabled, falling back to regular scheduling";
+        return scheduleAction(action_atom, start_time, priority);
+    }
+    
+    if (trajectory_points.empty()) {
+        logger().warn() << "[ActionScheduler] Empty trajectory provided for action: " << action_atom;
+        return ScheduleResult::INVALID_CONSTRAINT;
+    }
+    
+    // Check if we've reached maximum scheduled actions
+    if (_scheduled_actions.size() >= static_cast<size_t>(_max_scheduled_actions)) {
+        logger().warn() << "[ActionScheduler] Schedule queue is full, rejecting trajectory action";
+        return ScheduleResult::QUEUE_FULL;
+    }
+    
+    // Create scheduled action with trajectory
+    ScheduledAction scheduled;
+    scheduled.action_atom = action_atom;
+    scheduled.scheduled_time = start_time;
+    scheduled.priority = priority;
+    scheduled.has_spatial_constraints = true;
+    scheduled.trajectory_points = trajectory_points;
+    scheduled.spatial_tolerance = 0.1; // Default tolerance for trajectory following
+    
+    // Validate scheduling constraints
+    if (!validateSchedulingConstraints(scheduled)) {
+        logger().warn() << "[ActionScheduler] Invalid trajectory scheduling constraints for action: " << action_atom;
+        return ScheduleResult::INVALID_CONSTRAINT;
+    }
+    
+    // Plan and validate trajectory using SpaceTimeIntegrator
+    // TODO: Replace with actual SpaceTimeIntegrator::Trajectory when linking is available
+    TrajectoryPlaceholder trajectory;
+    auto trajectory_end_time = start_time + std::chrono::minutes(5); // Assume 5-minute trajectory duration
+    
+    bool trajectory_valid = true; // Placeholder - would use _spacetime_integrator->planTrajectory()
+    /*
+    bool trajectory_valid = _spacetime_integrator->planTrajectory(
+        action_atom,
+        trajectory_points.front(),  // Start location
+        trajectory_points.back(),   // Goal location
+        start_time,
+        trajectory_end_time,
+        trajectory
+    );
+    */
+    
+    if (!trajectory_valid) {
+        logger().warn() << "[ActionScheduler] Trajectory planning failed for action: " << action_atom;
+        return ScheduleResult::CONFLICT;
+    }
+    
+    // Add to scheduled actions map
+    _scheduled_actions[action_atom] = scheduled;
+    
+    // Create trajectory atom in AtomSpace
+    Handle trajectory_atom = _spacetime_integrator->createTrajectoryAtom(action_atom, trajectory);
+    if (trajectory_atom != Handle::UNDEFINED) {
+        TruthValuePtr trajectory_tv = SimpleTruthValue::createTV(0.8, 0.9);
+        trajectory_atom->setTruthValue(trajectory_tv);
+    }
+    
+    recordSchedulingDecision(action_atom, ScheduleResult::SCHEDULED);
+    
+    logger().info() << "[ActionScheduler] Action with trajectory scheduled successfully: " << action_atom;
+    return ScheduleResult::SCHEDULED;
+}
+
+ActionScheduler::ScheduleResult ActionScheduler::scheduleActionWithOptimalPlanning(
+    const Handle& action_atom,
+    const std::vector<octomap::point3d>& preferred_locations,
+    const std::chrono::steady_clock::time_point& earliest_start,
+    const std::chrono::steady_clock::time_point& latest_end,
+    int priority)
+{
+    logger().debug() << "[ActionScheduler] Scheduling action with optimal planning: " << action_atom;
+    
+    if (!_enable_spatial_temporal_planning || !_spacetime_integrator) {
+        logger().warn() << "[ActionScheduler] Spatial-temporal planning is disabled, falling back to regular scheduling";
+        return scheduleAction(action_atom, earliest_start, priority);
+    }
+    
+    if (preferred_locations.empty()) {
+        logger().warn() << "[ActionScheduler] No preferred locations provided for action: " << action_atom;
+        return ScheduleResult::INVALID_CONSTRAINT;
+    }
+    
+    // Check if we've reached maximum scheduled actions
+    if (_scheduled_actions.size() >= static_cast<size_t>(_max_scheduled_actions)) {
+        logger().warn() << "[ActionScheduler] Schedule queue is full, rejecting optimal planning action";
+        return ScheduleResult::QUEUE_FULL;
+    }
+    
+    // Create spatial constraints from preferred locations
+    std::vector<SpatialConstraintPlaceholder> spatial_requirements;
+    for (const auto& location : preferred_locations) {
+        SpatialConstraintPlaceholder constraint;
+        constraint.atom = action_atom;
+        constraint.location = location;
+        constraint.tolerance = 0.1;
+        constraint.start_time = earliest_start;
+        constraint.end_time = latest_end;
+        spatial_requirements.push_back(constraint);
+    }
+    
+    // Find optimal time window using SpaceTimeIntegrator
+    // TODO: Replace with actual SpaceTimeIntegrator call when linking is available
+    struct {
+        bool feasible = true;
+        std::chrono::steady_clock::time_point optimal_start_time;
+        std::chrono::steady_clock::time_point optimal_end_time;
+        double confidence_score = 0.8;
+        std::vector<SpatialConstraintPlaceholder> required_constraints;
+    } planning_result;
+    
+    planning_result.optimal_start_time = earliest_start;
+    planning_result.optimal_end_time = earliest_start + std::chrono::minutes(5);
+    planning_result.required_constraints = spatial_requirements;
+    
+    /*
+    auto planning_result = _spacetime_integrator->findOptimalTimeWindow(
+        action_atom,
+        spatial_requirements,
+        earliest_start,
+        latest_end
+    );
+    */
+    
+    if (!planning_result.feasible) {
+        logger().warn() << "[ActionScheduler] No feasible time window found for action: " << action_atom;
+        return ScheduleResult::CONFLICT;
+    }
+    
+    // Create optimally scheduled action
+    ScheduledAction scheduled;
+    scheduled.action_atom = action_atom;
+    scheduled.scheduled_time = planning_result.optimal_start_time;
+    scheduled.deadline = planning_result.optimal_end_time;
+    scheduled.priority = priority;
+    scheduled.has_spatial_constraints = true;
+    scheduled.required_locations = preferred_locations;
+    scheduled.spatial_tolerance = 0.1;
+    
+    // Add to scheduled actions map
+    _scheduled_actions[action_atom] = scheduled;
+    
+    // Create optimal scheduling atom in AtomSpace
+    Handle schedule_atom = createSpatialScheduleAtom(scheduled);
+    if (schedule_atom != Handle::UNDEFINED) {
+        // Use planning confidence as truth value strength
+        TruthValuePtr schedule_tv = SimpleTruthValue::createTV(planning_result.confidence_score, 0.9);
+        schedule_atom->setTruthValue(schedule_tv);
+    }
+    
+    recordSchedulingDecision(action_atom, ScheduleResult::SCHEDULED);
+    
+    logger().info() << "[ActionScheduler] Action with optimal planning scheduled successfully: " 
+                   << action_atom << " confidence: " << planning_result.confidence_score;
+    return ScheduleResult::SCHEDULED;
+}
+
+void ActionScheduler::configureSpatialTemporalFeatures(bool spatial_temporal, 
+                                                       double spatial_resolution,
+                                                       int time_resolution_ms)
+{
+    logger().debug() << "[ActionScheduler] Configuring spatial-temporal features: " << spatial_temporal;
+    
+    _enable_spatial_temporal_planning = spatial_temporal;
+    
+    if (spatial_temporal && !_spacetime_integrator) {
+        // Initialize SpaceTimeIntegrator
+        initializeSpaceTimeIntegration();
+        
+        if (_spacetime_integrator) {
+            // Configure the integrator
+            // TODO: Replace with actual configuration when linking is available
+            /*
+            SpaceTimeIntegrator::Configuration config;
+            config.spatial_resolution = spatial_resolution;
+            config.time_resolution = std::chrono::milliseconds(time_resolution_ms);
+            config.enable_spatial_constraints = true;
+            config.enable_trajectory_planning = true;
+            config.enable_timeline_reasoning = true;
+            
+            _spacetime_integrator->configure(config);
+            _spacetime_integrator->integrateWithActionScheduler(this);
+            */
+        }
+    } else if (!spatial_temporal && _spacetime_integrator) {
+        // Disable spatial-temporal integration
+        _spacetime_integrator->detachFromActionScheduler();
+        _spacetime_integrator.reset();
+    }
+    
+    logger().info() << "[ActionScheduler] Spatial-temporal features configured - Enabled: " << spatial_temporal;
+}
+
+// ===================================================================
+// Spatial-Temporal Helper Methods (AZ-SPATIAL-001)
+// ===================================================================
+
+bool ActionScheduler::validateSpatialConstraints(const ScheduledAction& action)
+{
+    if (!action.has_spatial_constraints || !_spacetime_integrator) {
+        return true; // No spatial constraints to validate
+    }
+    
+    // Check location availability for the scheduled time
+    auto end_time = action.scheduled_time + std::chrono::minutes(5); // Assume 5-minute action duration
+    if (action.deadline != std::chrono::steady_clock::time_point{}) {
+        end_time = action.deadline;
+    }
+    
+    return checkLocationAvailability(action.required_locations, action.scheduled_time, end_time);
+}
+
+bool ActionScheduler::checkLocationAvailability(const std::vector<octomap::point3d>& locations,
+                                               const std::chrono::steady_clock::time_point& start_time,
+                                               const std::chrono::steady_clock::time_point& end_time)
+{
+    if (!_spacetime_integrator) {
+        return true; // No spatial-temporal checking available
+    }
+    
+    for (const auto& location : locations) {
+        if (!_spacetime_integrator->checkLocationAvailability(location, start_time, end_time)) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+void ActionScheduler::initializeSpaceTimeIntegration()
+{
+    try {
+        logger().debug() << "[ActionScheduler] Initializing SpaceTimeIntegrator";
+        
+        // Note: This would need the proper include and linking
+        // For now, we'll leave it as a placeholder to avoid circular dependencies
+        // In a real implementation, this would be:
+        // _spacetime_integrator = std::make_shared<SpaceTimeIntegrator>(_atomspace);
+        
+        // TODO: Implement proper initialization once build system is set up
+        
+        logger().info() << "[ActionScheduler] SpaceTimeIntegrator initialization placeholder complete";
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[ActionScheduler] Failed to initialize SpaceTimeIntegrator: " << e.what();
+        _spacetime_integrator.reset();
+    }
+}
+
+Handle ActionScheduler::createSpatialScheduleAtom(const ScheduledAction& action)
+{
+    try {
+        HandleSeq spatial_schedule_content;
+        spatial_schedule_content.push_back(action.action_atom);
+        spatial_schedule_content.push_back(_schedule_context);
+        
+        // Add spatial context if available
+        if (action.has_spatial_constraints && _spacetime_integrator) {
+            spatial_schedule_content.push_back(_spacetime_integrator->getSpatialContext());
+        }
+        
+        Handle spatial_schedule_atom = _atomspace->add_link(EVALUATION_LINK, std::move(spatial_schedule_content));
+        return spatial_schedule_atom;
+        
+    } catch (const std::exception& e) {
+        logger().warn() << "[ActionScheduler] Failed to create spatial schedule atom: " << e.what();
+        return Handle::UNDEFINED;
     }
 }

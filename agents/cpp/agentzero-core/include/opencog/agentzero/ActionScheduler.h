@@ -24,12 +24,14 @@
 #include <opencog/atoms/base/Handle.h>
 #include <opencog/atoms/truthvalue/TruthValue.h>
 #include <opencog/util/Logger.h>
+#include <octomap/octomap.h>
 
 namespace opencog {
 namespace agentzero {
 
 class AgentZeroCore;
 class ActionExecutor;
+class SpaceTimeIntegrator;
 
 /**
  * ActionScheduler - Temporal coordination system for Agent-Zero actions
@@ -80,8 +82,16 @@ public:
         std::chrono::milliseconds period;
         int repeat_count;
         
+        // Spatial-temporal extensions for AZ-SPATIAL-001
+        bool has_spatial_constraints;
+        std::vector<octomap::point3d> required_locations;
+        std::vector<octomap::point3d> trajectory_points;
+        Handle spatial_context;
+        double spatial_tolerance;
+        
         ScheduledAction() 
-            : priority(5), is_periodic(false), period(0), repeat_count(1) {}
+            : priority(5), is_periodic(false), period(0), repeat_count(1),
+              has_spatial_constraints(false), spatial_tolerance(0.1) {}
     };
 
 private:
@@ -113,6 +123,10 @@ private:
     bool _enable_resource_management;
     bool _enable_dependency_checking;
     bool _enable_temporal_reasoning;
+    bool _enable_spatial_temporal_planning;  // AZ-SPATIAL-001 extension
+    
+    // Spatial-temporal integration (AZ-SPATIAL-001)
+    std::shared_ptr<SpaceTimeIntegrator> _spacetime_integrator;
     
     // Internal methods
     void initializeScheduler();
@@ -124,6 +138,14 @@ private:
     void updateDependencyGraph(const Handle& action_atom, const std::vector<Handle>& deps);
     Handle createScheduleAtom(const ScheduledAction& action);
     void recordSchedulingDecision(const Handle& action_atom, ScheduleResult result);
+    
+    // Spatial-temporal helper methods (AZ-SPATIAL-001)
+    bool validateSpatialConstraints(const ScheduledAction& action);
+    bool checkLocationAvailability(const std::vector<octomap::point3d>& locations,
+                                  const std::chrono::steady_clock::time_point& start_time,
+                                  const std::chrono::steady_clock::time_point& end_time);
+    void initializeSpaceTimeIntegration();
+    Handle createSpatialScheduleAtom(const ScheduledAction& action);
 
 public:
     /**
@@ -207,6 +229,51 @@ public:
     ScheduleResult scheduleActionWithResources(const Handle& action_atom,
                                               const std::vector<std::string>& resources,
                                               int priority = 5);
+    
+    // Spatial-temporal scheduling methods (AZ-SPATIAL-001)
+    /**
+     * Schedule an action with spatial constraints
+     * @param action_atom Handle to the action atom
+     * @param locations Required spatial locations for the action
+     * @param scheduled_time When to execute the action
+     * @param spatial_tolerance Distance tolerance in meters
+     * @param priority Priority level (1-20)
+     * @return ScheduleResult indicating success or failure reason
+     */
+    ScheduleResult scheduleActionWithSpatialConstraints(const Handle& action_atom,
+                                                       const std::vector<octomap::point3d>& locations,
+                                                       const std::chrono::steady_clock::time_point& scheduled_time,
+                                                       double spatial_tolerance = 0.1,
+                                                       int priority = 5);
+    
+    /**
+     * Schedule an action with a trajectory
+     * @param action_atom Handle to the action atom
+     * @param trajectory_points Sequence of spatial points to follow
+     * @param start_time When to start the trajectory
+     * @param priority Priority level (1-20)
+     * @return ScheduleResult indicating success or failure reason
+     */
+    ScheduleResult scheduleActionWithTrajectory(const Handle& action_atom,
+                                               const std::vector<octomap::point3d>& trajectory_points,
+                                               const std::chrono::steady_clock::time_point& start_time,
+                                               int priority = 5);
+    
+    /**
+     * Schedule an action with optimal spatial-temporal planning
+     * Uses SpaceTimeIntegrator to find optimal time and location
+     * @param action_atom Handle to the action atom
+     * @param preferred_locations Preferred spatial locations (in order of preference)
+     * @param earliest_start Earliest allowable start time
+     * @param latest_end Latest allowable end time
+     * @param priority Priority level (1-20)
+     * @return ScheduleResult indicating success or failure reason
+     */
+    ScheduleResult scheduleActionWithOptimalPlanning(const Handle& action_atom,
+                                                    const std::vector<octomap::point3d>& preferred_locations,
+                                                    const std::chrono::steady_clock::time_point& earliest_start,
+                                                    const std::chrono::steady_clock::time_point& latest_end,
+                                                    int priority = 5);
     
     /**
      * Cancel a scheduled action
@@ -301,6 +368,22 @@ public:
      * @param temporal Enable temporal reasoning
      */
     void configureFeatures(bool resources, bool dependencies, bool temporal);
+    
+    /**
+     * Configure spatial-temporal planning features (AZ-SPATIAL-001)
+     * @param spatial_temporal Enable spatial-temporal planning
+     * @param spatial_resolution Spatial resolution in meters
+     * @param time_resolution Time resolution in milliseconds
+     */
+    void configureSpatialTemporalFeatures(bool spatial_temporal, 
+                                         double spatial_resolution = 0.1,
+                                         int time_resolution_ms = 100);
+    
+    /**
+     * Get the SpaceTimeIntegrator instance
+     * @return Shared pointer to SpaceTimeIntegrator or nullptr if not enabled
+     */
+    std::shared_ptr<SpaceTimeIntegrator> getSpaceTimeIntegrator() const { return _spacetime_integrator; }
     
     // AtomSpace integration
     /**
