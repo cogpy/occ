@@ -12,6 +12,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cctype>
+#include <set>
 
 #include <opencog/atoms/atom_types/types.h>
 #include <opencog/atoms/base/Node.h>
@@ -36,9 +37,20 @@ KnowledgeIntegrator::KnowledgeIntegrator(AgentZeroCore* agent_core, AtomSpacePtr
     , _enable_semantic_integration(true)
     , _enable_memory_consolidation(true)
     , _knowledge_threshold(0.5)
+    , _enable_advanced_reasoning(false)
+    , _enable_pattern_mining(false)
+    , _enable_hypothesis_generation(false)
+    , _inference_confidence_threshold(0.6)
+    , _max_inference_steps(15)
+    , _reasoning_context(Handle::UNDEFINED)
+    , _inference_history(Handle::UNDEFINED)
+    , _learned_patterns(Handle::UNDEFINED)
+    , _hypothesis_space(Handle::UNDEFINED)
 {
     logger().info() << "[KnowledgeIntegrator] Constructor: Initializing knowledge integration";
     initializeKnowledgeStructures();
+    initializeAdvancedReasoning();
+    initializePatternMining();
 }
 
 KnowledgeIntegrator::~KnowledgeIntegrator()
@@ -1009,6 +1021,7 @@ TruthValuePtr KnowledgeIntegrator::assessKnowledgeReliability(const Handle& know
     }
 }
 
+// <<<<<<< copilot/fix-33
 // Helper methods for advanced concept formation
 
 std::string KnowledgeIntegrator::createStructureSignature(const Handle& atom)
@@ -1381,4 +1394,476 @@ void KnowledgeIntegrator::updateConceptConfidenceAfterValidation(Handle& concept
     } catch (const std::exception& e) {
         logger().error() << "[KnowledgeIntegrator] Error updating concept confidence: " << e.what();
     }
+// =======
+// Enhanced AtomSpace Operations Implementation
+
+void KnowledgeIntegrator::initializeAdvancedReasoning()
+{
+    logger().info() << "[KnowledgeIntegrator] Initializing advanced reasoning capabilities";
+    
+    std::string agent_name = _agent_core->getAgentName();
+    _reasoning_context = _atomspace->add_node(CONCEPT_NODE, agent_name + "_ReasoningContext");
+    _inference_history = _atomspace->add_node(CONCEPT_NODE, agent_name + "_InferenceHistory");
+    _learned_patterns = _atomspace->add_node(CONCEPT_NODE, agent_name + "_LearnedPatterns");
+    _hypothesis_space = _atomspace->add_node(CONCEPT_NODE, agent_name + "_HypothesisSpace");
+    
+    // Initialize reasoning configuration
+    _enable_advanced_reasoning = true;
+    _inference_confidence_threshold = 0.6;
+    _max_inference_steps = 15;
+    
+    logger().info() << "[KnowledgeIntegrator] Advanced reasoning initialized";
+}
+
+void KnowledgeIntegrator::initializePatternMining()
+{
+    logger().info() << "[KnowledgeIntegrator] Initializing pattern mining capabilities";
+    
+    _enable_pattern_mining = true;
+    _enable_hypothesis_generation = true;
+    
+    logger().info() << "[KnowledgeIntegrator] Pattern mining initialized";
+}
+
+std::vector<Handle> KnowledgeIntegrator::performInference(const std::vector<Handle>& premises, 
+                                                        const std::string& target_pattern)
+{
+    logger().debug() << "[KnowledgeIntegrator] Performing inference with " << premises.size() << " premises";
+    
+    std::vector<Handle> inferences;
+    
+    try {
+        // Simple forward inference implementation
+        for (const Handle& premise : premises) {
+            // Find implications from this premise
+            const IncomingSet& incoming = premise->getIncomingSet();
+            
+            for (const Handle& link : incoming) {
+                if (link->get_type() == IMPLICATION_LINK) {
+                    const HandleSeq& outgoing = link->getOutgoingSet();
+                    if (outgoing.size() == 2 && outgoing[0] == premise) {
+                        // This is an implication: premise -> conclusion
+                        Handle conclusion = outgoing[1];
+                        
+                        // Check if conclusion meets confidence threshold
+                        TruthValuePtr link_tv = link->getTruthValue();
+                        if (link_tv->get_confidence() >= _inference_confidence_threshold) {
+                            inferences.push_back(conclusion);
+                        }
+                    }
+                }
+            }
+        }
+        
+        logger().debug() << "[KnowledgeIntegrator] Generated " << inferences.size() << " inferences";
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error in inference: " << e.what();
+    }
+    
+    return inferences;
+}
+
+std::vector<Handle> KnowledgeIntegrator::discoverPatterns(const std::vector<Handle>& data_atoms, 
+                                                        double minimum_support)
+{
+    logger().debug() << "[KnowledgeIntegrator] Discovering patterns in " << data_atoms.size() << " atoms";
+    
+    std::vector<Handle> patterns;
+    
+    try {
+        // Simple pattern discovery: find frequently co-occurring atoms
+        std::map<std::pair<Handle, Handle>, int> cooccurrence_count;
+        
+        // Count co-occurrences
+        for (size_t i = 0; i < data_atoms.size(); ++i) {
+            for (size_t j = i + 1; j < data_atoms.size(); ++j) {
+                std::pair<Handle, Handle> pair = {data_atoms[i], data_atoms[j]};
+                cooccurrence_count[pair]++;
+            }
+        }
+        
+        // Create patterns from frequent co-occurrences
+        int min_count = static_cast<int>(data_atoms.size() * minimum_support);
+        
+        for (const auto& entry : cooccurrence_count) {
+            if (entry.second >= min_count) {
+                // Create pattern atom
+                Handle pattern = _atomspace->add_node(CONCEPT_NODE, 
+                    "Pattern_" + entry.first.first->get_name() + "_" + entry.first.second->get_name());
+                
+                // Link the pattern to its components
+                HandleSeq pattern_link;
+                pattern_link.push_back(entry.first.first);
+                pattern_link.push_back(entry.first.second);
+                Handle pattern_structure = _atomspace->add_link(AND_LINK, std::move(pattern_link));
+                
+                // Set pattern confidence
+                double confidence = static_cast<double>(entry.second) / data_atoms.size();
+                TruthValuePtr pattern_tv = SimpleTruthValue::createTV(confidence, 0.9);
+                pattern->setTruthValue(pattern_tv);
+                
+                patterns.push_back(pattern);
+            }
+        }
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error discovering patterns: " << e.what();
+    }
+    
+    return patterns;
+}
+
+std::vector<Handle> KnowledgeIntegrator::applyRules(const std::vector<Handle>& rule_set,
+                                                  const std::vector<Handle>& facts)
+{
+    logger().debug() << "[KnowledgeIntegrator] Applying " << rule_set.size() << " rules to " << facts.size() << " facts";
+    
+    std::vector<Handle> derived_facts;
+    
+    try {
+        // Simple rule application
+        for (const Handle& rule : rule_set) {
+            if (rule->get_type() == IMPLICATION_LINK) {
+                const HandleSeq& rule_parts = rule->getOutgoingSet();
+                if (rule_parts.size() == 2) {
+                    Handle antecedent = rule_parts[0];
+                    Handle consequent = rule_parts[1];
+                    
+                    // Check if antecedent matches any facts
+                    for (const Handle& fact : facts) {
+                        if (atomMatches(antecedent, fact)) {
+                            // Apply rule: derive consequent
+                            TruthValuePtr rule_tv = rule->getTruthValue();
+                            TruthValuePtr fact_tv = fact->getTruthValue();
+                            
+                            // Combine truth values
+                            double derived_strength = rule_tv->get_mean() * fact_tv->get_mean();
+                            double derived_confidence = std::min(rule_tv->get_confidence(), fact_tv->get_confidence());
+                            
+                            if (derived_confidence >= _inference_confidence_threshold) {
+                                Handle derived = _atomspace->add_atom(consequent);
+                                TruthValuePtr derived_tv = SimpleTruthValue::createTV(derived_strength, derived_confidence);
+                                derived->setTruthValue(derived_tv);
+                                
+                                derived_facts.push_back(derived);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error applying rules: " << e.what();
+    }
+    
+    return derived_facts;
+}
+
+Handle KnowledgeIntegrator::createInferenceContext(const std::string& reasoning_task)
+{
+    std::string context_name = _agent_core->getAgentName() + "_" + reasoning_task + "_Context";
+    Handle context = _atomspace->add_node(CONCEPT_NODE, context_name);
+    
+    _reasoning_tasks[reasoning_task] = context;
+    
+    return context;
+}
+
+std::vector<Handle> KnowledgeIntegrator::performSemanticSearch(const std::string& query,
+                                                             const std::vector<Handle>& context)
+{
+    std::vector<Handle> semantic_results;
+    
+    try {
+        // Basic semantic search using string similarity and context
+        HandleSeq all_atoms;
+        _atomspace->get_handles_by_type(all_atoms, ATOM, true);
+        
+        for (const Handle& atom : all_atoms) {
+            std::string atom_name = atom->get_name();
+            
+            // Calculate semantic similarity (simplified)
+            double similarity = calculateStringSimilarity(query, atom_name);
+            
+            if (similarity > 0.3) { // Threshold for semantic relevance
+                semantic_results.push_back(atom);
+            }
+        }
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error in semantic search: " << e.what();
+    }
+    
+    return semantic_results;
+}
+
+std::vector<Handle> KnowledgeIntegrator::generateHypotheses(const std::vector<Handle>& observations)
+{
+    std::vector<Handle> hypotheses;
+    
+    try {
+        // Simple hypothesis generation from observations
+        for (const Handle& observation : observations) {
+            // Generate causal hypotheses
+            Handle hypothesis = _atomspace->add_node(CONCEPT_NODE, 
+                "Hypothesis_cause_of_" + observation->get_name());
+            
+            // Set initial low confidence
+            TruthValuePtr hyp_tv = SimpleTruthValue::createTV(0.5, 0.3);
+            hypothesis->setTruthValue(hyp_tv);
+            
+            hypotheses.push_back(hypothesis);
+        }
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error generating hypotheses: " << e.what();
+    }
+    
+    return hypotheses;
+}
+
+std::vector<Handle> KnowledgeIntegrator::extractImplications(const std::vector<Handle>& premises)
+{
+    std::vector<Handle> implications;
+    
+    try {
+        // Look for potential implications between premises
+        for (size_t i = 0; i < premises.size(); ++i) {
+            for (size_t j = i + 1; j < premises.size(); ++j) {
+                // Create potential implication
+                HandleSeq impl_link;
+                impl_link.push_back(premises[i]);
+                impl_link.push_back(premises[j]);
+                
+                Handle implication = _atomspace->add_link(IMPLICATION_LINK, std::move(impl_link));
+                
+                // Set tentative truth value
+                TruthValuePtr impl_tv = SimpleTruthValue::createTV(0.6, 0.4);
+                implication->setTruthValue(impl_tv);
+                
+                implications.push_back(implication);
+            }
+        }
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error extracting implications: " << e.what();
+    }
+    
+    return implications;
+}
+
+void KnowledgeIntegrator::learnFromInteractionPatterns(const std::vector<Handle>& interaction_sequence)
+{
+    try {
+        // Learn temporal patterns from interaction sequences
+        for (size_t i = 0; i < interaction_sequence.size() - 1; ++i) {
+            Handle current = interaction_sequence[i];
+            Handle next = interaction_sequence[i + 1];
+            
+            // Create temporal link
+            HandleSeq temporal_link;
+            temporal_link.push_back(current);
+            temporal_link.push_back(next);
+            
+            Handle temporal_pattern = _atomspace->add_link(SEQUENTIAL_AND_LINK, std::move(temporal_link));
+            
+            // Update or set truth value based on frequency
+            TruthValuePtr existing_tv = temporal_pattern->getTruthValue();
+            double new_strength = std::min(1.0, existing_tv->get_mean() + 0.1);
+            double new_confidence = std::min(1.0, existing_tv->get_confidence() + 0.1);
+            
+            TruthValuePtr new_tv = SimpleTruthValue::createTV(new_strength, new_confidence);
+            temporal_pattern->setTruthValue(new_tv);
+        }
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error learning from interactions: " << e.what();
+    }
+}
+
+Handle KnowledgeIntegrator::synthesizeNewKnowledge(const std::vector<Handle>& source_knowledge,
+                                                 const std::string& synthesis_goal)
+{
+    Handle synthesized = Handle::UNDEFINED;
+    
+    try {
+        // Simple knowledge synthesis by combining source knowledge
+        std::string synthesized_name = "Synthesized_" + synthesis_goal;
+        
+        // Replace spaces and special characters
+        std::replace(synthesized_name.begin(), synthesized_name.end(), ' ', '_');
+        
+        synthesized = _atomspace->add_node(CONCEPT_NODE, synthesized_name);
+        
+        // Link to source knowledge
+        for (const Handle& source : source_knowledge) {
+            HandleSeq synth_link;
+            synth_link.push_back(synthesized);
+            synth_link.push_back(source);
+            _atomspace->add_link(EVALUATION_LINK, std::move(synth_link));
+        }
+        
+        // Set synthesis confidence based on source confidence
+        double avg_confidence = 0.0;
+        for (const Handle& source : source_knowledge) {
+            avg_confidence += source->getTruthValue()->get_confidence();
+        }
+        avg_confidence /= source_knowledge.size();
+        
+        TruthValuePtr synth_tv = SimpleTruthValue::createTV(0.7, avg_confidence);
+        synthesized->setTruthValue(synth_tv);
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error synthesizing knowledge: " << e.what();
+    }
+    
+    return synthesized;
+}
+
+// Helper methods for enhanced operations
+
+double KnowledgeIntegrator::calculateSemanticSimilarity(const Handle& atom1, const Handle& atom2)
+{
+    try {
+        // Simple semantic similarity based on shared connections
+        const IncomingSet& incoming1 = atom1->getIncomingSet();
+        const IncomingSet& incoming2 = atom2->getIncomingSet();
+        
+        int shared_connections = 0;
+        int total_connections = incoming1.size() + incoming2.size();
+        
+        for (const Handle& link1 : incoming1) {
+            for (const Handle& link2 : incoming2) {
+                if (link1 == link2) {
+                    shared_connections++;
+                }
+            }
+        }
+        
+        if (total_connections == 0) return 0.0;
+        
+        return static_cast<double>(shared_connections) / total_connections;
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error calculating semantic similarity: " << e.what();
+        return 0.0;
+    }
+}
+
+double KnowledgeIntegrator::calculateStringSimilarity(const std::string& str1, const std::string& str2)
+{
+    // Simple Jaccard similarity for strings
+    std::set<char> set1(str1.begin(), str1.end());
+    std::set<char> set2(str2.begin(), str2.end());
+    
+    std::set<char> intersection;
+    std::set_intersection(set1.begin(), set1.end(),
+                         set2.begin(), set2.end(),
+                         std::inserter(intersection, intersection.begin()));
+    
+    std::set<char> union_set;
+    std::set_union(set1.begin(), set1.end(),
+                  set2.begin(), set2.end(),
+                  std::inserter(union_set, union_set.begin()));
+    
+    if (union_set.empty()) return 0.0;
+    
+    return static_cast<double>(intersection.size()) / union_set.size();
+}
+
+bool KnowledgeIntegrator::atomMatches(const Handle& pattern, const Handle& atom)
+{
+    // Simple atom matching - can be enhanced with pattern matching engine
+    return pattern->get_name() == atom->get_name() || 
+           pattern->get_type() == atom->get_type();
+}
+
+bool KnowledgeIntegrator::isContradictory(const Handle& atom1, const Handle& atom2)
+{
+    try {
+        TruthValuePtr tv1 = atom1->getTruthValue();
+        TruthValuePtr tv2 = atom2->getTruthValue();
+        
+        // Simple contradiction check: opposite truth values for similar content
+        if (atom1->get_name().find(atom2->get_name()) != std::string::npos ||
+            atom2->get_name().find(atom1->get_name()) != std::string::npos) {
+            return (tv1->get_mean() > 0.5 && tv2->get_mean() < 0.5) ||
+                   (tv1->get_mean() < 0.5 && tv2->get_mean() > 0.5);
+        }
+        
+        return false;
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[KnowledgeIntegrator] Error checking contradiction: " << e.what();
+        return false;
+    }
+}
+
+std::vector<Handle> KnowledgeIntegrator::extractTemporalPatterns(const std::vector<Handle>& sequence)
+{
+    std::vector<Handle> patterns;
+    
+    // Extract sequential patterns
+    for (size_t i = 0; i < sequence.size() - 1; ++i) {
+        HandleSeq pattern_link;
+        pattern_link.push_back(sequence[i]);
+        pattern_link.push_back(sequence[i + 1]);
+        
+        Handle pattern = _atomspace->add_link(SEQUENTIAL_AND_LINK, std::move(pattern_link));
+        patterns.push_back(pattern);
+    }
+    
+    return patterns;
+}
+
+std::vector<Handle> KnowledgeIntegrator::extractCausalPatterns(const std::vector<Handle>& sequence)
+{
+    std::vector<Handle> patterns;
+    
+    // Extract potential causal patterns
+    for (size_t i = 0; i < sequence.size() - 1; ++i) {
+        HandleSeq causal_link;
+        causal_link.push_back(sequence[i]);
+        causal_link.push_back(sequence[i + 1]);
+        
+        Handle causal_pattern = _atomspace->add_link(IMPLICATION_LINK, std::move(causal_link));
+        
+        // Set low initial confidence for causal relationships
+        TruthValuePtr causal_tv = SimpleTruthValue::createTV(0.4, 0.3);
+        causal_pattern->setTruthValue(causal_tv);
+        
+        patterns.push_back(causal_pattern);
+    }
+    
+    return patterns;
+}
+
+std::vector<Handle> KnowledgeIntegrator::extractStatisticalPatterns(const std::vector<Handle>& data)
+{
+    std::vector<Handle> patterns;
+    
+    // Extract frequency-based patterns
+    std::map<Handle, int> frequency;
+    for (const Handle& item : data) {
+        frequency[item]++;
+    }
+    
+    // Create patterns for frequently occurring items
+    for (const auto& pair : frequency) {
+        if (pair.second > static_cast<int>(data.size() * 0.2)) { // 20% threshold
+            Handle pattern = _atomspace->add_node(CONCEPT_NODE, 
+                "FrequentPattern_" + pair.first->get_name());
+            
+            double freq_strength = static_cast<double>(pair.second) / data.size();
+            TruthValuePtr freq_tv = SimpleTruthValue::createTV(freq_strength, 0.8);
+            pattern->setTruthValue(freq_tv);
+            
+            patterns.push_back(pattern);
+        }
+    }
+    
+    return patterns;
+// >>>>>>> main
 }

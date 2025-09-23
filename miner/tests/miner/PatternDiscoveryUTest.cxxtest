@@ -1,0 +1,328 @@
+/*
+ * PatternDiscoveryUTest.cxxtest
+ *
+ * Copyright (C) 2024 OpenCog Foundation
+ *
+ * Author: OpenCog AI
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License v3 as
+ * published by the Free Software Foundation and including the exceptions
+ * at http://opencog.org/wiki/Licenses
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program; if not, write to:
+ * Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+#include <opencog/miner/PatternDiscovery.h>
+#include <opencog/atomspace/AtomSpace.h>
+#include <opencog/atoms/base/Node.h>
+#include <opencog/atoms/base/Link.h>
+#include <opencog/util/Logger.h>
+
+using namespace opencog;
+
+class PatternDiscoveryUTest : public CxxTest::TestSuite
+{
+private:
+    AtomSpacePtr as;
+
+public:
+    PatternDiscoveryUTest()
+    {
+        logger().set_level(Logger::INFO);
+        logger().set_print_to_stdout_flag(true);
+    }
+
+    void setUp();
+    void tearDown();
+    
+    // Test basic functionality
+    void test_constructor();
+    void test_config_validation();
+    void test_basic_pattern_discovery();
+    void test_pattern_discovery_with_atoms();
+    void test_temporal_pattern_discovery();
+    void test_surprisingness_evaluation();
+    void test_pattern_filtering();
+    void test_top_patterns_selection();
+    void test_export_functionality();
+    void test_configuration_update();
+    
+    // Test error handling
+    void test_invalid_config();
+    void test_empty_database();
+    void test_error_handling();
+};
+
+void PatternDiscoveryUTest::setUp()
+{
+    as = createAtomSpace();
+}
+
+void PatternDiscoveryUTest::tearDown()
+{
+    as.reset();
+}
+
+void PatternDiscoveryUTest::test_constructor()
+{
+    // Test default constructor
+    PatternDiscoveryConfig default_config;
+    TS_ASSERT_EQUALS(default_config.minimum_support, 10);
+    TS_ASSERT_EQUALS(default_config.max_depth, -1);
+    TS_ASSERT_EQUALS(default_config.surprisingness_measure, "isurp");
+    
+    // Test constructor with custom config
+    PatternDiscoveryConfig custom_config(5, 3, Handle::UNDEFINED, "jsd");
+    PatternDiscovery discovery(custom_config);
+    
+    TS_ASSERT_EQUALS(discovery.get_config().minimum_support, 5);
+    TS_ASSERT_EQUALS(discovery.get_config().max_depth, 3);
+    TS_ASSERT_EQUALS(discovery.get_config().surprisingness_measure, "jsd");
+}
+
+void PatternDiscoveryUTest::test_config_validation()
+{
+    // Test valid configuration
+    PatternDiscoveryConfig valid_config(10, 5);
+    TS_ASSERT_THROWS_NOTHING(PatternDiscovery discovery(valid_config));
+    
+    // Test invalid minimum support
+    PatternDiscoveryConfig invalid_config1(0);  // min_support = 0
+    TS_ASSERT_THROWS_ANYTHING(PatternDiscovery discovery(invalid_config1));
+    
+    // Test invalid max variables
+    PatternDiscoveryConfig invalid_config2;
+    invalid_config2.max_variables = 0;
+    TS_ASSERT_THROWS_ANYTHING(PatternDiscovery discovery(invalid_config2));
+    
+    // Test invalid surprisingness measure
+    PatternDiscoveryConfig invalid_config3;
+    invalid_config3.surprisingness_measure = "";
+    TS_ASSERT_THROWS_ANYTHING(PatternDiscovery discovery(invalid_config3));
+}
+
+void PatternDiscoveryUTest::test_basic_pattern_discovery()
+{
+    // Create some test data in AtomSpace
+    Handle concept_a = as->add_node(CONCEPT_NODE, "A");
+    Handle concept_b = as->add_node(CONCEPT_NODE, "B");
+    Handle concept_c = as->add_node(CONCEPT_NODE, "C");
+    
+    Handle inheritance1 = as->add_link(INHERITANCE_LINK, concept_a, concept_b);
+    Handle inheritance2 = as->add_link(INHERITANCE_LINK, concept_b, concept_c);
+    Handle inheritance3 = as->add_link(INHERITANCE_LINK, concept_a, concept_c);
+    
+    // Configure pattern discovery with low minimum support
+    PatternDiscoveryConfig config(1);  // Very low support for testing
+    PatternDiscovery discovery(config);
+    
+    // Discover patterns
+    auto results = discovery.discover_patterns(*as);
+    
+    // Basic validation
+    TS_ASSERT_LESS_THAN(0, results.total_patterns_found);
+    TS_ASSERT_LESS_THAN(0.0, results.statistics.discovery_time_seconds);
+    TS_ASSERT_EQUALS(results.statistics.atoms_processed, as->get_size());
+}
+
+void PatternDiscoveryUTest::test_pattern_discovery_with_atoms()
+{
+    // Create test atoms
+    HandleSeq test_atoms = {
+        as->add_node(CONCEPT_NODE, "Animal"),
+        as->add_node(CONCEPT_NODE, "Dog"),
+        as->add_node(CONCEPT_NODE, "Cat"),
+        as->add_link(INHERITANCE_LINK, 
+                    as->add_node(CONCEPT_NODE, "Dog"),
+                    as->add_node(CONCEPT_NODE, "Animal")),
+        as->add_link(INHERITANCE_LINK,
+                    as->add_node(CONCEPT_NODE, "Cat"), 
+                    as->add_node(CONCEPT_NODE, "Animal"))
+    };
+    
+    PatternDiscoveryConfig config(1);
+    PatternDiscovery discovery(config);
+    
+    // Discover patterns from specific atoms
+    auto results = discovery.discover_patterns(test_atoms);
+    
+    // Validate results
+    TS_ASSERT_LESS_THAN(0, results.total_patterns_found);
+    TS_ASSERT_EQUALS(results.statistics.atoms_processed, test_atoms.size());
+}
+
+void PatternDiscoveryUTest::test_temporal_pattern_discovery()
+{
+    // Create temporal test data
+    Handle time_var = as->add_node(VARIABLE_NODE, "$T");
+    Handle event1 = as->add_node(CONCEPT_NODE, "Event1");
+    Handle event2 = as->add_node(CONCEPT_NODE, "Event2");
+    
+    PatternDiscoveryConfig config(1);
+    PatternDiscovery discovery(config);
+    
+    // Test temporal pattern discovery
+    auto results = discovery.discover_temporal_patterns(*as, 1);
+    
+    // Should complete without error
+    TS_ASSERT_LESS_THAN_EQUALS(0, results.total_patterns_found);
+    TS_ASSERT_LESS_THAN(0.0, results.statistics.discovery_time_seconds);
+}
+
+void PatternDiscoveryUTest::test_surprisingness_evaluation()
+{
+    // Create a simple pattern
+    Handle var = as->add_node(VARIABLE_NODE, "$X");
+    Handle pattern = as->add_link(LAMBDA_LINK, var, 
+                                 as->add_link(PRESENT_LINK, var));
+    
+    // Create test database
+    HandleSeq db = {
+        as->add_node(CONCEPT_NODE, "A"),
+        as->add_node(CONCEPT_NODE, "B"),
+        as->add_node(CONCEPT_NODE, "C")
+    };
+    
+    PatternDiscovery discovery;
+    
+    // Evaluate surprisingness
+    double surprisingness = discovery.evaluate_surprisingness(pattern, db);
+    
+    // Should return a valid surprisingness score
+    TS_ASSERT_LESS_THAN_EQUALS(0.0, surprisingness);
+}
+
+void PatternDiscoveryUTest::test_pattern_filtering()
+{
+    // Create test patterns
+    HandleSeq patterns = {
+        as->add_node(CONCEPT_NODE, "Pattern1"),
+        as->add_node(CONCEPT_NODE, "Pattern2"),
+        as->add_node(CONCEPT_NODE, "Pattern3")
+    };
+    
+    PatternDiscovery discovery;
+    
+    // This test mainly verifies the method doesn't crash
+    // Actual filtering requires patterns with surprisingness values
+    HandleSeq filtered = discovery.filter_by_surprisingness(patterns, 0.5);
+    
+    // Should return a (possibly empty) list without error
+    TS_ASSERT_LESS_THAN_EQUALS(filtered.size(), patterns.size());
+}
+
+void PatternDiscoveryUTest::test_top_patterns_selection()
+{
+    // Create test patterns
+    HandleSeq patterns = {
+        as->add_node(CONCEPT_NODE, "Pattern1"),
+        as->add_node(CONCEPT_NODE, "Pattern2"),
+        as->add_node(CONCEPT_NODE, "Pattern3")
+    };
+    
+    PatternDiscovery discovery;
+    
+    // Get top 2 patterns
+    HandleSeq top_patterns = discovery.get_top_patterns(patterns, 2);
+    
+    // Should return at most 2 patterns
+    TS_ASSERT_LESS_THAN_EQUALS(top_patterns.size(), 2);
+    TS_ASSERT_LESS_THAN_EQUALS(top_patterns.size(), patterns.size());
+}
+
+void PatternDiscoveryUTest::test_export_functionality()
+{
+    // Create test patterns
+    HandleSeq patterns = {
+        as->add_node(CONCEPT_NODE, "TestPattern1"),
+        as->add_node(CONCEPT_NODE, "TestPattern2")
+    };
+    
+    PatternDiscovery discovery;
+    
+    // Test Scheme export
+    std::string scheme_output = discovery.export_patterns_as_scheme(patterns);
+    TS_ASSERT(!scheme_output.empty());
+    TS_ASSERT(scheme_output.find("List") != std::string::npos);
+    
+    // Test JSON export
+    std::string json_output = discovery.export_patterns_as_json(patterns);
+    TS_ASSERT(!json_output.empty());
+    TS_ASSERT(json_output.find("patterns") != std::string::npos);
+    TS_ASSERT(json_output.find("total_count") != std::string::npos);
+}
+
+void PatternDiscoveryUTest::test_configuration_update()
+{
+    PatternDiscoveryConfig initial_config(10, 5);
+    PatternDiscovery discovery(initial_config);
+    
+    // Verify initial config
+    TS_ASSERT_EQUALS(discovery.get_config().minimum_support, 10);
+    TS_ASSERT_EQUALS(discovery.get_config().max_depth, 5);
+    
+    // Update configuration
+    PatternDiscoveryConfig new_config(20, 10);
+    discovery.update_config(new_config);
+    
+    // Verify updated config
+    TS_ASSERT_EQUALS(discovery.get_config().minimum_support, 20);
+    TS_ASSERT_EQUALS(discovery.get_config().max_depth, 10);
+}
+
+void PatternDiscoveryUTest::test_invalid_config()
+{
+    // Test various invalid configurations
+    PatternDiscoveryConfig config;
+    
+    // Invalid minimum support
+    config.minimum_support = 0;
+    TS_ASSERT_THROWS_ANYTHING(PatternDiscovery discovery(config));
+    
+    // Invalid max variables
+    config.minimum_support = 10;  // Reset to valid
+    config.max_variables = 0;
+    TS_ASSERT_THROWS_ANYTHING(PatternDiscovery discovery(config));
+    
+    // Invalid surprisingness measure
+    config.max_variables = 10;  // Reset to valid
+    config.surprisingness_measure = "";
+    TS_ASSERT_THROWS_ANYTHING(PatternDiscovery discovery(config));
+}
+
+void PatternDiscoveryUTest::test_empty_database()
+{
+    // Test with empty AtomSpace
+    AtomSpacePtr empty_as = createAtomSpace();
+    
+    PatternDiscoveryConfig config(1);  // Low threshold
+    PatternDiscovery discovery(config);
+    
+    // Should handle empty database gracefully
+    auto results = discovery.discover_patterns(*empty_as);
+    
+    TS_ASSERT_EQUALS(results.total_patterns_found, 0);
+    TS_ASSERT_LESS_THAN(0.0, results.statistics.discovery_time_seconds);
+}
+
+void PatternDiscoveryUTest::test_error_handling()
+{
+    PatternDiscovery discovery;
+    
+    // Test with invalid pattern for surprisingness evaluation
+    Handle invalid_pattern = Handle::UNDEFINED;
+    HandleSeq db = { as->add_node(CONCEPT_NODE, "A") };
+    
+    // Should handle invalid pattern gracefully
+    double surp = discovery.evaluate_surprisingness(invalid_pattern, db);
+    TS_ASSERT_EQUALS(surp, 0.0);  // Should return 0.0 for invalid patterns
+}
