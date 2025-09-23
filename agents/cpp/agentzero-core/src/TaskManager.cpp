@@ -393,12 +393,17 @@ std::string TaskManager::getGoalHierarchyInfo(const Handle& goal_atom) const
         
         // Find subgoals
         HandleSeq subgoals;
-        HandleSeq all_links = _atomspace->get_incoming_by_type(target_goal, INHERITANCE_LINK);
+        HandleSeq all_links;
+        _atomspace->get_handles_by_type(all_links, INHERITANCE_LINK);
         
         for (const Handle& link : all_links) {
             HandleSeq link_outgoing = link->getOutgoingSet();
-            if (link_outgoing.size() == 2 && link_outgoing[0] == target_goal) {
-                subgoals.push_back(link_outgoing[1]);
+            // Check if this inheritance link involves our target goal
+            if (link_outgoing.size() == 2) {
+                if (link_outgoing[1] == target_goal) {
+                    // link_outgoing[0] is a subgoal of target_goal
+                    subgoals.push_back(link_outgoing[0]);
+                }
             }
         }
         
@@ -410,7 +415,8 @@ std::string TaskManager::getGoalHierarchyInfo(const Handle& goal_atom) const
             info << "\"name\":\"" << subgoals[i]->get_name() << "\"";
             
             // Check if subgoal has associated tasks
-            HandleSeq eval_links = _atomspace->get_atoms_by_type(EVALUATION_LINK);
+            HandleSeq eval_links;
+            _atomspace->get_handles_by_type(eval_links, EVALUATION_LINK);
             Handle associated_task = Handle::UNDEFINED;
             for (const Handle& eval : eval_links) {
                 HandleSeq eval_outgoing = eval->getOutgoingSet();
