@@ -40,6 +40,14 @@ struct ActionItem {
     Handle context_atom;                         // Context for execution
     std::string action_id;                       // Unique identifier
     
+    // Default constructor
+    ActionItem() : action_atom(Handle::UNDEFINED), 
+                   scheduled_time(std::chrono::steady_clock::now()),
+                   duration(std::chrono::milliseconds(100)),
+                   priority(0), 
+                   context_atom(Handle::UNDEFINED),
+                   action_id("") {}
+    
     ActionItem(Handle atom, std::chrono::steady_clock::time_point time, 
                std::chrono::milliseconds dur, int prio = 0, Handle ctx = Handle::UNDEFINED)
         : action_atom(atom), scheduled_time(time), duration(dur), 

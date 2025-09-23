@@ -85,11 +85,12 @@ if(NOT ATOMSPACE_FOUND)
 endif()
 
 if(NOT COGSERVER_FOUND)
-    message(FATAL_ERROR "\n"
+    message(WARNING "\n"
         "OpenCog dependency 'cogserver' not found.\n"
-        "Please install the OpenCog ecosystem first:\n" 
+        "Some features may be disabled.\n" 
         "  See: https://github.com/opencog/cogserver\n"
         "  Or use the OpenCog Dependency Build workflow\n")
+    set(COGSERVER_FOUND FALSE)
 endif()
 
 # Optional OpenCog dependencies (for specific modules)

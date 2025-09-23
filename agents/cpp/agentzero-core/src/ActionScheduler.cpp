@@ -256,8 +256,8 @@ void ActionScheduler::updateActionStatus(const std::string& action_id, const std
         if (!_atomspace) return;
         
         Handle status_node = _atomspace->add_node(PREDICATE_NODE, "ActionStatus");
-        Handle status_value = _atomspace->add_node(CONCEPT_NODE, status);
-        Handle action_id_node = _atomspace->add_node(CONCEPT_NODE, action_id);
+        Handle status_value = _atomspace->add_node(CONCEPT_NODE, std::string(status));
+        Handle action_id_node = _atomspace->add_node(CONCEPT_NODE, std::string(action_id));
         
         HandleSeq status_link;
         status_link.push_back(status_node);
