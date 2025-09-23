@@ -62,6 +62,7 @@ CognitiveLoop::CognitiveLoop(AgentZeroCore* agent_core, AtomSpacePtr atomspace)
     , _attention_context(Handle::UNDEFINED)
     , _perception_importance_threshold(0.5)
     , _attention_spreading_factor(0.1)
+    , _action_scheduler(nullptr)
 {
     logger().info() << "[CognitiveLoop] Constructor: Initializing cognitive loop";
     
@@ -388,7 +389,7 @@ bool CognitiveLoop::executeActionPhase()
         TruthValuePtr action_tv = SimpleTruthValue::createTV(0.6, 0.7);
         _action_context->setTruthValue(action_tv);
         
-        // Process action execution through the ActionExecutor
+        // Process action execution through the ActionExecutor and ActionScheduler
         if (_action_executor) {
             // Process scheduled actions
             int scheduled_actions = 0;
@@ -407,6 +408,12 @@ bool CognitiveLoop::executeActionPhase()
                            << scheduled_actions << " scheduled, "
                            << queued_actions << " queued, "
                            << status_changes << " status changes";
+        } else if (_action_scheduler && _action_scheduler->isEnabled()) {
+            // Fallback to ActionScheduler-only mode for backward compatibility
+            bool action_success = _action_scheduler->processScheduleQueue() > 0;
+            _action_scheduler->updateScheduler();
+            
+            logger().debug() << "[CognitiveLoop] ActionScheduler processed actions";
         }
         
         // Delegate to TaskManager for additional processing
@@ -421,6 +428,14 @@ bool CognitiveLoop::executeActionPhase()
         _atomspace->add_link(EVALUATION_LINK, std::move(action_link));
         
         return true;
+            HandleSeq action_link;
+            action_link.push_back(_agent_core->getAgentSelfAtom());
+            action_link.push_back(_action_context);
+            _atomspace->add_link(EVALUATION_LINK, std::move(action_link));
+        }
+        
+        return action_success;
+>>>>>>> 67c15d12b369fc6089bbee9ff404403b888efb65
         
     } catch (const std::exception& e) {
         logger().error() << "[CognitiveLoop] Action phase error: " << e.what();

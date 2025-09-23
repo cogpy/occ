@@ -31,12 +31,15 @@ if (ATOMSPACE_FOUND)
     link_directories(${ATOMSPACE_LIBRARY_DIRS})
 endif()
 
-# Find cogserver
-pkg_check_modules(COGSERVER REQUIRED cogserver)
+# Find cogserver (optional)
+pkg_check_modules(COGSERVER cogserver)
 if (COGSERVER_FOUND)
     message(STATUS "Found cogserver version ${COGSERVER_VERSION}")
     include_directories(${COGSERVER_INCLUDE_DIRS})
     link_directories(${COGSERVER_LIBRARY_DIRS})
+else()
+    message(STATUS "CogServer not found - some features will be disabled")
+    set(COGSERVER_FOUND FALSE)
 endif()
 
 # Find attention module
@@ -96,9 +99,15 @@ if(AGENTZERO_CORE_SOURCES)
     target_link_libraries(agentzero-core
         ${COGUTIL_LIBRARIES}
         ${ATOMSPACE_LIBRARIES}
-        ${COGSERVER_LIBRARIES}
         ${Boost_LIBRARIES}
     )
+    
+    # Link cogserver libraries if available
+    if(COGSERVER_FOUND AND COGSERVER_LIBRARIES)
+        target_link_libraries(agentzero-core ${COGSERVER_LIBRARIES})
+        target_compile_definitions(agentzero-core PRIVATE HAVE_COGSERVER=1)
+        message(STATUS "Linking cogserver libraries: ${COGSERVER_LIBRARIES}")
+    endif()
     
     # Link attention libraries if available
     if(ATTENTION_FOUND AND ATTENTION_LIBRARIES)

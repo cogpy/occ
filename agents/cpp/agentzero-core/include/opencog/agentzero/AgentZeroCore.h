@@ -16,7 +16,9 @@
 #include <string>
 #include <atomic>
 
+#ifdef HAVE_COGSERVER
 #include <opencog/cogserver/server/Module.h>
+#endif
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/atoms/base/Handle.h>
 #include <opencog/util/Logger.h>
@@ -34,16 +36,20 @@ class KnowledgeIntegrator;
  *
  * This class provides the core integration between Agent-Zero and OpenCog,
  * implementing the main cognitive loop and coordination between components.
- * It inherits from OpenCog's Module class to integrate with CogServer.
+ * It optionally inherits from OpenCog's Module class to integrate with CogServer.
  *
  * Key Features:
- * - CogServer module integration for network access
+ * - Optional CogServer module integration for network access
  * - AtomSpace-based state representation
  * - Cognitive loop coordination
  * - Goal and task management
  * - Knowledge integration and reasoning
  */
+#ifdef HAVE_COGSERVER
 class AgentZeroCore : public Module
+#else
+class AgentZeroCore
+#endif
 {
 private:
     // Core components
@@ -78,21 +84,29 @@ private:
 
 public:
     /**
-     * Constructor - Creates AgentZeroCore module
-     * @param cogserver Reference to the CogServer instance
-     * @param agent_name Name identifier for this agent instance
+     * Constructor - Creates AgentZeroCore instance
+     * @param agent_name Name identifier for this agent instance  
+     * @param atomspace Optional AtomSpace to use (creates new one if null)
      */
+#ifdef HAVE_COGSERVER
     AgentZeroCore(CogServer& cogserver, const std::string& agent_name = "AgentZero");
+#endif
+    AgentZeroCore(const std::string& agent_name = "AgentZero", AtomSpacePtr atomspace = nullptr);
     
     /**
      * Destructor - Cleans up resources and stops processing
      */
     virtual ~AgentZeroCore();
     
+#ifdef HAVE_COGSERVER
     // Module interface implementation
     virtual void init() override;
     virtual bool config(const char* config_string) override;
     virtual const char* id();
+#endif
+    
+    // Core initialization method (for non-CogServer usage)
+    bool initialize(const std::string& agent_name, AtomSpacePtr atomspace = nullptr);
     
     // Core agent operations
     /**

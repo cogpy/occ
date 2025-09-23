@@ -88,6 +88,9 @@ private:
     double _perception_importance_threshold;
     double _attention_spreading_factor;
     
+    // Action coordination
+    std::unique_ptr<ActionScheduler> _action_scheduler;
+    
     // Internal methods
     void runMainLoop();
     bool executePerceptionPhase();
@@ -238,6 +241,7 @@ public:
     Handle getAttentionContext() const { return _attention_context; }
     
     /**
+<<<<<<< HEAD
      * Get the action executor component
      * @return shared pointer to ActionExecutor
      */
@@ -248,6 +252,12 @@ public:
      * @return shared pointer to ActionScheduler
      */
     std::shared_ptr<ActionScheduler> getActionScheduler() const { return _action_scheduler; }
+=======
+     * Get the action scheduler
+     * @return Pointer to ActionScheduler instance
+     */
+    ActionScheduler* getActionScheduler() const { return _action_scheduler.get(); }
+>>>>>>> 67c15d12b369fc6089bbee9ff404403b888efb65
     
     /**
      * Get status information for debugging
