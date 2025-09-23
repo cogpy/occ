@@ -29,7 +29,7 @@ jobs:
       opencog-postgres:
         image: opencog/postgres
         env:
-          POSTGRES_USER: opencog_test
+          POSTGRES_USER: root
           POSTGRES_PASSWORD: cheese
           POSTGRES_DB: atomspace_db
         ports:
@@ -48,8 +48,8 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Create PostgreSQL root role if missing
-      - name: Create PostgreSQL user if missing
+      # Verify PostgreSQL Connection and Setup
+      - name: Verify PostgreSQL Connection
         run: |
           # Install PostgreSQL client
           sudo apt-get install -y postgresql-client
@@ -70,9 +70,10 @@ jobs:
             echo "ERROR: PostgreSQL did not become ready within $timeout seconds"
             exit 1
           fi
-          # Create root role for database access
-          PGPASSWORD=cheese psql -h localhost -p 5432 -U opencog_test \
-            -d atomspace_db -c "CREATE ROLE root WITH LOGIN SUPERUSER PASSWORD 'cheese';" || true
+          # Test database connection with root user
+          echo "Testing database connection..."
+          PGPASSWORD=cheese psql -h localhost -p 5432 -U root -d atomspace_db -c "SELECT version();"
+          echo "PostgreSQL connection test successful!"
 
       # 01. Install Build Dependencies
       - name: Install Build Dependencies
