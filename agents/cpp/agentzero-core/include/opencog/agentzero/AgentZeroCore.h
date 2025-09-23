@@ -30,6 +30,7 @@ namespace agentzero {
 class CognitiveLoop;
 class TaskManager;
 class KnowledgeIntegrator;
+class ReasoningEngine;
 
 /**
  * AgentZeroCore - Main orchestration engine for Agent-Zero cognitive architecture
@@ -56,6 +57,7 @@ private:
     std::unique_ptr<CognitiveLoop> _cognitive_loop;
     std::unique_ptr<TaskManager> _task_manager;
     std::unique_ptr<KnowledgeIntegrator> _knowledge_integrator;
+    std::unique_ptr<ReasoningEngine> _reasoning_engine;
     
     // AtomSpace for state representation
     AtomSpacePtr _atomspace;
@@ -74,6 +76,7 @@ private:
     bool _enable_cognitive_loop;
     bool _enable_goal_processing;
     bool _enable_knowledge_integration;
+    bool _enable_reasoning_engine;
     
     // Internal methods
     void initializeAtomSpace();
@@ -177,6 +180,12 @@ public:
      * @return pointer to KnowledgeIntegrator instance
      */
     KnowledgeIntegrator* getKnowledgeIntegrator() const { return _knowledge_integrator.get(); }
+    
+    /**
+     * Get the reasoning engine component
+     * @return pointer to ReasoningEngine instance
+     */
+    ReasoningEngine* getReasoningEngine() const { return _reasoning_engine.get(); }
     
     // Agent information
     /**
