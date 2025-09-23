@@ -16,7 +16,9 @@
 #include <opencog/atoms/base/Node.h>
 #include <opencog/atoms/base/Link.h>
 #include <opencog/atoms/truthvalue/SimpleTruthValue.h>
+#ifdef HAVE_COGSERVER
 #include <opencog/cogserver/server/CogServer.h>
+#endif
 
 #include "opencog/agentzero/AgentZeroCore.h"
 #include "opencog/agentzero/CognitiveLoop.h"

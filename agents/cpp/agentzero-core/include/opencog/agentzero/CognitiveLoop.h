@@ -32,6 +32,7 @@ namespace opencog {
 namespace agentzero {
 
 class AgentZeroCore;
+class ActionScheduler;
 
 /**
  * CognitiveLoop - Implements the basic perception-action-reflection cycle
@@ -81,6 +82,9 @@ private:
     Handle _attention_context;
     double _perception_importance_threshold;
     double _attention_spreading_factor;
+    
+    // Action coordination
+    std::unique_ptr<ActionScheduler> _action_scheduler;
     
     // Internal methods
     void runMainLoop();
@@ -230,6 +234,12 @@ public:
      * @return Handle to attention context
      */
     Handle getAttentionContext() const { return _attention_context; }
+    
+    /**
+     * Get the action scheduler
+     * @return Pointer to ActionScheduler instance
+     */
+    ActionScheduler* getActionScheduler() const { return _action_scheduler.get(); }
     
     /**
      * Get status information for debugging

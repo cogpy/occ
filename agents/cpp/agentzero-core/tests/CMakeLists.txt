@@ -26,6 +26,21 @@ if(CXXTEST_FOUND)
         )
     endif()
     
+    # ActionScheduler unit tests
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/ActionSchedulerTest.cpp")
+        add_executable(ActionSchedulerTest ActionSchedulerTest.cpp)
+        
+        target_link_libraries(ActionSchedulerTest
+            agentzero-core
+            ${COGUTIL_LIBRARIES}
+            ${ATOMSPACE_LIBRARIES}
+            ${COGSERVER_LIBRARIES}
+            ${Boost_LIBRARIES}
+        )
+        
+        add_test(NAME ActionSchedulerTest COMMAND ActionSchedulerTest)
+    endif()
+    
     message(STATUS "Agent-Zero Core tests configured with CxxTest")
 else()
     message(STATUS "CxxTest not found - tests will not be built")

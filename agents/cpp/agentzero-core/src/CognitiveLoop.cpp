@@ -33,6 +33,7 @@ namespace opencog {
 #include "opencog/agentzero/AgentZeroCore.h"
 #include "opencog/agentzero/TaskManager.h"
 #include "opencog/agentzero/KnowledgeIntegrator.h"
+#include "opencog/agentzero/ActionScheduler.h"
 
 using namespace opencog;
 using namespace opencog::agentzero;
@@ -58,6 +59,7 @@ CognitiveLoop::CognitiveLoop(AgentZeroCore* agent_core, AtomSpacePtr atomspace)
     , _attention_context(Handle::UNDEFINED)
     , _perception_importance_threshold(0.5)
     , _attention_spreading_factor(0.1)
+    , _action_scheduler(nullptr)
 {
     logger().info() << "[CognitiveLoop] Constructor: Initializing cognitive loop";
     
@@ -72,7 +74,10 @@ CognitiveLoop::CognitiveLoop(AgentZeroCore* agent_core, AtomSpacePtr atomspace)
     // Initialize attention system if available
     initializeAttentionSystem();
     
-    logger().debug() << "[CognitiveLoop] Context atoms created";
+    // Initialize action scheduler
+    _action_scheduler = std::make_unique<ActionScheduler>(_agent_core, _atomspace);
+    
+    logger().debug() << "[CognitiveLoop] Context atoms created and ActionScheduler initialized";
 }
 
 CognitiveLoop::~CognitiveLoop()
@@ -376,19 +381,27 @@ bool CognitiveLoop::executeActionPhase()
         TruthValuePtr action_tv = SimpleTruthValue::createTV(0.6, 0.7);
         _action_context->setTruthValue(action_tv);
         
-        // Basic action processing - in a full implementation this would:
-        // - Execute planned actions
-        // - Monitor action outcomes
-        // - Handle action failures
-        // - Update environment state
+        // Use ActionScheduler for temporal coordination of actions
+        bool action_success = true;
+        if (_action_scheduler && _action_scheduler->isEnabled()) {
+            // Process scheduled actions through the ActionScheduler
+            action_success = _action_scheduler->processScheduledActions();
+            
+            logger().debug() << "[CognitiveLoop] ActionScheduler processed: " 
+                           << _action_scheduler->getPendingActionCount() << " pending, "
+                           << _action_scheduler->getExecutingActionCount() << " executing";
+        } else {
+            // Fallback to basic action processing
+            logger().debug() << "[CognitiveLoop] ActionScheduler not available, using basic action processing";
+            
+            // Record that action phase occurred
+            HandleSeq action_link;
+            action_link.push_back(_agent_core->getAgentSelfAtom());
+            action_link.push_back(_action_context);
+            _atomspace->add_link(EVALUATION_LINK, std::move(action_link));
+        }
         
-        // For now, just record that action phase occurred
-        HandleSeq action_link;
-        action_link.push_back(_agent_core->getAgentSelfAtom());
-        action_link.push_back(_action_context);
-        _atomspace->add_link(EVALUATION_LINK, std::move(action_link));
-        
-        return true;
+        return action_success;
         
     } catch (const std::exception& e) {
         logger().error() << "[CognitiveLoop] Action phase error: " << e.what();
