@@ -22,6 +22,14 @@
 #include <cmath>
 #include <random>
 
+// URE includes (only if URE is available)
+#ifdef HAVE_URE
+#include <opencog/ure/UREConfig.h>
+#include <opencog/ure/Rule.h>
+#include <opencog/ure/forwardchainer/ForwardChainer.h>
+#include <opencog/ure/backwardchainer/BackwardChainer.h>
+#endif
+
 using namespace opencog;
 using namespace opencog::agentzero;
 
@@ -73,11 +81,47 @@ void ReasoningEngine::initializeUREIntegration()
 {
     logger().debug() << "[ReasoningEngine] Initializing URE integration";
     
-    // Create URE rule base
+    // Create URE rule base in AtomSpace
     _rule_base = _atomspace->add_node(CONCEPT_NODE, "URE_RuleBase");
     _rule_base->setTruthValue(SimpleTruthValue::createTV(1.0, 1.0));
     
-    logger().debug() << "[ReasoningEngine] URE integration initialized";
+#ifdef HAVE_URE
+    try {
+        // Create URE-specific rulebase handle
+        _ure_rulebase_handle = _atomspace->add_node(CONCEPT_NODE, "AgentZero-URE-RuleBase");
+        
+        // Initialize URE configuration with the rulebase
+        _ure_config = std::make_unique<UREConfig>(*_atomspace, _ure_rulebase_handle);
+        
+        // Set default URE parameters
+        _ure_parameters["max_iterations"] = 100.0;
+        _ure_parameters["complexity_penalty"] = 0.1;
+        _ure_parameters["jobs"] = 1.0;
+        _ure_parameters["expansion_pool_size"] = 10.0;
+        
+        // Apply default configuration
+        _ure_config->set_maximum_iterations(static_cast<int>(_ure_parameters["max_iterations"]));
+        _ure_config->set_complexity_penalty(_ure_parameters["complexity_penalty"]);
+        _ure_config->set_jobs(static_cast<int>(_ure_parameters["jobs"]));
+        _ure_config->set_expansion_pool_size(static_cast<int>(_ure_parameters["expansion_pool_size"]));
+        
+        logger().debug() << "[ReasoningEngine] URE configuration initialized with " 
+                        << "max_iterations=" << _ure_parameters["max_iterations"] 
+                        << ", complexity_penalty=" << _ure_parameters["complexity_penalty"];
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[ReasoningEngine] Failed to initialize URE configuration: " << e.what();
+        _enable_ure_integration = false;
+    }
+#endif
+    
+    logger().debug() << "[ReasoningEngine] URE integration initialized (URE available: " 
+#ifdef HAVE_URE
+                    << "yes"
+#else
+                    << "no"
+#endif
+                    << ")";
 }
 
 void ReasoningEngine::loadDefaultReasoningRules()
@@ -228,6 +272,49 @@ ReasoningEngine::performForwardChaining(const std::vector<Handle>& premises, int
     logger().debug() << "[ReasoningEngine] Performing forward chaining with " << premises.size() << " premises";
     
     std::vector<ReasoningResult> results;
+    
+#ifdef HAVE_URE
+    // Try URE-based forward chaining first if enabled and configured
+    if (_enable_ure_integration && _ure_config && _forward_chainer && !_ure_rules.empty()) {
+        logger().debug() << "[ReasoningEngine] Using URE forward chainer";
+        
+        try {
+            // Execute URE chaining
+            auto ure_results = executeUREChaining(_ure_rulebase_handle, premises, max_steps);
+            
+            // Convert URE results to ReasoningResult format
+            for (size_t i = 0; i < ure_results.size(); ++i) {
+                ReasoningResult result;
+                result.conclusion = ure_results[i];
+                result.premises = premises;
+                result.confidence = 0.8; // Default confidence for URE results
+                result.reasoning_type = "ure_forward_chaining";
+                result.inference_steps = static_cast<int>(i + 1);
+                result.explanation = "URE forward chaining result";
+                
+                // Set truth value if not already set
+                if (!result.conclusion->getTruthValue()) {
+                    result.conclusion->setTruthValue(SimpleTruthValue::createTV(0.8, 0.8));
+                }
+                
+                results.push_back(result);
+            }
+            
+            if (!results.empty()) {
+                logger().info() << "[ReasoningEngine] URE forward chaining produced " 
+                               << results.size() << " results";
+                return results;
+            }
+        } catch (const std::exception& e) {
+            logger().warn() << "[ReasoningEngine] URE forward chaining failed: " << e.what()
+                           << ", falling back to traditional approach";
+        }
+    }
+#endif
+    
+    // Traditional forward chaining implementation (fallback or when URE not available)
+    logger().debug() << "[ReasoningEngine] Using traditional forward chaining";
+    
     std::set<Handle> derived_facts(premises.begin(), premises.end());
     std::set<Handle> new_facts = derived_facts;
     
@@ -254,7 +341,7 @@ ReasoningEngine::performForwardChaining(const std::vector<Handle>& premises, int
                         result.confidence >= _confidence_threshold) {
                         
                         // Add to results
-                        result.reasoning_type = "forward_chaining";
+                        result.reasoning_type = "traditional_forward_chaining";
                         result.inference_steps = step + 1;
                         results.push_back(result);
                         
@@ -547,6 +634,24 @@ bool ReasoningEngine::addReasoningRule(const ReasoningRule& rule)
         _reasoning_rules.push_back(new_rule);
         _rules_by_type[rule.rule_type].push_back(new_rule);
         
+#ifdef HAVE_URE
+        // If URE is enabled, also create URE rule representation
+        if (_enable_ure_integration && _ure_config) {
+            try {
+                // Create URE Rule from the ReasoningRule
+                if (new_rule.rule_atom != Handle::UNDEFINED) {
+                    RulePtr ure_rule = std::make_shared<Rule>(new_rule.rule_atom);
+                    _ure_rules.push_back(ure_rule);
+                    
+                    logger().debug() << "[ReasoningEngine] Created URE rule for: " << rule.name;
+                }
+            } catch (const std::exception& e) {
+                logger().warn() << "[ReasoningEngine] Failed to create URE rule for " 
+                               << rule.name << ": " << e.what();
+            }
+        }
+#endif
+        
         return true;
     } catch (const std::exception& e) {
         logger().error() << "[ReasoningEngine] Error adding rule " << rule.name << ": " << e.what();
@@ -629,7 +734,40 @@ void ReasoningEngine::configureURE(bool enable_ure, int max_iterations, double c
                    << ", complexity_penalty=" << complexity_penalty;
     
     _enable_ure_integration = enable_ure;
-    // In a full implementation, we would configure the actual URE here
+    
+#ifdef HAVE_URE
+    if (enable_ure && _ure_config) {
+        try {
+            // Update URE parameters
+            _ure_parameters["max_iterations"] = static_cast<double>(max_iterations);
+            _ure_parameters["complexity_penalty"] = complexity_penalty;
+            
+            // Apply configuration to URE
+            _ure_config->set_maximum_iterations(max_iterations);
+            _ure_config->set_complexity_penalty(complexity_penalty);
+            
+            // Recreate chainers with new configuration
+            if (max_iterations > 0) {
+                _forward_chainer = std::make_unique<ForwardChainer>(*_atomspace, _ure_rulebase_handle);
+                _backward_chainer = std::make_unique<BackwardChainer>(*_atomspace, _ure_rulebase_handle);
+                
+                logger().debug() << "[ReasoningEngine] URE chainers initialized with new configuration";
+            }
+            
+            logger().info() << "[ReasoningEngine] URE configuration updated successfully";
+            
+        } catch (const std::exception& e) {
+            logger().error() << "[ReasoningEngine] Failed to configure URE: " << e.what();
+            _enable_ure_integration = false;
+        }
+    } else if (enable_ure && !_ure_config) {
+        logger().warn() << "[ReasoningEngine] URE configuration requested but URE not properly initialized";
+    }
+#else
+    if (enable_ure) {
+        logger().warn() << "[ReasoningEngine] URE integration requested but not compiled with URE support";
+    }
+#endif
 }
 
 std::string ReasoningEngine::getStatusInfo() const
@@ -669,3 +807,151 @@ void ReasoningEngine::clearReasoningCache()
     _applied_rules_cache.clear();
     _active_reasoning_tasks.clear();
 }
+
+// URE-specific method implementations
+#ifdef HAVE_URE
+
+Handle ReasoningEngine::createURERuleBase(const std::vector<ReasoningRule>& rules)
+{
+    logger().debug() << "[ReasoningEngine] Creating URE rule base with " << rules.size() << " rules";
+    
+    if (!_ure_config) {
+        logger().error() << "[ReasoningEngine] URE configuration not initialized";
+        return Handle::UNDEFINED;
+    }
+    
+    try {
+        // Create a new rule base in the AtomSpace
+        std::string rulebase_name = "URE-RuleBase-" + std::to_string(_active_reasoning_tasks.size());
+        Handle rulebase_handle = _atomspace->add_node(CONCEPT_NODE, rulebase_name);
+        
+        // Convert AgentZero ReasoningRule format to URE Rule format
+        std::vector<RulePtr> ure_rules;
+        for (const auto& reasoning_rule : rules) {
+            try {
+                // Create URE Rule from ReasoningRule
+                // For now, we create a simple rule based on the ReasoningRule data
+                if (reasoning_rule.rule_atom != Handle::UNDEFINED) {
+                    RulePtr ure_rule = std::make_shared<Rule>(reasoning_rule.rule_atom);
+                    ure_rules.push_back(ure_rule);
+                    
+                    logger().debug() << "[ReasoningEngine] Converted rule: " << reasoning_rule.name;
+                }
+            } catch (const std::exception& e) {
+                logger().warn() << "[ReasoningEngine] Failed to convert rule " 
+                               << reasoning_rule.name << ": " << e.what();
+            }
+        }
+        
+        // Store the converted rules
+        _ure_rules = ure_rules;
+        
+        logger().info() << "[ReasoningEngine] URE rule base created with " 
+                       << ure_rules.size() << " converted rules";
+        
+        return rulebase_handle;
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[ReasoningEngine] Failed to create URE rule base: " << e.what();
+        return Handle::UNDEFINED;
+    }
+}
+
+std::vector<Handle> ReasoningEngine::executeUREChaining(const Handle& rule_base,
+                                                       const std::vector<Handle>& premises,
+                                                       int max_steps)
+{
+    logger().debug() << "[ReasoningEngine] Executing URE chaining with " 
+                    << premises.size() << " premises, max_steps=" << max_steps;
+    
+    std::vector<Handle> results;
+    
+    if (!_ure_config || rule_base == Handle::UNDEFINED) {
+        logger().error() << "[ReasoningEngine] URE not properly configured for chaining";
+        return results;
+    }
+    
+    try {
+        // Use forward chainer for premises-to-conclusions reasoning
+        if (_forward_chainer) {
+            // Set the premises as sources for forward chaining
+            HandleSeq sources(premises.begin(), premises.end());
+            
+            // Configure the forward chainer with max steps
+            auto saved_max_iter = _ure_config->get_maximum_iterations();
+            _ure_config->set_maximum_iterations(max_steps);
+            
+            // Execute forward chaining
+            HandleSeq conclusions = _forward_chainer->do_chain(sources);
+            
+            // Restore original max iterations
+            _ure_config->set_maximum_iterations(saved_max_iter);
+            
+            // Convert results
+            results.assign(conclusions.begin(), conclusions.end());
+            
+            logger().info() << "[ReasoningEngine] URE forward chaining produced " 
+                           << results.size() << " conclusions";
+        } else {
+            logger().warn() << "[ReasoningEngine] Forward chainer not available";
+        }
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[ReasoningEngine] URE chaining failed: " << e.what();
+    }
+    
+    return results;
+}
+
+void ReasoningEngine::updateUREConfiguration(const std::map<std::string, double>& parameters)
+{
+    logger().debug() << "[ReasoningEngine] Updating URE configuration with " 
+                    << parameters.size() << " parameters";
+    
+    if (!_ure_config) {
+        logger().error() << "[ReasoningEngine] URE configuration not initialized";
+        return;
+    }
+    
+    try {
+        // Update local parameter storage
+        for (const auto& param : parameters) {
+            _ure_parameters[param.first] = param.second;
+            logger().debug() << "[ReasoningEngine] Updated parameter: " 
+                           << param.first << " = " << param.second;
+        }
+        
+        // Apply standard URE parameters
+        if (parameters.find("max_iterations") != parameters.end()) {
+            _ure_config->set_maximum_iterations(static_cast<int>(parameters.at("max_iterations")));
+        }
+        
+        if (parameters.find("complexity_penalty") != parameters.end()) {
+            _ure_config->set_complexity_penalty(parameters.at("complexity_penalty"));
+        }
+        
+        if (parameters.find("jobs") != parameters.end()) {
+            _ure_config->set_jobs(static_cast<int>(parameters.at("jobs")));
+        }
+        
+        if (parameters.find("expansion_pool_size") != parameters.end()) {
+            _ure_config->set_expansion_pool_size(static_cast<int>(parameters.at("expansion_pool_size")));
+        }
+        
+        // Forward chainer specific parameters
+        if (parameters.find("retry_exhausted_sources") != parameters.end()) {
+            _ure_config->set_retry_exhausted_sources(parameters.at("retry_exhausted_sources") > 0.5);
+        }
+        
+        if (parameters.find("full_rule_application") != parameters.end()) {
+            _ure_config->set_full_rule_application(parameters.at("full_rule_application") > 0.5);
+        }
+        
+        logger().info() << "[ReasoningEngine] URE configuration updated successfully";
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[ReasoningEngine] Failed to update URE configuration: " << e.what();
+    }
+}
+
+#endif // HAVE_URE
