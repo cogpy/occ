@@ -72,6 +72,7 @@ set(AGENTZERO_CORE_SOURCES
     src/CognitiveLoop.cpp  
     src/TaskManager.cpp
     src/KnowledgeIntegrator.cpp
+    src/ActionScheduler.cpp
 )
 
 # Header files
@@ -80,6 +81,7 @@ set(AGENTZERO_CORE_HEADERS
     include/opencog/agentzero/CognitiveLoop.h
     include/opencog/agentzero/TaskManager.h
     include/opencog/agentzero/KnowledgeIntegrator.h
+    include/opencog/agentzero/ActionScheduler.h
 )
 
 # Create library (when source files exist)
