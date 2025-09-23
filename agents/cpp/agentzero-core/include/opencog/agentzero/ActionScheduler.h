@@ -4,123 +4,127 @@
  * Copyright (C) 2024 OpenCog Foundation
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * ActionScheduler for Temporal Coordination
- * Manages temporal coordination of actions within Agent-Zero cognitive architecture
- * Part of the AGENT-ZERO-GENESIS project
+ * Action Scheduler for Temporal Coordination
+ * Temporal coordination and scheduling system for Agent-Zero actions
+ * Part of AZ-ACTION-001: Implement ActionScheduler for temporal coordination
  */
 
 #ifndef _OPENCOG_AGENTZERO_ACTION_SCHEDULER_H
 #define _OPENCOG_AGENTZERO_ACTION_SCHEDULER_H
 
 #include <memory>
+#include <vector>
 #include <queue>
+#include <string>
+#include <map>
 #include <chrono>
-#include <atomic>
-#include <unordered_map>
+#include <functional>
 
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/atoms/base/Handle.h>
+#include <opencog/atoms/truthvalue/TruthValue.h>
 #include <opencog/util/Logger.h>
 
 namespace opencog {
 namespace agentzero {
 
-// Forward declarations
 class AgentZeroCore;
-class CognitiveLoop;
+class ActionExecutor;
 
 /**
- * ActionItem - Represents a scheduled action with temporal constraints
- */
-struct ActionItem {
-    Handle action_atom;                          // AtomSpace representation of action
-    std::chrono::steady_clock::time_point scheduled_time; // When to execute
-    std::chrono::milliseconds duration;          // Expected duration
-    int priority;                                // Execution priority (higher = more important)
-    Handle context_atom;                         // Context for execution
-    std::string action_id;                       // Unique identifier
-    
-    // Default constructor
-    ActionItem() : action_atom(Handle::UNDEFINED), 
-                   scheduled_time(std::chrono::steady_clock::now()),
-                   duration(std::chrono::milliseconds(100)),
-                   priority(0), 
-                   context_atom(Handle::UNDEFINED),
-                   action_id("") {}
-    
-    ActionItem(Handle atom, std::chrono::steady_clock::time_point time, 
-               std::chrono::milliseconds dur, int prio = 0, Handle ctx = Handle::UNDEFINED)
-        : action_atom(atom), scheduled_time(time), duration(dur), 
-          priority(prio), context_atom(ctx), action_id(std::to_string(atom.value())) {}
-    
-    // Comparison for priority queue (higher priority first)
-    bool operator<(const ActionItem& other) const {
-        if (scheduled_time == other.scheduled_time) {
-            return priority < other.priority;
-        }
-        return scheduled_time > other.scheduled_time;
-    }
-};
-
-/**
- * ActionScheduler - Temporal coordination of actions in Agent-Zero
+ * ActionScheduler - Temporal coordination system for Agent-Zero actions
  *
- * This class manages the temporal scheduling and execution of actions
- * within the Agent-Zero cognitive architecture. It integrates with
- * AtomSpace for state representation and provides temporal coordination
- * capabilities for the action phase of the cognitive loop.
+ * This class provides comprehensive temporal scheduling and coordination
+ * of actions with AtomSpace integration. It handles timing constraints,
+ * dependencies, and resource management for action execution.
  *
- * Key Features:
- * - Temporal scheduling with time-based execution
- * - Priority-based action ordering
- * - AtomSpace integration for action representation
- * - Context-aware action execution
- * - Integration with CognitiveLoop action phase
+ * Key features:
+ * - Temporal action scheduling with precise timing
+ * - Action dependency management
+ * - Resource conflict resolution
+ * - Priority-based scheduling
+ * - AtomSpace integration for temporal reasoning
  */
 class ActionScheduler
 {
+public:
+    // Scheduling constraint types
+    enum class ConstraintType {
+        TIME_ABSOLUTE,     // Execute at specific time
+        TIME_RELATIVE,     // Execute after delay from now
+        TIME_DEADLINE,     // Must complete before deadline
+        DEPENDENCY,        // Wait for other actions to complete
+        RESOURCE,          // Require exclusive resource access
+        CONDITION,         // Wait for AtomSpace condition
+        PERIODIC           // Execute repeatedly with interval
+    };
+    
+    // Scheduling result
+    enum class ScheduleResult {
+        SCHEDULED,         // Successfully scheduled
+        CONFLICT,          // Resource or time conflict
+        DEPENDENCY_UNMET,  // Dependencies not satisfied
+        INVALID_CONSTRAINT,// Invalid scheduling constraint
+        QUEUE_FULL         // Schedule queue is full
+    };
+    
+    // Scheduled action entry
+    struct ScheduledAction {
+        Handle action_atom;
+        std::chrono::steady_clock::time_point scheduled_time;
+        std::chrono::steady_clock::time_point deadline;
+        std::vector<Handle> dependencies;
+        std::vector<std::string> required_resources;
+        int priority;
+        bool is_periodic;
+        std::chrono::milliseconds period;
+        int repeat_count;
+        
+        ScheduledAction() 
+            : priority(5), is_periodic(false), period(0), repeat_count(1) {}
+    };
+
 private:
     // Core references
     AgentZeroCore* _agent_core;
     AtomSpacePtr _atomspace;
+    std::shared_ptr<ActionExecutor> _executor;
     
-    // Action queue and tracking
-    std::priority_queue<ActionItem> _scheduled_actions;
-    std::unordered_map<std::string, ActionItem> _executing_actions;
-    std::unordered_map<std::string, Handle> _completed_actions;
+    // Scheduling structures
+    std::priority_queue<ScheduledAction> _schedule_queue;
+    std::map<Handle, ScheduledAction> _scheduled_actions;
+    std::map<std::string, Handle> _resource_locks;
+    std::map<Handle, std::vector<Handle>> _dependency_graph;
     
-    // Temporal coordination state
-    std::atomic<bool> _enabled;
-    std::chrono::steady_clock::time_point _last_execution_time;
-    std::chrono::milliseconds _execution_window;
-    std::chrono::milliseconds _default_action_duration;
+    // Current execution state
+    std::vector<Handle> _executing_actions;
+    std::vector<std::string> _available_resources;
+    std::chrono::steady_clock::time_point _last_update;
     
-    // AtomSpace handles for scheduler state
-    Handle _scheduler_context;
-    Handle _active_actions_context;
+    // AtomSpace handles for scheduling
+    Handle _schedule_context;
     Handle _temporal_context;
+    Handle _dependency_context;
+    Handle _resource_context;
     
     // Configuration
-    size_t _max_concurrent_actions;
-    bool _use_priority_scheduling;
-    bool _enable_temporal_constraints;
-    double _action_completion_threshold;
-    
-    // Statistics
-    std::atomic<size_t> _actions_scheduled;
-    std::atomic<size_t> _actions_executed;
-    std::atomic<size_t> _actions_completed;
-    std::atomic<size_t> _actions_failed;
+    int _max_scheduled_actions;
+    std::chrono::milliseconds _scheduling_resolution;
+    bool _enable_resource_management;
+    bool _enable_dependency_checking;
+    bool _enable_temporal_reasoning;
     
     // Internal methods
-    void initializeSchedulerContext();
-    bool canExecuteAction(const ActionItem& action) const;
-    bool executeAction(const ActionItem& action);
-    void updateActionStatus(const std::string& action_id, const std::string& status);
-    void cleanupCompletedActions();
-    Handle createActionStatusAtom(const ActionItem& action, const std::string& status);
-    std::chrono::steady_clock::time_point calculateNextExecutionTime(const ActionItem& action) const;
-    
+    void initializeScheduler();
+    bool validateSchedulingConstraints(const ScheduledAction& action);
+    bool checkResourceAvailability(const std::vector<std::string>& resources);
+    bool checkDependencies(const std::vector<Handle>& dependencies);
+    std::vector<ScheduledAction> getReadyActions();
+    void updateResourceLocks(const Handle& action_atom, bool acquire);
+    void updateDependencyGraph(const Handle& action_atom, const std::vector<Handle>& deps);
+    Handle createScheduleAtom(const ScheduledAction& action);
+    void recordSchedulingDecision(const Handle& action_atom, ScheduleResult result);
+
 public:
     /**
      * Constructor
@@ -130,120 +134,180 @@ public:
     ActionScheduler(AgentZeroCore* agent_core, AtomSpacePtr atomspace);
     
     /**
-     * Destructor - ensures cleanup of scheduled actions
+     * Destructor - ensures cleanup of resources
      */
     ~ActionScheduler();
     
     // Core scheduling interface
     /**
-     * Schedule an action for execution at a specific time
-     * @param action_atom AtomSpace handle representing the action
-     * @param execution_time When to execute the action
-     * @param duration Expected duration of the action
-     * @param priority Priority level (higher = more important)
-     * @param context_atom Context for execution (optional)
-     * @return true if successfully scheduled
+     * Schedule an action with timing constraints
+     * @param action_atom Handle to the action atom
+     * @param scheduled_time When to execute the action
+     * @param priority Priority level (1-20)
+     * @return ScheduleResult indicating success or failure reason
      */
-    bool scheduleAction(Handle action_atom, 
-                       std::chrono::steady_clock::time_point execution_time,
-                       std::chrono::milliseconds duration = std::chrono::milliseconds(100),
-                       int priority = 0,
-                       Handle context_atom = Handle::UNDEFINED);
+    ScheduleResult scheduleAction(const Handle& action_atom,
+                                 const std::chrono::steady_clock::time_point& scheduled_time,
+                                 int priority = 5);
     
     /**
-     * Schedule an action for immediate execution
-     * @param action_atom AtomSpace handle representing the action
-     * @param duration Expected duration of the action
-     * @param priority Priority level (higher = more important)
-     * @param context_atom Context for execution (optional)
-     * @return true if successfully scheduled
+     * Schedule an action with relative delay
+     * @param action_atom Handle to the action atom
+     * @param delay_ms Delay in milliseconds from now
+     * @param priority Priority level (1-20)
+     * @return ScheduleResult indicating success or failure reason
      */
-    bool scheduleImmediateAction(Handle action_atom,
-                               std::chrono::milliseconds duration = std::chrono::milliseconds(100),
-                               int priority = 0,
-                               Handle context_atom = Handle::UNDEFINED);
+    ScheduleResult scheduleActionAfter(const Handle& action_atom,
+                                      int delay_ms,
+                                      int priority = 5);
     
     /**
-     * Process scheduled actions - called during cognitive loop action phase
-     * @return true if processing completed successfully
+     * Schedule an action with deadline constraint
+     * @param action_atom Handle to the action atom
+     * @param deadline When action must complete by
+     * @param priority Priority level (1-20)
+     * @return ScheduleResult indicating success or failure reason
      */
-    bool processScheduledActions();
+    ScheduleResult scheduleActionBefore(const Handle& action_atom,
+                                       const std::chrono::steady_clock::time_point& deadline,
+                                       int priority = 5);
+    
+    /**
+     * Schedule a periodic action
+     * @param action_atom Handle to the action atom
+     * @param period_ms Period between executions in milliseconds
+     * @param repeat_count Number of repetitions (-1 for infinite)
+     * @param priority Priority level (1-20)
+     * @return ScheduleResult indicating success or failure reason
+     */
+    ScheduleResult schedulePeriodicAction(const Handle& action_atom,
+                                         int period_ms,
+                                         int repeat_count = -1,
+                                         int priority = 5);
+    
+    // Dependency and resource management
+    /**
+     * Schedule action with dependencies
+     * @param action_atom Handle to the action atom
+     * @param dependencies Vector of action atoms that must complete first
+     * @param priority Priority level (1-20)
+     * @return ScheduleResult indicating success or failure reason
+     */
+    ScheduleResult scheduleActionWithDependencies(const Handle& action_atom,
+                                                 const std::vector<Handle>& dependencies,
+                                                 int priority = 5);
+    
+    /**
+     * Schedule action with resource requirements
+     * @param action_atom Handle to the action atom
+     * @param resources Vector of resource names required
+     * @param priority Priority level (1-20)
+     * @return ScheduleResult indicating success or failure reason
+     */
+    ScheduleResult scheduleActionWithResources(const Handle& action_atom,
+                                              const std::vector<std::string>& resources,
+                                              int priority = 5);
     
     /**
      * Cancel a scheduled action
-     * @param action_id Unique identifier of the action
-     * @return true if successfully cancelled
+     * @param action_atom Handle to the action atom to cancel
+     * @return true if action was cancelled successfully
      */
-    bool cancelAction(const std::string& action_id);
+    bool cancelScheduledAction(const Handle& action_atom);
     
     /**
-     * Cancel all scheduled actions
+     * Reschedule an existing action
+     * @param action_atom Handle to the action atom
+     * @param new_time New scheduled time
+     * @return ScheduleResult indicating success or failure reason
      */
-    void cancelAllActions();
+    ScheduleResult rescheduleAction(const Handle& action_atom,
+                                   const std::chrono::steady_clock::time_point& new_time);
     
-    // State queries
+    // Processing and monitoring
     /**
-     * Check if scheduler is enabled
-     * @return true if enabled
+     * Process the schedule queue and dispatch ready actions
+     * @return number of actions dispatched
      */
-    bool isEnabled() const { return _enabled.load(); }
-    
-    /**
-     * Enable or disable the scheduler
-     * @param enabled New enabled state
-     */
-    void setEnabled(bool enabled) { _enabled.store(enabled); }
+    int processScheduleQueue();
     
     /**
-     * Get number of pending scheduled actions
-     * @return count of pending actions
+     * Update scheduler state and check for ready actions
+     * @return number of actions that became ready
      */
-    size_t getPendingActionCount() const { return _scheduled_actions.size(); }
+    int updateScheduler();
     
     /**
-     * Get number of currently executing actions
-     * @return count of executing actions
+     * Get list of currently scheduled actions
+     * @return vector of scheduled action entries
      */
-    size_t getExecutingActionCount() const { return _executing_actions.size(); }
+    std::vector<ScheduledAction> getScheduledActions() const;
     
     /**
-     * Check if an action is currently executing
-     * @param action_id Unique identifier of the action
-     * @return true if executing
+     * Get next scheduled action time
+     * @return time point of next action, or time_point::max() if none
      */
-    bool isActionExecuting(const std::string& action_id) const;
+    std::chrono::steady_clock::time_point getNextActionTime() const;
+    
+    // Resource management
+    /**
+     * Register a resource for management
+     * @param resource_name Name of the resource
+     * @return true if resource was registered successfully
+     */
+    bool registerResource(const std::string& resource_name);
+    
+    /**
+     * Unregister a resource
+     * @param resource_name Name of the resource
+     * @return true if resource was unregistered successfully
+     */
+    bool unregisterResource(const std::string& resource_name);
+    
+    /**
+     * Check if a resource is currently available
+     * @param resource_name Name of the resource
+     * @return true if resource is available
+     */
+    bool isResourceAvailable(const std::string& resource_name) const;
+    
+    /**
+     * Get list of available resources
+     * @return vector of resource names
+     */
+    std::vector<std::string> getAvailableResources() const;
     
     // Configuration
     /**
-     * Configure temporal execution parameters
-     * @param execution_window Maximum time window for action execution
-     * @param default_duration Default duration for actions without explicit duration
+     * Set maximum number of scheduled actions
+     * @param max_actions Maximum actions in schedule queue
      */
-    void configureTemporalParameters(std::chrono::milliseconds execution_window,
-                                   std::chrono::milliseconds default_duration);
+    void setMaxScheduledActions(int max_actions) { 
+        _max_scheduled_actions = max_actions; 
+    }
     
     /**
-     * Configure concurrency and priority settings
-     * @param max_concurrent Maximum number of concurrent actions
-     * @param use_priority Enable priority-based scheduling
-     * @param enable_temporal Enable temporal constraint checking
+     * Set scheduling time resolution
+     * @param resolution_ms Time resolution in milliseconds
      */
-    void configureExecution(size_t max_concurrent = 3, 
-                          bool use_priority = true,
-                          bool enable_temporal = true);
+    void setSchedulingResolution(int resolution_ms) { 
+        _scheduling_resolution = std::chrono::milliseconds(resolution_ms); 
+    }
+    
+    /**
+     * Configure scheduler features
+     * @param resources Enable resource management
+     * @param dependencies Enable dependency checking
+     * @param temporal Enable temporal reasoning
+     */
+    void configureFeatures(bool resources, bool dependencies, bool temporal);
     
     // AtomSpace integration
     /**
-     * Get the scheduler context atom
-     * @return Handle to scheduler context
+     * Get the schedule context atom
+     * @return Handle to schedule context
      */
-    Handle getSchedulerContext() const { return _scheduler_context; }
-    
-    /**
-     * Get the active actions context atom
-     * @return Handle to active actions context
-     */
-    Handle getActiveActionsContext() const { return _active_actions_context; }
+    Handle getScheduleContext() const { return _schedule_context; }
     
     /**
      * Get the temporal context atom
@@ -251,23 +315,20 @@ public:
      */
     Handle getTemporalContext() const { return _temporal_context; }
     
-    // Statistics and debugging
-    /**
-     * Get scheduling statistics
-     * @return JSON string with statistics
-     */
-    std::string getSchedulingStatistics() const;
-    
     /**
      * Get status information for debugging
      * @return JSON string with status details
      */
     std::string getStatusInfo() const;
     
+    // Executor integration
     /**
-     * Reset all statistics
+     * Set the action executor instance
+     * @param executor Shared pointer to ActionExecutor
      */
-    void resetStatistics();
+    void setExecutor(std::shared_ptr<ActionExecutor> executor) { 
+        _executor = executor; 
+    }
 };
 
 } // namespace agentzero

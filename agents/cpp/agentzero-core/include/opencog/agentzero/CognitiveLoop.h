@@ -32,6 +32,7 @@ namespace opencog {
 namespace agentzero {
 
 class AgentZeroCore;
+class ActionExecutor;
 class ActionScheduler;
 
 /**
@@ -53,6 +54,10 @@ private:
     // Core references
     AgentZeroCore* _agent_core;
     AtomSpacePtr _atomspace;
+    
+    // Action execution components
+    std::shared_ptr<ActionExecutor> _action_executor;
+    std::shared_ptr<ActionScheduler> _action_scheduler;
     
     // Loop control
     std::atomic<bool> _running;
@@ -236,10 +241,23 @@ public:
     Handle getAttentionContext() const { return _attention_context; }
     
     /**
+<<<<<<< HEAD
+     * Get the action executor component
+     * @return shared pointer to ActionExecutor
+     */
+    std::shared_ptr<ActionExecutor> getActionExecutor() const { return _action_executor; }
+    
+    /**
+     * Get the action scheduler component
+     * @return shared pointer to ActionScheduler
+     */
+    std::shared_ptr<ActionScheduler> getActionScheduler() const { return _action_scheduler; }
+=======
      * Get the action scheduler
      * @return Pointer to ActionScheduler instance
      */
     ActionScheduler* getActionScheduler() const { return _action_scheduler.get(); }
+>>>>>>> 67c15d12b369fc6089bbee9ff404403b888efb65
     
     /**
      * Get status information for debugging

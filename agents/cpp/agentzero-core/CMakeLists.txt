@@ -75,6 +75,7 @@ set(AGENTZERO_CORE_SOURCES
     src/CognitiveLoop.cpp  
     src/TaskManager.cpp
     src/KnowledgeIntegrator.cpp
+    src/ActionExecutor.cpp
     src/ActionScheduler.cpp
 )
 
@@ -84,6 +85,7 @@ set(AGENTZERO_CORE_HEADERS
     include/opencog/agentzero/CognitiveLoop.h
     include/opencog/agentzero/TaskManager.h
     include/opencog/agentzero/KnowledgeIntegrator.h
+    include/opencog/agentzero/ActionExecutor.h
     include/opencog/agentzero/ActionScheduler.h
 )
 

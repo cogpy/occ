@@ -1,23 +1,26 @@
 /*
- * opencog/agentzero/ActionScheduler.cpp
+ * src/ActionScheduler.cpp
  *
  * Copyright (C) 2024 OpenCog Foundation
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * ActionScheduler Implementation
- * Temporal coordination of actions within Agent-Zero cognitive architecture
+ * Action Scheduler Implementation
+ * Temporal coordination and scheduling system for Agent-Zero actions
+ * Part of AZ-ACTION-001: Implement ActionScheduler for temporal coordination
  */
 
-#include "opencog/agentzero/ActionScheduler.h"
-#include "opencog/agentzero/AgentZeroCore.h"
+#include <sstream>
+#include <algorithm>
+#include <ctime>
 
-#include <opencog/atoms/truthvalue/SimpleTruthValue.h>
+#include <opencog/atoms/atom_types/types.h>
 #include <opencog/atoms/base/Node.h>
 #include <opencog/atoms/base/Link.h>
-#include <opencog/atomspace/AtomSpace.h>
+#include <opencog/atoms/truthvalue/SimpleTruthValue.h>
 
-#include <sstream>
-#include <iomanip>
+#include "opencog/agentzero/ActionScheduler.h"
+#include "opencog/agentzero/ActionExecutor.h"
+#include "opencog/agentzero/AgentZeroCore.h"
 
 using namespace opencog;
 using namespace opencog::agentzero;
@@ -25,417 +28,703 @@ using namespace opencog::agentzero;
 ActionScheduler::ActionScheduler(AgentZeroCore* agent_core, AtomSpacePtr atomspace)
     : _agent_core(agent_core)
     , _atomspace(atomspace)
-    , _enabled(true)
-    , _execution_window(std::chrono::milliseconds(1000))  // 1 second window
-    , _default_action_duration(std::chrono::milliseconds(100))  // 100ms default
-    , _scheduler_context(Handle::UNDEFINED)
-    , _active_actions_context(Handle::UNDEFINED)
+    , _executor(nullptr)
+    , _schedule_context(Handle::UNDEFINED)
     , _temporal_context(Handle::UNDEFINED)
-    , _max_concurrent_actions(3)
-    , _use_priority_scheduling(true)
-    , _enable_temporal_constraints(true)
-    , _action_completion_threshold(0.8)
-    , _actions_scheduled(0)
-    , _actions_executed(0)
-    , _actions_completed(0)
-    , _actions_failed(0)
+    , _dependency_context(Handle::UNDEFINED)
+    , _resource_context(Handle::UNDEFINED)
+    , _max_scheduled_actions(100)
+    , _scheduling_resolution(std::chrono::milliseconds(100))
+    , _enable_resource_management(true)
+    , _enable_dependency_checking(true)
+    , _enable_temporal_reasoning(true)
+    , _last_update(std::chrono::steady_clock::now())
 {
-    logger().info() << "[ActionScheduler] Initializing ActionScheduler";
-    initializeSchedulerContext();
-    _last_execution_time = std::chrono::steady_clock::now();
+    logger().info() << "[ActionScheduler] Constructor: Initializing temporal coordination system";
+    initializeScheduler();
 }
 
 ActionScheduler::~ActionScheduler()
 {
-    logger().info() << "[ActionScheduler] Shutting down ActionScheduler";
-    cancelAllActions();
+    logger().info() << "[ActionScheduler] Destructor: Cleaning up scheduler resources";
+    
+    // Clear all scheduled actions
+    _scheduled_actions.clear();
+    _resource_locks.clear();
+    _dependency_graph.clear();
 }
 
-void ActionScheduler::initializeSchedulerContext()
+void ActionScheduler::initializeScheduler()
 {
-    if (!_atomspace) {
-        logger().error() << "[ActionScheduler] AtomSpace is null, cannot initialize context";
-        return;
-    }
+    logger().debug() << "[ActionScheduler] Initializing scheduler system";
     
     try {
-        // Create scheduler context atoms
-        _scheduler_context = _atomspace->add_node(CONCEPT_NODE, "ActionSchedulerContext");
-        _active_actions_context = _atomspace->add_node(CONCEPT_NODE, "ActiveActionsContext");
-        _temporal_context = _atomspace->add_node(CONCEPT_NODE, "TemporalCoordinationContext");
+        // Create context atoms in AtomSpace
+        _schedule_context = _atomspace->add_node(CONCEPT_NODE, std::string("ScheduleContext"));
+        _temporal_context = _atomspace->add_node(CONCEPT_NODE, std::string("TemporalContext"));
+        _dependency_context = _atomspace->add_node(CONCEPT_NODE, std::string("DependencyContext"));
+        _resource_context = _atomspace->add_node(CONCEPT_NODE, std::string("ResourceContext"));
         
         // Set initial truth values
-        TruthValuePtr scheduler_tv = SimpleTruthValue::createTV(0.9, 0.9);
-        _scheduler_context->setTruthValue(scheduler_tv);
-        _active_actions_context->setTruthValue(scheduler_tv);
-        _temporal_context->setTruthValue(scheduler_tv);
+        TruthValuePtr context_tv = SimpleTruthValue::createTV(0.8, 0.9);
+        _schedule_context->setTruthValue(context_tv);
+        _temporal_context->setTruthValue(context_tv);
+        _dependency_context->setTruthValue(context_tv);
+        _resource_context->setTruthValue(context_tv);
         
-        // Create relationship between contexts
-        HandleSeq context_link;
-        context_link.push_back(_scheduler_context);
-        context_link.push_back(_active_actions_context);
-        context_link.push_back(_temporal_context);
-        _atomspace->add_link(LIST_LINK, std::move(context_link));
+        // Initialize basic resources
+        registerResource("cpu");
+        registerResource("memory");
+        registerResource("network");
+        registerResource("storage");
         
-        logger().debug() << "[ActionScheduler] Scheduler context initialized";
-        
-    } catch (const std::exception& e) {
-        logger().error() << "[ActionScheduler] Failed to initialize scheduler context: " << e.what();
-    }
-}
-
-bool ActionScheduler::scheduleAction(Handle action_atom, 
-                                   std::chrono::steady_clock::time_point execution_time,
-                                   std::chrono::milliseconds duration,
-                                   int priority,
-                                   Handle context_atom)
-{
-    if (!_enabled.load()) {
-        logger().debug() << "[ActionScheduler] Scheduler disabled, action not scheduled";
-        return false;
-    }
-    
-    if (!action_atom || action_atom == Handle::UNDEFINED) {
-        logger().warn() << "[ActionScheduler] Invalid action atom provided";
-        return false;
-    }
-    
-    try {
-        // Create action item
-        ActionItem action(action_atom, execution_time, duration, priority, context_atom);
-        
-        // Add to scheduled actions queue
-        _scheduled_actions.push(action);
-        _actions_scheduled++;
-        
-        // Create AtomSpace representation of scheduled action
-        createActionStatusAtom(action, "scheduled");
-        
-        logger().debug() << "[ActionScheduler] Action " << action.action_id 
-                        << " scheduled for execution with priority " << priority;
-        
-        return true;
+        logger().info() << "[ActionScheduler] Scheduler system initialized successfully";
         
     } catch (const std::exception& e) {
-        logger().error() << "[ActionScheduler] Failed to schedule action: " << e.what();
-        return false;
+        logger().error() << "[ActionScheduler] Failed to initialize scheduler: " << e.what();
+        throw;
     }
 }
 
-bool ActionScheduler::scheduleImmediateAction(Handle action_atom,
-                                            std::chrono::milliseconds duration,
-                                            int priority,
-                                            Handle context_atom)
+ActionScheduler::ScheduleResult ActionScheduler::scheduleAction(const Handle& action_atom,
+                                                               const std::chrono::steady_clock::time_point& scheduled_time,
+                                                               int priority)
 {
-    auto immediate_time = std::chrono::steady_clock::now();
-    return scheduleAction(action_atom, immediate_time, duration, priority, context_atom);
-}
-
-bool ActionScheduler::processScheduledActions()
-{
-    if (!_enabled.load()) {
-        return true;  // Successfully "processed" (by doing nothing)
+    logger().debug() << "[ActionScheduler] Scheduling action: " << action_atom << " at time: " << 
+                      std::chrono::duration_cast<std::chrono::milliseconds>(scheduled_time.time_since_epoch()).count();
+    
+    // Check if we've reached maximum scheduled actions
+    if (_scheduled_actions.size() >= static_cast<size_t>(_max_scheduled_actions)) {
+        logger().warn() << "[ActionScheduler] Schedule queue is full, rejecting action";
+        return ScheduleResult::QUEUE_FULL;
     }
     
+    // Create scheduled action entry
+    ScheduledAction scheduled;
+    scheduled.action_atom = action_atom;
+    scheduled.scheduled_time = scheduled_time;
+    scheduled.priority = priority;
+    
+    // Validate scheduling constraints
+    if (!validateSchedulingConstraints(scheduled)) {
+        logger().warn() << "[ActionScheduler] Invalid scheduling constraints for action: " << action_atom;
+        return ScheduleResult::INVALID_CONSTRAINT;
+    }
+    
+    // Add to scheduled actions map
+    _scheduled_actions[action_atom] = scheduled;
+    
+    // Create scheduling atom in AtomSpace
+    Handle schedule_atom = createScheduleAtom(scheduled);
+    if (schedule_atom != Handle::UNDEFINED) {
+        TruthValuePtr schedule_tv = SimpleTruthValue::createTV(0.7, 0.8);
+        schedule_atom->setTruthValue(schedule_tv);
+    }
+    
+    recordSchedulingDecision(action_atom, ScheduleResult::SCHEDULED);
+    
+    logger().info() << "[ActionScheduler] Action scheduled successfully: " << action_atom;
+    return ScheduleResult::SCHEDULED;
+}
+
+ActionScheduler::ScheduleResult ActionScheduler::scheduleActionAfter(const Handle& action_atom,
+                                                                    int delay_ms,
+                                                                    int priority)
+{
+    auto scheduled_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(delay_ms);
+    return scheduleAction(action_atom, scheduled_time, priority);
+}
+
+ActionScheduler::ScheduleResult ActionScheduler::scheduleActionBefore(const Handle& action_atom,
+                                                                     const std::chrono::steady_clock::time_point& deadline,
+                                                                     int priority)
+{
+    logger().debug() << "[ActionScheduler] Scheduling action with deadline: " << action_atom;
+    
+    // Schedule immediately but set deadline
+    auto now = std::chrono::steady_clock::now();
+    
+    ScheduledAction scheduled;
+    scheduled.action_atom = action_atom;
+    scheduled.scheduled_time = now;
+    scheduled.deadline = deadline;
+    scheduled.priority = priority;
+    
+    if (!validateSchedulingConstraints(scheduled)) {
+        return ScheduleResult::INVALID_CONSTRAINT;
+    }
+    
+    _scheduled_actions[action_atom] = scheduled;
+    
+    Handle schedule_atom = createScheduleAtom(scheduled);
+    if (schedule_atom != Handle::UNDEFINED) {
+        TruthValuePtr schedule_tv = SimpleTruthValue::createTV(0.8, 0.9);  // Higher confidence with deadline
+        schedule_atom->setTruthValue(schedule_tv);
+    }
+    
+    recordSchedulingDecision(action_atom, ScheduleResult::SCHEDULED);
+    
+    logger().info() << "[ActionScheduler] Action scheduled with deadline: " << action_atom;
+    return ScheduleResult::SCHEDULED;
+}
+
+ActionScheduler::ScheduleResult ActionScheduler::schedulePeriodicAction(const Handle& action_atom,
+                                                                       int period_ms,
+                                                                       int repeat_count,
+                                                                       int priority)
+{
+    logger().debug() << "[ActionScheduler] Scheduling periodic action: " << action_atom 
+                    << " period: " << period_ms << "ms, repeats: " << repeat_count;
+    
+    auto now = std::chrono::steady_clock::now();
+    
+    ScheduledAction scheduled;
+    scheduled.action_atom = action_atom;
+    scheduled.scheduled_time = now;
+    scheduled.priority = priority;
+    scheduled.is_periodic = true;
+    scheduled.period = std::chrono::milliseconds(period_ms);
+    scheduled.repeat_count = repeat_count;
+    
+    if (!validateSchedulingConstraints(scheduled)) {
+        return ScheduleResult::INVALID_CONSTRAINT;
+    }
+    
+    _scheduled_actions[action_atom] = scheduled;
+    
+    Handle schedule_atom = createScheduleAtom(scheduled);
+    if (schedule_atom != Handle::UNDEFINED) {
+        TruthValuePtr schedule_tv = SimpleTruthValue::createTV(0.7, 0.8);
+        schedule_atom->setTruthValue(schedule_tv);
+    }
+    
+    recordSchedulingDecision(action_atom, ScheduleResult::SCHEDULED);
+    
+    logger().info() << "[ActionScheduler] Periodic action scheduled: " << action_atom;
+    return ScheduleResult::SCHEDULED;
+}
+
+ActionScheduler::ScheduleResult ActionScheduler::scheduleActionWithDependencies(const Handle& action_atom,
+                                                                               const std::vector<Handle>& dependencies,
+                                                                               int priority)
+{
+    logger().debug() << "[ActionScheduler] Scheduling action with dependencies: " << action_atom 
+                    << " deps count: " << dependencies.size();
+    
+    if (!_enable_dependency_checking) {
+        // Fall back to simple scheduling if dependencies disabled
+        return scheduleAction(action_atom, std::chrono::steady_clock::now(), priority);
+    }
+    
+    // Check if dependencies are valid
+    if (!checkDependencies(dependencies)) {
+        logger().warn() << "[ActionScheduler] Dependencies not met for action: " << action_atom;
+        return ScheduleResult::DEPENDENCY_UNMET;
+    }
+    
+    auto now = std::chrono::steady_clock::now();
+    
+    ScheduledAction scheduled;
+    scheduled.action_atom = action_atom;
+    scheduled.scheduled_time = now;
+    scheduled.dependencies = dependencies;
+    scheduled.priority = priority;
+    
+    _scheduled_actions[action_atom] = scheduled;
+    updateDependencyGraph(action_atom, dependencies);
+    
+    Handle schedule_atom = createScheduleAtom(scheduled);
+    if (schedule_atom != Handle::UNDEFINED) {
+        TruthValuePtr schedule_tv = SimpleTruthValue::createTV(0.6, 0.7);  // Lower confidence due to dependencies
+        schedule_atom->setTruthValue(schedule_tv);
+    }
+    
+    recordSchedulingDecision(action_atom, ScheduleResult::SCHEDULED);
+    
+    logger().info() << "[ActionScheduler] Action with dependencies scheduled: " << action_atom;
+    return ScheduleResult::SCHEDULED;
+}
+
+ActionScheduler::ScheduleResult ActionScheduler::scheduleActionWithResources(const Handle& action_atom,
+                                                                            const std::vector<std::string>& resources,
+                                                                            int priority)
+{
+    logger().debug() << "[ActionScheduler] Scheduling action with resources: " << action_atom 
+                    << " resources count: " << resources.size();
+    
+    if (!_enable_resource_management) {
+        // Fall back to simple scheduling if resource management disabled
+        return scheduleAction(action_atom, std::chrono::steady_clock::now(), priority);
+    }
+    
+    // Check resource availability
+    if (!checkResourceAvailability(resources)) {
+        logger().warn() << "[ActionScheduler] Required resources not available for action: " << action_atom;
+        return ScheduleResult::CONFLICT;
+    }
+    
+    auto now = std::chrono::steady_clock::now();
+    
+    ScheduledAction scheduled;
+    scheduled.action_atom = action_atom;
+    scheduled.scheduled_time = now;
+    scheduled.required_resources = resources;
+    scheduled.priority = priority;
+    
+    _scheduled_actions[action_atom] = scheduled;
+    
+    Handle schedule_atom = createScheduleAtom(scheduled);
+    if (schedule_atom != Handle::UNDEFINED) {
+        TruthValuePtr schedule_tv = SimpleTruthValue::createTV(0.8, 0.9);
+        schedule_atom->setTruthValue(schedule_tv);
+    }
+    
+    recordSchedulingDecision(action_atom, ScheduleResult::SCHEDULED);
+    
+    logger().info() << "[ActionScheduler] Action with resources scheduled: " << action_atom;
+    return ScheduleResult::SCHEDULED;
+}
+
+bool ActionScheduler::cancelScheduledAction(const Handle& action_atom)
+{
+    logger().debug() << "[ActionScheduler] Cancelling scheduled action: " << action_atom;
+    
+    auto iter = _scheduled_actions.find(action_atom);
+    if (iter == _scheduled_actions.end()) {
+        logger().warn() << "[ActionScheduler] Action not found for cancellation: " << action_atom;
+        return false;
+    }
+    
+    const ScheduledAction& scheduled = iter->second;
+    
+    // Release any locked resources
+    updateResourceLocks(action_atom, false);
+    
+    // Remove from dependency graph
+    _dependency_graph.erase(action_atom);
+    
+    // Remove from scheduled actions
+    _scheduled_actions.erase(iter);
+    
+    // Record cancellation in AtomSpace
     try {
-        auto current_time = std::chrono::steady_clock::now();
-        std::vector<ActionItem> ready_actions;
+        Handle cancelled_node = _atomspace->add_node(CONCEPT_NODE, std::string("CancelledAction"));
+        HandleSeq cancel_link;
+        cancel_link.push_back(action_atom);
+        cancel_link.push_back(cancelled_node);
+        Handle cancel_atom = _atomspace->add_link(EVALUATION_LINK, std::move(cancel_link));
         
-        // Find actions ready for execution
-        while (!_scheduled_actions.empty()) {
-            const ActionItem& next_action = _scheduled_actions.top();
+        TruthValuePtr cancel_tv = SimpleTruthValue::createTV(0.0, 0.9);  // Low strength indicates cancellation
+        cancel_atom->setTruthValue(cancel_tv);
+        
+    } catch (const std::exception& e) {
+        logger().warn() << "[ActionScheduler] Failed to record cancellation: " << e.what();
+    }
+    
+    logger().info() << "[ActionScheduler] Scheduled action cancelled: " << action_atom;
+    return true;
+}
+
+ActionScheduler::ScheduleResult ActionScheduler::rescheduleAction(const Handle& action_atom,
+                                                                 const std::chrono::steady_clock::time_point& new_time)
+{
+    logger().debug() << "[ActionScheduler] Rescheduling action: " << action_atom;
+    
+    auto iter = _scheduled_actions.find(action_atom);
+    if (iter == _scheduled_actions.end()) {
+        logger().warn() << "[ActionScheduler] Action not found for rescheduling: " << action_atom;
+        return ScheduleResult::INVALID_CONSTRAINT;
+    }
+    
+    // Update scheduled time
+    iter->second.scheduled_time = new_time;
+    
+    // Validate new constraints
+    if (!validateSchedulingConstraints(iter->second)) {
+        logger().warn() << "[ActionScheduler] Invalid constraints for rescheduled action: " << action_atom;
+        return ScheduleResult::INVALID_CONSTRAINT;
+    }
+    
+    recordSchedulingDecision(action_atom, ScheduleResult::SCHEDULED);
+    
+    logger().info() << "[ActionScheduler] Action rescheduled successfully: " << action_atom;
+    return ScheduleResult::SCHEDULED;
+}
+
+int ActionScheduler::processScheduleQueue()
+{
+    auto now = std::chrono::steady_clock::now();
+    int actions_dispatched = 0;
+    
+    // Get actions that are ready to execute
+    std::vector<ScheduledAction> ready_actions = getReadyActions();
+    
+    // Sort by priority (higher priority first)
+    std::sort(ready_actions.begin(), ready_actions.end(), 
+              [](const ScheduledAction& a, const ScheduledAction& b) {
+                  return a.priority > b.priority;
+              });
+    
+    // Dispatch ready actions
+    for (const ScheduledAction& action : ready_actions) {
+        if (!_executor) {
+            logger().warn() << "[ActionScheduler] No executor available for action dispatch";
+            break;
+        }
+        
+        logger().debug() << "[ActionScheduler] Dispatching ready action: " << action.action_atom;
+        
+        // Acquire resources if needed
+        if (!action.required_resources.empty()) {
+            updateResourceLocks(action.action_atom, true);
+        }
+        
+        // Execute the action through the executor
+        bool dispatched = _executor->executeAction(action.action_atom, ActionExecutor::Priority::MEDIUM);
+        
+        if (dispatched) {
+            actions_dispatched++;
             
-            // Check if action is ready to execute
-            if (next_action.scheduled_time <= current_time + _execution_window) {
-                if (canExecuteAction(next_action)) {
-                    ready_actions.push_back(next_action);
-                    _scheduled_actions.pop();
+            // Handle periodic actions
+            if (action.is_periodic && action.repeat_count != 0) {
+                ScheduledAction next_iteration = action;
+                next_iteration.scheduled_time = now + action.period;
+                if (next_iteration.repeat_count > 0) {
+                    next_iteration.repeat_count--;
+                }
+                
+                if (next_iteration.repeat_count != 0) {
+                    _scheduled_actions[action.action_atom] = next_iteration;
                 } else {
-                    break;  // Cannot execute due to constraints
+                    _scheduled_actions.erase(action.action_atom);
                 }
             } else {
-                break;  // No more ready actions
+                // Remove non-periodic actions after dispatch
+                _scheduled_actions.erase(action.action_atom);
+            }
+        } else {
+            // Release resources if dispatch failed
+            if (!action.required_resources.empty()) {
+                updateResourceLocks(action.action_atom, false);
             }
         }
-        
-        // Execute ready actions
-        bool all_executed = true;
-        for (const auto& action : ready_actions) {
-            if (!executeAction(action)) {
-                all_executed = false;
-            }
-        }
-        
-        // Cleanup completed actions
-        cleanupCompletedActions();
-        
-        _last_execution_time = current_time;
-        return all_executed;
-        
-    } catch (const std::exception& e) {
-        logger().error() << "[ActionScheduler] Error processing scheduled actions: " << e.what();
-        return false;
     }
+    
+    return actions_dispatched;
 }
 
-bool ActionScheduler::canExecuteAction(const ActionItem& action) const
+int ActionScheduler::updateScheduler()
 {
-    // Check concurrent action limit
-    if (_executing_actions.size() >= _max_concurrent_actions) {
-        return false;
-    }
+    auto now = std::chrono::steady_clock::now();
+    int status_changes = 0;
     
-    // Check if action is already executing
-    if (_executing_actions.find(action.action_id) != _executing_actions.end()) {
-        return false;
-    }
-    
-    // Check temporal constraints if enabled
-    if (_enable_temporal_constraints) {
-        auto current_time = std::chrono::steady_clock::now();
-        if (action.scheduled_time > current_time + _execution_window) {
-            return false;  // Too early
+    // Check for expired deadlines
+    for (auto iter = _scheduled_actions.begin(); iter != _scheduled_actions.end(); ) {
+        const ScheduledAction& action = iter->second;
+        
+        if (action.deadline != std::chrono::steady_clock::time_point{} && now > action.deadline) {
+            logger().warn() << "[ActionScheduler] Action missed deadline: " << action.action_atom;
+            
+            // Record deadline miss in AtomSpace
+            try {
+                Handle deadline_miss = _atomspace->add_node(CONCEPT_NODE, std::string("DeadlineMissed"));
+                HandleSeq miss_link;
+                miss_link.push_back(action.action_atom);
+                miss_link.push_back(deadline_miss);
+                Handle miss_atom = _atomspace->add_link(EVALUATION_LINK, std::move(miss_link));
+                
+                TruthValuePtr miss_tv = SimpleTruthValue::createTV(0.0, 0.9);
+                miss_atom->setTruthValue(miss_tv);
+                
+            } catch (const std::exception& e) {
+                logger().warn() << "[ActionScheduler] Failed to record deadline miss: " << e.what();
+            }
+            
+            iter = _scheduled_actions.erase(iter);
+            status_changes++;
+        } else {
+            ++iter;
         }
+    }
+    
+    _last_update = now;
+    return status_changes;
+}
+
+std::vector<ActionScheduler::ScheduledAction> ActionScheduler::getScheduledActions() const
+{
+    std::vector<ScheduledAction> actions;
+    for (const auto& pair : _scheduled_actions) {
+        actions.push_back(pair.second);
+    }
+    return actions;
+}
+
+std::chrono::steady_clock::time_point ActionScheduler::getNextActionTime() const
+{
+    if (_scheduled_actions.empty()) {
+        return std::chrono::steady_clock::time_point::max();
+    }
+    
+    auto earliest = std::chrono::steady_clock::time_point::max();
+    for (const auto& pair : _scheduled_actions) {
+        if (pair.second.scheduled_time < earliest) {
+            earliest = pair.second.scheduled_time;
+        }
+    }
+    
+    return earliest;
+}
+
+bool ActionScheduler::registerResource(const std::string& resource_name)
+{
+    logger().debug() << "[ActionScheduler] Registering resource: " << resource_name;
+    
+    auto iter = std::find(_available_resources.begin(), _available_resources.end(), resource_name);
+    if (iter != _available_resources.end()) {
+        logger().debug() << "[ActionScheduler] Resource already registered: " << resource_name;
+        return true;  // Already registered
+    }
+    
+    _available_resources.push_back(resource_name);
+    
+    // Create resource atom in AtomSpace
+    try {
+        Handle resource_node = _atomspace->add_node(CONCEPT_NODE, std::string(resource_name));
+        HandleSeq resource_link;
+        resource_link.push_back(resource_node);
+        resource_link.push_back(_resource_context);
+        Handle resource_atom = _atomspace->add_link(EVALUATION_LINK, std::move(resource_link));
+        
+        TruthValuePtr resource_tv = SimpleTruthValue::createTV(1.0, 0.9);  // Available
+        resource_atom->setTruthValue(resource_tv);
+        
+    } catch (const std::exception& e) {
+        logger().warn() << "[ActionScheduler] Failed to create resource atom: " << e.what();
+    }
+    
+    logger().info() << "[ActionScheduler] Resource registered: " << resource_name;
+    return true;
+}
+
+bool ActionScheduler::unregisterResource(const std::string& resource_name)
+{
+    logger().debug() << "[ActionScheduler] Unregistering resource: " << resource_name;
+    
+    auto iter = std::find(_available_resources.begin(), _available_resources.end(), resource_name);
+    if (iter == _available_resources.end()) {
+        logger().warn() << "[ActionScheduler] Resource not found: " << resource_name;
+        return false;
+    }
+    
+    // Check if resource is currently locked
+    if (_resource_locks.find(resource_name) != _resource_locks.end()) {
+        logger().warn() << "[ActionScheduler] Cannot unregister locked resource: " << resource_name;
+        return false;
+    }
+    
+    _available_resources.erase(iter);
+    
+    logger().info() << "[ActionScheduler] Resource unregistered: " << resource_name;
+    return true;
+}
+
+bool ActionScheduler::isResourceAvailable(const std::string& resource_name) const
+{
+    // Check if resource exists
+    auto resource_iter = std::find(_available_resources.begin(), _available_resources.end(), resource_name);
+    if (resource_iter == _available_resources.end()) {
+        return false;
+    }
+    
+    // Check if resource is locked
+    auto lock_iter = _resource_locks.find(resource_name);
+    return lock_iter == _resource_locks.end();
+}
+
+std::vector<std::string> ActionScheduler::getAvailableResources() const
+{
+    std::vector<std::string> available;
+    for (const std::string& resource : _available_resources) {
+        if (isResourceAvailable(resource)) {
+            available.push_back(resource);
+        }
+    }
+    return available;
+}
+
+void ActionScheduler::configureFeatures(bool resources, bool dependencies, bool temporal)
+{
+    _enable_resource_management = resources;
+    _enable_dependency_checking = dependencies;
+    _enable_temporal_reasoning = temporal;
+    
+    logger().info() << "[ActionScheduler] Features configured - Resources: " << resources 
+                    << ", Dependencies: " << dependencies << ", Temporal: " << temporal;
+}
+
+std::string ActionScheduler::getStatusInfo() const
+{
+    std::ostringstream oss;
+    oss << "{\n";
+    oss << "  \"scheduled_actions\": " << _scheduled_actions.size() << ",\n";
+    oss << "  \"max_scheduled_actions\": " << _max_scheduled_actions << ",\n";
+    oss << "  \"available_resources\": " << _available_resources.size() << ",\n";
+    oss << "  \"locked_resources\": " << _resource_locks.size() << ",\n";
+    oss << "  \"dependency_entries\": " << _dependency_graph.size() << ",\n";
+    oss << "  \"resource_management_enabled\": " << (_enable_resource_management ? "true" : "false") << ",\n";
+    oss << "  \"dependency_checking_enabled\": " << (_enable_dependency_checking ? "true" : "false") << ",\n";
+    oss << "  \"temporal_reasoning_enabled\": " << (_enable_temporal_reasoning ? "true" : "false") << "\n";
+    oss << "}";
+    return oss.str();
+}
+
+// Private helper methods
+
+bool ActionScheduler::validateSchedulingConstraints(const ScheduledAction& action)
+{
+    // Basic validation
+    if (action.action_atom == Handle::UNDEFINED) {
+        return false;
+    }
+    
+    // Check deadline constraints
+    if (action.deadline != std::chrono::steady_clock::time_point{} && 
+        action.scheduled_time > action.deadline) {
+        return false;
+    }
+    
+    // Check periodic constraints
+    if (action.is_periodic && action.period.count() <= 0) {
+        return false;
     }
     
     return true;
 }
 
-bool ActionScheduler::executeAction(const ActionItem& action)
+bool ActionScheduler::checkResourceAvailability(const std::vector<std::string>& resources)
 {
-    try {
-        logger().debug() << "[ActionScheduler] Executing action " << action.action_id;
-        
-        // Add to executing actions
-        _executing_actions[action.action_id] = action;
-        
-        // Update action status in AtomSpace
-        updateActionStatus(action.action_id, "executing");
-        
-        // Basic action execution - in a full implementation this would:
-        // - Execute the actual action logic
-        // - Monitor execution progress
-        // - Handle execution failures
-        // - Interface with external systems
-        
-        // For now, simulate execution by updating AtomSpace
-        if (action.context_atom != Handle::UNDEFINED) {
-            HandleSeq execution_link;
-            execution_link.push_back(action.action_atom);
-            execution_link.push_back(action.context_atom);
-            execution_link.push_back(_temporal_context);
-            Handle execution_atom = _atomspace->add_link(EVALUATION_LINK, std::move(execution_link));
-            
-            TruthValuePtr execution_tv = SimpleTruthValue::createTV(0.8, 0.9);
-            execution_atom->setTruthValue(execution_tv);
-        }
-        
-        // Mark as completed (in a real system, this would be done asynchronously)
-        _completed_actions[action.action_id] = action.action_atom;
-        updateActionStatus(action.action_id, "completed");
-        
-        _actions_executed++;
-        _actions_completed++;
-        
-        logger().debug() << "[ActionScheduler] Action " << action.action_id << " completed successfully";
-        return true;
-        
-    } catch (const std::exception& e) {
-        logger().error() << "[ActionScheduler] Failed to execute action " << action.action_id 
-                        << ": " << e.what();
-        
-        updateActionStatus(action.action_id, "failed");
-        _actions_failed++;
-        return false;
-    }
-}
-
-void ActionScheduler::updateActionStatus(const std::string& action_id, const std::string& status)
-{
-    try {
-        if (!_atomspace) return;
-        
-        Handle status_node = _atomspace->add_node(PREDICATE_NODE, "ActionStatus");
-        Handle status_value = _atomspace->add_node(CONCEPT_NODE, std::string(status));
-        Handle action_id_node = _atomspace->add_node(CONCEPT_NODE, std::string(action_id));
-        
-        HandleSeq status_link;
-        status_link.push_back(status_node);
-        status_link.push_back(action_id_node);
-        status_link.push_back(status_value);
-        
-        Handle status_eval = _atomspace->add_link(EVALUATION_LINK, std::move(status_link));
-        TruthValuePtr status_tv = SimpleTruthValue::createTV(0.9, 0.95);
-        status_eval->setTruthValue(status_tv);
-        
-    } catch (const std::exception& e) {
-        logger().error() << "[ActionScheduler] Failed to update action status: " << e.what();
-    }
-}
-
-void ActionScheduler::cleanupCompletedActions()
-{
-    // Remove completed actions from executing map
-    for (auto it = _executing_actions.begin(); it != _executing_actions.end();) {
-        const std::string& action_id = it->first;
-        if (_completed_actions.find(action_id) != _completed_actions.end()) {
-            it = _executing_actions.erase(it);
-        } else {
-            ++it;
+    for (const std::string& resource : resources) {
+        if (!isResourceAvailable(resource)) {
+            return false;
         }
     }
+    return true;
 }
 
-Handle ActionScheduler::createActionStatusAtom(const ActionItem& action, const std::string& status)
+bool ActionScheduler::checkDependencies(const std::vector<Handle>& dependencies)
 {
-    if (!_atomspace) return Handle::UNDEFINED;
+    if (!_enable_dependency_checking) {
+        return true;  // Dependencies disabled, always pass
+    }
     
+    // For now, assume all dependencies are met
+    // In a real implementation, this would check the execution status of dependent actions
+    // through the executor or AtomSpace queries
+    
+    for (const Handle& dep : dependencies) {
+        if (dep == Handle::UNDEFINED) {
+            return false;
+        }
+        // Additional dependency checking logic would go here
+    }
+    
+    return true;
+}
+
+std::vector<ActionScheduler::ScheduledAction> ActionScheduler::getReadyActions()
+{
+    std::vector<ScheduledAction> ready;
+    auto now = std::chrono::steady_clock::now();
+    
+    for (const auto& pair : _scheduled_actions) {
+        const ScheduledAction& action = pair.second;
+        
+        // Check if time has come
+        if (action.scheduled_time > now) {
+            continue;
+        }
+        
+        // Check dependencies
+        if (!checkDependencies(action.dependencies)) {
+            continue;
+        }
+        
+        // Check resources
+        if (!checkResourceAvailability(action.required_resources)) {
+            continue;
+        }
+        
+        ready.push_back(action);
+    }
+    
+    return ready;
+}
+
+void ActionScheduler::updateResourceLocks(const Handle& action_atom, bool acquire)
+{
+    auto iter = _scheduled_actions.find(action_atom);
+    if (iter == _scheduled_actions.end()) {
+        return;
+    }
+    
+    const std::vector<std::string>& resources = iter->second.required_resources;
+    
+    if (acquire) {
+        // Acquire locks
+        for (const std::string& resource : resources) {
+            _resource_locks[resource] = action_atom;
+            logger().debug() << "[ActionScheduler] Resource locked: " << resource << " by " << action_atom;
+        }
+    } else {
+        // Release locks
+        for (const std::string& resource : resources) {
+            auto lock_iter = _resource_locks.find(resource);
+            if (lock_iter != _resource_locks.end() && lock_iter->second == action_atom) {
+                _resource_locks.erase(lock_iter);
+                logger().debug() << "[ActionScheduler] Resource released: " << resource << " by " << action_atom;
+            }
+        }
+    }
+}
+
+void ActionScheduler::updateDependencyGraph(const Handle& action_atom, const std::vector<Handle>& deps)
+{
+    _dependency_graph[action_atom] = deps;
+}
+
+Handle ActionScheduler::createScheduleAtom(const ScheduledAction& action)
+{
     try {
-        Handle status_atom = _atomspace->add_node(CONCEPT_NODE, 
-                                                 "ActionStatus_" + action.action_id + "_" + status);
+        HandleSeq schedule_content;
+        schedule_content.push_back(action.action_atom);
+        schedule_content.push_back(_schedule_context);
         
-        // Link to scheduler context
-        HandleSeq context_link;
-        context_link.push_back(_scheduler_context);
-        context_link.push_back(status_atom);
-        context_link.push_back(action.action_atom);
-        
-        Handle context_eval = _atomspace->add_link(EVALUATION_LINK, std::move(context_link));
-        TruthValuePtr context_tv = SimpleTruthValue::createTV(0.8, 0.9);
-        context_eval->setTruthValue(context_tv);
-        
-        return status_atom;
+        Handle schedule_atom = _atomspace->add_link(EVALUATION_LINK, std::move(schedule_content));
+        return schedule_atom;
         
     } catch (const std::exception& e) {
-        logger().error() << "[ActionScheduler] Failed to create action status atom: " << e.what();
+        logger().warn() << "[ActionScheduler] Failed to create schedule atom: " << e.what();
         return Handle::UNDEFINED;
     }
 }
 
-std::chrono::steady_clock::time_point ActionScheduler::calculateNextExecutionTime(const ActionItem& action) const
-{
-    // In a more sophisticated implementation, this could consider:
-    // - Resource availability
-    // - Action dependencies
-    // - Temporal constraints
-    // - Priority-based scheduling
-    return action.scheduled_time;
-}
-
-bool ActionScheduler::cancelAction(const std::string& action_id)
+void ActionScheduler::recordSchedulingDecision(const Handle& action_atom, ScheduleResult result)
 {
     try {
-        // Remove from executing actions if present
-        auto executing_it = _executing_actions.find(action_id);
-        if (executing_it != _executing_actions.end()) {
-            updateActionStatus(action_id, "cancelled");
-            _executing_actions.erase(executing_it);
-            return true;
-        }
+        std::string result_name = "ScheduleResult" + std::to_string(static_cast<int>(result));
+        Handle result_node = _atomspace->add_node(CONCEPT_NODE, std::string(result_name));
         
-        // For scheduled actions, we'd need to rebuild the queue without this action
-        // This is a limitation of std::priority_queue - in a real implementation,
-        // we might use a different data structure
+        HandleSeq decision_link;
+        decision_link.push_back(action_atom);
+        decision_link.push_back(result_node);
+        Handle decision_atom = _atomspace->add_link(EVALUATION_LINK, std::move(decision_link));
         
-        updateActionStatus(action_id, "cancelled");
-        return true;
+        double strength = (result == ScheduleResult::SCHEDULED) ? 1.0 : 0.0;
+        TruthValuePtr decision_tv = SimpleTruthValue::createTV(strength, 0.9);
+        decision_atom->setTruthValue(decision_tv);
         
     } catch (const std::exception& e) {
-        logger().error() << "[ActionScheduler] Failed to cancel action " << action_id 
-                        << ": " << e.what();
-        return false;
+        logger().warn() << "[ActionScheduler] Failed to record scheduling decision: " << e.what();
     }
-}
-
-void ActionScheduler::cancelAllActions()
-{
-    try {
-        // Clear scheduled actions
-        while (!_scheduled_actions.empty()) {
-            _scheduled_actions.pop();
-        }
-        
-        // Cancel executing actions
-        for (const auto& pair : _executing_actions) {
-            updateActionStatus(pair.first, "cancelled");
-        }
-        _executing_actions.clear();
-        
-        // Clear completed actions
-        _completed_actions.clear();
-        
-        logger().info() << "[ActionScheduler] All actions cancelled";
-        
-    } catch (const std::exception& e) {
-        logger().error() << "[ActionScheduler] Error cancelling all actions: " << e.what();
-    }
-}
-
-bool ActionScheduler::isActionExecuting(const std::string& action_id) const
-{
-    return _executing_actions.find(action_id) != _executing_actions.end();
-}
-
-void ActionScheduler::configureTemporalParameters(std::chrono::milliseconds execution_window,
-                                                 std::chrono::milliseconds default_duration)
-{
-    _execution_window = execution_window;
-    _default_action_duration = default_duration;
-    
-    logger().debug() << "[ActionScheduler] Temporal parameters configured - window: " 
-                    << execution_window.count() << "ms, default duration: " 
-                    << default_duration.count() << "ms";
-}
-
-void ActionScheduler::configureExecution(size_t max_concurrent, 
-                                        bool use_priority,
-                                        bool enable_temporal)
-{
-    _max_concurrent_actions = max_concurrent;
-    _use_priority_scheduling = use_priority;
-    _enable_temporal_constraints = enable_temporal;
-    
-    logger().debug() << "[ActionScheduler] Execution configured - max concurrent: " 
-                    << max_concurrent << ", priority: " << use_priority 
-                    << ", temporal: " << enable_temporal;
-}
-
-std::string ActionScheduler::getSchedulingStatistics() const
-{
-    std::ostringstream stats;
-    stats << "{"
-          << "\"actions_scheduled\": " << _actions_scheduled.load() << ","
-          << "\"actions_executed\": " << _actions_executed.load() << ","
-          << "\"actions_completed\": " << _actions_completed.load() << ","
-          << "\"actions_failed\": " << _actions_failed.load() << ","
-          << "\"pending_actions\": " << _scheduled_actions.size() << ","
-          << "\"executing_actions\": " << _executing_actions.size() << ","
-          << "\"completed_actions\": " << _completed_actions.size()
-          << "}";
-    return stats.str();
-}
-
-std::string ActionScheduler::getStatusInfo() const
-{
-    std::ostringstream status;
-    status << "{"
-           << "\"enabled\": " << (_enabled.load() ? "true" : "false") << ","
-           << "\"max_concurrent\": " << _max_concurrent_actions << ","
-           << "\"use_priority\": " << (_use_priority_scheduling ? "true" : "false") << ","
-           << "\"temporal_constraints\": " << (_enable_temporal_constraints ? "true" : "false") << ","
-           << "\"execution_window_ms\": " << _execution_window.count() << ","
-           << "\"default_duration_ms\": " << _default_action_duration.count() << ","
-           << "\"statistics\": " << getSchedulingStatistics()
-           << "}";
-    return status.str();
-}
-
-void ActionScheduler::resetStatistics()
-{
-    _actions_scheduled.store(0);
-    _actions_executed.store(0);
-    _actions_completed.store(0);
-    _actions_failed.store(0);
-    
-    logger().info() << "[ActionScheduler] Statistics reset";
 }
