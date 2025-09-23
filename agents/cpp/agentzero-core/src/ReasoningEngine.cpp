@@ -748,8 +748,12 @@ void ReasoningEngine::configureURE(bool enable_ure, int max_iterations, double c
             
             // Recreate chainers with new configuration
             if (max_iterations > 0) {
-                _forward_chainer = std::make_unique<ForwardChainer>(*_atomspace, _ure_rulebase_handle);
-                _backward_chainer = std::make_unique<BackwardChainer>(*_atomspace, _ure_rulebase_handle);
+                // Create a dummy source for the chainers - they need a source/target atom
+                Handle dummy_source = _atomspace->add_node(CONCEPT_NODE, "URE-ChainerSource");
+                Handle dummy_target = _atomspace->add_node(CONCEPT_NODE, "URE-ChainerTarget");
+                
+                _forward_chainer = std::make_unique<ForwardChainer>(*_atomspace, _ure_rulebase_handle, dummy_source);
+                _backward_chainer = std::make_unique<BackwardChainer>(*_atomspace, _ure_rulebase_handle, dummy_target);
                 
                 logger().debug() << "[ReasoningEngine] URE chainers initialized with new configuration";
             }
@@ -872,29 +876,47 @@ std::vector<Handle> ReasoningEngine::executeUREChaining(const Handle& rule_base,
     }
     
     try {
-        // Use forward chainer for premises-to-conclusions reasoning
-        if (_forward_chainer) {
-            // Set the premises as sources for forward chaining
-            HandleSeq sources(premises.begin(), premises.end());
-            
-            // Configure the forward chainer with max steps
-            auto saved_max_iter = _ure_config->get_maximum_iterations();
-            _ure_config->set_maximum_iterations(max_steps);
-            
-            // Execute forward chaining
-            HandleSeq conclusions = _forward_chainer->do_chain(sources);
-            
-            // Restore original max iterations
-            _ure_config->set_maximum_iterations(saved_max_iter);
-            
-            // Convert results
-            results.assign(conclusions.begin(), conclusions.end());
-            
-            logger().info() << "[ReasoningEngine] URE forward chaining produced " 
-                           << results.size() << " conclusions";
-        } else {
-            logger().warn() << "[ReasoningEngine] Forward chainer not available";
+        // Configure URE parameters for this chaining session
+        auto saved_max_iter = _ure_config->get_maximum_iterations();
+        _ure_config->set_maximum_iterations(max_steps);
+        
+        // For each premise, create a ForwardChainer and run it
+        for (const Handle& premise : premises) {
+            try {
+                // Create ForwardChainer for this specific premise
+                ForwardChainer fc(*_atomspace, rule_base, premise);
+                
+                // Execute forward chaining
+                fc.do_chain();
+                
+                // Get results and add them to our result set
+                Handle premise_results = fc.get_results();
+                if (premise_results != Handle::UNDEFINED) {
+                    results.push_back(premise_results);
+                }
+                
+                // Also get the set of results for individual conclusions
+                HandleSet premise_results_set = fc.get_results_set();
+                for (const Handle& result : premise_results_set) {
+                    if (result != premise) { // Don't include the original premise
+                        results.push_back(result);
+                    }
+                }
+                
+            } catch (const std::exception& e) {
+                logger().warn() << "[ReasoningEngine] URE chaining failed for premise: " << e.what();
+            }
         }
+        
+        // Restore original max iterations
+        _ure_config->set_maximum_iterations(saved_max_iter);
+        
+        // Remove duplicates
+        std::sort(results.begin(), results.end());
+        results.erase(std::unique(results.begin(), results.end()), results.end());
+        
+        logger().info() << "[ReasoningEngine] URE forward chaining produced " 
+                       << results.size() << " unique conclusions";
         
     } catch (const std::exception& e) {
         logger().error() << "[ReasoningEngine] URE chaining failed: " << e.what();
