@@ -54,3 +54,12 @@ ADD_CXXTEST(SurprisingnessUTest)
 TARGET_LINK_LIBRARIES(SurprisingnessUTest
   minerutestutils
 )
+
+ADD_CXXTEST(PatternDiscoveryUTest)
+TARGET_LINK_LIBRARIES(PatternDiscoveryUTest
+  test-types
+  miner
+  guile-miner
+  ${URE_LIBRARIES}
+  ${UNIFY_LIBRARIES}
+)
