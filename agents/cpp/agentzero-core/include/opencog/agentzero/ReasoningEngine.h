@@ -26,6 +26,15 @@
 #include <opencog/atoms/truthvalue/TruthValue.h>
 #include <opencog/util/Logger.h>
 
+// URE Integration includes
+#ifdef HAVE_URE
+#include <opencog/ure/UREConfig.h>
+#include <opencog/ure/Rule.h>
+#include <opencog/ure/forwardchainer/ForwardChainer.h>
+#include <opencog/ure/backwardchainer/BackwardChainer.h>
+#include <opencog/ure/Utils.h>
+#endif
+
 namespace opencog {
 namespace agentzero {
 
@@ -114,6 +123,16 @@ private:
     std::vector<ReasoningRule> _reasoning_rules;
     std::map<std::string, std::vector<ReasoningRule>> _rules_by_type;
     std::set<Handle> _applied_rules_cache;
+    
+    // URE-specific member variables
+#ifdef HAVE_URE
+    std::unique_ptr<UREConfig> _ure_config;
+    std::unique_ptr<ForwardChainer> _forward_chainer;
+    std::unique_ptr<BackwardChainer> _backward_chainer;
+    std::vector<RulePtr> _ure_rules;
+    Handle _ure_rulebase_handle;
+    std::map<std::string, double> _ure_parameters;
+#endif
     
     // Internal reasoning methods
     void initializePLNIntegration();
