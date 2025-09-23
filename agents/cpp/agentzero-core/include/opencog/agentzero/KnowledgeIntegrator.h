@@ -99,6 +99,62 @@ private:
     TruthValuePtr assessKnowledgeReliability(const Handle& knowledge_atom);
     void consolidateMemory();
     std::vector<Handle> findRelatedKnowledge(const Handle& query_atom);
+    
+    // Enhanced AtomSpace operations for Agent-Zero
+    void initializeAdvancedReasoning();
+    void initializePatternMining();
+    std::vector<Handle> performInference(const std::vector<Handle>& premises, 
+                                        const std::string& target_pattern = "");
+    std::vector<Handle> discoverPatterns(const std::vector<Handle>& data_atoms, 
+                                        double minimum_support = 0.3);
+    std::vector<Handle> applyRules(const std::vector<Handle>& rule_set,
+                                  const std::vector<Handle>& facts);
+    Handle createInferenceContext(const std::string& reasoning_task);
+    std::vector<Handle> performSemanticSearch(const std::string& query,
+                                            const std::vector<Handle>& context = {});
+    std::vector<Handle> generateHypotheses(const std::vector<Handle>& observations);
+    void updateTruthValues(const std::vector<Handle>& atoms, 
+                          const std::vector<double>& evidences);
+    Handle createCompositeKnowledge(const std::vector<Handle>& component_atoms,
+                                   const std::string& composition_type);
+    std::vector<Handle> extractImplications(const std::vector<Handle>& premises);
+    
+    // Advanced query processing
+    std::vector<Handle> queryWithInference(const std::string& query_pattern,
+                                          const std::vector<Handle>& background_knowledge);
+    std::vector<Handle> findSimilarKnowledge(const Handle& target_atom,
+                                           double similarity_threshold = 0.7);
+    std::map<Handle, double> rankKnowledgeRelevance(const std::vector<Handle>& candidates,
+                                                   const Handle& context);
+    
+    // Pattern-based learning
+    void learnFromInteractionPatterns(const std::vector<Handle>& interaction_sequence);
+    std::vector<Handle> identifyKnowledgeGaps(const std::vector<Handle>& current_knowledge);
+    Handle synthesizeNewKnowledge(const std::vector<Handle>& source_knowledge,
+                                 const std::string& synthesis_goal);
+    
+    // Advanced configuration
+    bool _enable_advanced_reasoning;
+    bool _enable_pattern_mining;
+    bool _enable_hypothesis_generation;
+    double _inference_confidence_threshold;
+    int _max_inference_steps;
+    
+    // Advanced AtomSpace handles
+    Handle _reasoning_context;
+    Handle _inference_history;
+    Handle _learned_patterns;
+    Handle _hypothesis_space;
+    std::map<std::string, Handle> _reasoning_tasks;
+    
+    // Helper methods for enhanced operations
+    double calculateSemanticSimilarity(const Handle& atom1, const Handle& atom2);
+    double calculateStringSimilarity(const std::string& str1, const std::string& str2);
+    bool atomMatches(const Handle& pattern, const Handle& atom);
+    bool isContradictory(const Handle& atom1, const Handle& atom2);
+    std::vector<Handle> extractTemporalPatterns(const std::vector<Handle>& sequence);
+    std::vector<Handle> extractCausalPatterns(const std::vector<Handle>& sequence);
+    std::vector<Handle> extractStatisticalPatterns(const std::vector<Handle>& data);
 
 public:
     /**
@@ -322,6 +378,134 @@ public:
      * @return true if processing completed successfully
      */
     bool processKnowledgeIntegration();
+    
+    // Enhanced AtomSpace Operations for Agent-Zero
+    
+    /**
+     * Perform advanced reasoning with inference over knowledge base
+     * @param query_atoms The atoms to reason about
+     * @param reasoning_type Type of reasoning ("forward", "backward", "mixed")
+     * @param max_steps Maximum number of reasoning steps
+     * @return Vector of inferred knowledge atoms
+     */
+    std::vector<Handle> performAdvancedReasoning(const std::vector<Handle>& query_atoms,
+                                               const std::string& reasoning_type = "mixed",
+                                               int max_steps = 10);
+    
+    /**
+     * Discover knowledge patterns using pattern mining
+     * @param data_atoms Vector of atoms to analyze for patterns
+     * @param pattern_type Type of pattern to discover ("sequential", "associative", "causal")
+     * @param minimum_support Minimum support threshold for pattern acceptance
+     * @return Vector of discovered pattern atoms
+     */
+    std::vector<Handle> discoverKnowledgePatterns(const std::vector<Handle>& data_atoms,
+                                                 const std::string& pattern_type = "associative",
+                                                 double minimum_support = 0.3);
+    
+    /**
+     * Apply knowledge rules using the Unified Rule Engine
+     * @param rule_base Vector of rule atoms to apply
+     * @param facts Vector of fact atoms to apply rules to
+     * @param rule_selection Strategy for rule selection ("random", "confidence", "relevance")
+     * @return Vector of newly derived knowledge atoms
+     */
+    std::vector<Handle> applyKnowledgeRules(const std::vector<Handle>& rule_base,
+                                          const std::vector<Handle>& facts,
+                                          const std::string& rule_selection = "confidence");
+    
+    /**
+     * Generate hypotheses from incomplete knowledge
+     * @param observations Vector of observation atoms
+     * @param hypothesis_templates Optional templates for hypothesis generation
+     * @return Vector of generated hypothesis atoms with confidence scores
+     */
+    std::vector<Handle> generateKnowledgeHypotheses(const std::vector<Handle>& observations,
+                                                   const std::vector<Handle>& hypothesis_templates = {});
+    
+    /**
+     * Perform semantic similarity search in knowledge base
+     * @param target_concept The concept to find similar items for
+     * @param similarity_threshold Minimum similarity score (0.0-1.0)
+     * @param max_results Maximum number of results to return
+     * @return Vector of similar concept atoms with similarity scores
+     */
+    std::vector<Handle> findSemanticallySimilar(const Handle& target_concept,
+                                              double similarity_threshold = 0.7,
+                                              int max_results = 10);
+    
+    /**
+     * Synthesize new knowledge from existing knowledge components
+     * @param source_knowledge Vector of source knowledge atoms
+     * @param synthesis_goal Description of what new knowledge to synthesize
+     * @param synthesis_method Method for synthesis ("analogical", "compositional", "inductive")
+     * @return Handle to synthesized knowledge atom
+     */
+    Handle synthesizeKnowledge(const std::vector<Handle>& source_knowledge,
+                              const std::string& synthesis_goal,
+                              const std::string& synthesis_method = "compositional");
+    
+    /**
+     * Learn knowledge patterns from interaction sequences
+     * @param interaction_atoms Vector of interaction atoms in sequence
+     * @param learning_type Type of learning ("temporal", "causal", "statistical")
+     * @return Vector of learned pattern atoms
+     */
+    std::vector<Handle> learnFromInteractions(const std::vector<Handle>& interaction_atoms,
+                                            const std::string& learning_type = "temporal");
+    
+    /**
+     * Validate knowledge consistency using reasoning
+     * @param knowledge_subset Optional subset to validate (empty = all knowledge)
+     * @return Vector of inconsistency atoms found with explanation
+     */
+    std::vector<Handle> validateKnowledgeWithReasoning(const std::vector<Handle>& knowledge_subset = {});
+    
+    /**
+     * Update knowledge confidence based on reasoning outcomes
+     * @param reasoning_results Vector of reasoning result atoms
+     * @return Number of knowledge atoms with updated confidence
+     */
+    int updateConfidenceFromReasoning(const std::vector<Handle>& reasoning_results);
+    
+    /**
+     * Query knowledge with advanced pattern matching and inference
+     * @param query_pattern Natural language or logical pattern
+     * @param context_atoms Optional context for query interpretation
+     * @param enable_inference Whether to use inference for query answering
+     * @return Vector of matching knowledge atoms with relevance scores
+     */
+    std::vector<Handle> advancedKnowledgeQuery(const std::string& query_pattern,
+                                             const std::vector<Handle>& context_atoms = {},
+                                             bool enable_inference = true);
+    
+    // Configuration for enhanced operations
+    
+    /**
+     * Configure advanced reasoning parameters
+     * @param enable_reasoning Whether to enable advanced reasoning
+     * @param confidence_threshold Minimum confidence for reasoning results
+     * @param max_inference_steps Maximum steps in inference chains
+     */
+    void configureAdvancedReasoning(bool enable_reasoning = true,
+                                   double confidence_threshold = 0.6,
+                                   int max_inference_steps = 15);
+    
+    /**
+     * Configure pattern mining parameters
+     * @param enable_mining Whether to enable pattern mining
+     * @param min_support Minimum support for pattern acceptance
+     * @param enable_hypothesis_generation Whether to generate hypotheses
+     */
+    void configurePatternMining(bool enable_mining = true,
+                               double min_support = 0.3,
+                               bool enable_hypothesis_generation = true);
+    
+    /**
+     * Get advanced knowledge statistics including reasoning metrics
+     * @return Map of advanced statistics (inference_count, pattern_count, etc.)
+     */
+    std::map<std::string, int> getAdvancedKnowledgeStatistics();
 };
 
 } // namespace agentzero
