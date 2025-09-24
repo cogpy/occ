@@ -846,3 +846,391 @@ Handle TaskManager::findTaskForGoal(const Handle& goal_atom)
         return Handle::UNDEFINED;
     }
 }
+
+// Enhanced GoalHierarchy management methods implementation
+
+std::vector<Handle> TaskManager::getSubgoals(const Handle& parent_goal) const
+{
+    std::vector<Handle> subgoals;
+    
+    if (parent_goal == Handle::UNDEFINED) {
+        logger().error() << "[TaskManager] Cannot get subgoals of undefined parent goal";
+        return subgoals;
+    }
+    
+    try {
+        HandleSeq all_links;
+        _atomspace->get_handles_by_type(all_links, INHERITANCE_LINK);
+        
+        for (const Handle& link : all_links) {
+            HandleSeq link_outgoing = link->getOutgoingSet();
+            if (link_outgoing.size() == 2 && link_outgoing[1] == parent_goal) {
+                subgoals.push_back(link_outgoing[0]);
+            }
+        }
+        
+        logger().debug() << "[TaskManager] Found " << subgoals.size() 
+                        << " subgoals for parent: " << parent_goal->get_name();
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[TaskManager] Error getting subgoals: " << e.what();
+    }
+    
+    return subgoals;
+}
+
+Handle TaskManager::getParentGoal(const Handle& subgoal) const
+{
+    if (subgoal == Handle::UNDEFINED) {
+        logger().error() << "[TaskManager] Cannot get parent of undefined subgoal";
+        return Handle::UNDEFINED;
+    }
+    
+    try {
+        HandleSeq all_links;
+        _atomspace->get_handles_by_type(all_links, INHERITANCE_LINK);
+        
+        for (const Handle& link : all_links) {
+            HandleSeq link_outgoing = link->getOutgoingSet();
+            if (link_outgoing.size() == 2 && link_outgoing[0] == subgoal) {
+                logger().debug() << "[TaskManager] Found parent goal: " 
+                                << link_outgoing[1]->get_name() 
+                                << " for subgoal: " << subgoal->get_name();
+                return link_outgoing[1];
+            }
+        }
+        
+        logger().debug() << "[TaskManager] No parent goal found for: " << subgoal->get_name();
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[TaskManager] Error getting parent goal: " << e.what();
+    }
+    
+    return Handle::UNDEFINED;
+}
+
+std::vector<Handle> TaskManager::getGoalAncestors(const Handle& goal) const
+{
+    std::vector<Handle> ancestors;
+    
+    if (goal == Handle::UNDEFINED) {
+        return ancestors;
+    }
+    
+    try {
+        Handle current = goal;
+        Handle parent = getParentGoal(current);
+        
+        while (parent != Handle::UNDEFINED) {
+            ancestors.push_back(parent);
+            current = parent;
+            parent = getParentGoal(current);
+            
+            // Prevent infinite loops in case of circular hierarchies
+            if (ancestors.size() > 50) {
+                logger().warn() << "[TaskManager] Goal hierarchy too deep, stopping ancestor search";
+                break;
+            }
+        }
+        
+        logger().debug() << "[TaskManager] Found " << ancestors.size() 
+                        << " ancestors for goal: " << goal->get_name();
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[TaskManager] Error getting goal ancestors: " << e.what();
+    }
+    
+    return ancestors;
+}
+
+TruthValuePtr TaskManager::calculateHierarchicalGoalAchievement(const Handle& goal)
+{
+    if (goal == Handle::UNDEFINED) {
+        logger().error() << "[TaskManager] Cannot calculate achievement for undefined goal";
+        return SimpleTruthValue::createTV(0.0, 0.0);
+    }
+    
+    try {
+        // Get the goal's own achievement level
+        TruthValuePtr goal_tv = goal->getTruthValue();
+        double goal_achievement = goal_tv ? goal_tv->get_mean() : 0.0;
+        double goal_confidence = goal_tv ? goal_tv->get_confidence() : 0.1;
+        
+        // Get all subgoals
+        std::vector<Handle> subgoals = getSubgoals(goal);
+        
+        if (subgoals.empty()) {
+            // Leaf goal - return its own achievement
+            logger().debug() << "[TaskManager] Leaf goal achievement: " 
+                            << goal_achievement << " for " << goal->get_name();
+            return SimpleTruthValue::createTV(goal_achievement, goal_confidence);
+        }
+        
+        // Calculate weighted average of subgoal achievements
+        double total_subgoal_achievement = 0.0;
+        double total_weight = 0.0;
+        double min_confidence = 1.0;
+        
+        for (const Handle& subgoal : subgoals) {
+            TruthValuePtr subgoal_tv = calculateHierarchicalGoalAchievement(subgoal);
+            double subgoal_achievement = subgoal_tv->get_mean();
+            double subgoal_confidence = subgoal_tv->get_confidence();
+            
+            // Weight by confidence
+            total_subgoal_achievement += subgoal_achievement * subgoal_confidence;
+            total_weight += subgoal_confidence;
+            min_confidence = std::min(min_confidence, subgoal_confidence);
+        }
+        
+        double hierarchical_achievement = total_weight > 0 ? 
+            total_subgoal_achievement / total_weight : 0.0;
+        
+        // Combine goal's own achievement (30%) with subgoal achievement (70%)
+        double final_achievement = 0.3 * goal_achievement + 0.7 * hierarchical_achievement;
+        double final_confidence = std::min(goal_confidence, min_confidence * 0.9);
+        
+        logger().debug() << "[TaskManager] Hierarchical achievement for " << goal->get_name() 
+                        << ": " << final_achievement << " (confidence: " << final_confidence << ")";
+        
+        // Update the goal's truth value with hierarchical achievement
+        TruthValuePtr hierarchical_tv = SimpleTruthValue::createTV(final_achievement, final_confidence);
+        goal->setTruthValue(hierarchical_tv);
+        
+        return hierarchical_tv;
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[TaskManager] Error calculating hierarchical goal achievement: " << e.what();
+        return SimpleTruthValue::createTV(0.0, 0.1);
+    }
+}
+
+bool TaskManager::propagateGoalPriority(const Handle& goal, Priority priority)
+{
+    if (goal == Handle::UNDEFINED) {
+        logger().error() << "[TaskManager] Cannot propagate priority for undefined goal";
+        return false;
+    }
+    
+    try {
+        logger().debug() << "[TaskManager] Propagating priority " << static_cast<int>(priority) 
+                        << " from goal: " << goal->get_name();
+        
+        // Get all subgoals
+        std::vector<Handle> subgoals = getSubgoals(goal);
+        
+        for (const Handle& subgoal : subgoals) {
+            // Propagate priority to subgoal (but reduce it slightly)
+            Priority subgoal_priority = static_cast<Priority>(
+                std::max(1, static_cast<int>(priority) - 1)
+            );
+            
+            // Update priority metadata in AtomSpace
+            Handle priority_pred = _atomspace->add_node(PREDICATE_NODE, "goal_priority");
+            Handle priority_value = _atomspace->add_node(NUMBER_NODE, 
+                std::to_string(static_cast<int>(subgoal_priority)));
+            Handle priority_eval = _atomspace->add_link(EVALUATION_LINK, 
+                {priority_pred, subgoal, priority_value});
+            
+            TruthValuePtr priority_tv = SimpleTruthValue::createTV(
+                static_cast<double>(subgoal_priority) / 20.0, 0.9);
+            priority_eval->setTruthValue(priority_tv);
+            
+            // Recursively propagate to deeper levels
+            propagateGoalPriority(subgoal, subgoal_priority);
+            
+            logger().debug() << "[TaskManager] Set priority " << static_cast<int>(subgoal_priority) 
+                            << " for subgoal: " << subgoal->get_name();
+        }
+        
+        return true;
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[TaskManager] Error propagating goal priority: " << e.what();
+        return false;
+    }
+}
+
+bool TaskManager::synchronizeGoalHierarchy(const Handle& goal)
+{
+    if (goal == Handle::UNDEFINED) {
+        logger().error() << "[TaskManager] Cannot synchronize undefined goal";
+        return false;
+    }
+    
+    try {
+        logger().debug() << "[TaskManager] Synchronizing goal hierarchy from: " << goal->get_name();
+        
+        // Get current goal achievement
+        TruthValuePtr goal_tv = calculateHierarchicalGoalAchievement(goal);
+        double goal_achievement = goal_tv->get_mean();
+        
+        // Synchronize parent goals if this goal is highly achieved
+        if (goal_achievement > 0.8) {
+            Handle parent = getParentGoal(goal);
+            if (parent != Handle::UNDEFINED) {
+                synchronizeGoalHierarchy(parent);
+            }
+        }
+        
+        // Synchronize subgoals
+        std::vector<Handle> subgoals = getSubgoals(goal);
+        for (const Handle& subgoal : subgoals) {
+            synchronizeGoalHierarchy(subgoal);
+        }
+        
+        // Add synchronization timestamp
+        Handle sync_pred = _atomspace->add_node(PREDICATE_NODE, "hierarchy_synchronized");
+        Handle sync_time = _atomspace->add_node(NUMBER_NODE, std::to_string(std::time(nullptr)));
+        Handle sync_eval = _atomspace->add_link(EVALUATION_LINK, {sync_pred, goal, sync_time});
+        sync_eval->setTruthValue(SimpleTruthValue::createTV(1.0, 0.9));
+        
+        logger().debug() << "[TaskManager] Synchronized goal hierarchy for: " << goal->get_name();
+        return true;
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[TaskManager] Error synchronizing goal hierarchy: " << e.what();
+        return false;
+    }
+}
+
+std::vector<Handle> TaskManager::getLeafGoals(const Handle& root_goal) const
+{
+    std::vector<Handle> leaf_goals;
+    Handle target_goal = (root_goal != Handle::UNDEFINED) ? root_goal : _current_goal;
+    
+    if (target_goal == Handle::UNDEFINED) {
+        logger().warn() << "[TaskManager] No root goal specified and no current goal set";
+        return leaf_goals;
+    }
+    
+    try {
+        std::vector<Handle> subgoals = getSubgoals(target_goal);
+        
+        if (subgoals.empty()) {
+            // This is a leaf goal
+            leaf_goals.push_back(target_goal);
+        } else {
+            // Recursively find leaf goals in subgoals
+            for (const Handle& subgoal : subgoals) {
+                std::vector<Handle> subgoal_leaves = getLeafGoals(subgoal);
+                leaf_goals.insert(leaf_goals.end(), subgoal_leaves.begin(), subgoal_leaves.end());
+            }
+        }
+        
+        logger().debug() << "[TaskManager] Found " << leaf_goals.size() 
+                        << " leaf goals under: " << target_goal->get_name();
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[TaskManager] Error getting leaf goals: " << e.what();
+    }
+    
+    return leaf_goals;
+}
+
+int TaskManager::getGoalHierarchyDepth(const Handle& goal) const
+{
+    Handle target_goal = (goal != Handle::UNDEFINED) ? goal : _current_goal;
+    
+    if (target_goal == Handle::UNDEFINED) {
+        return 0;
+    }
+    
+    try {
+        std::vector<Handle> subgoals = getSubgoals(target_goal);
+        
+        if (subgoals.empty()) {
+            return 1; // Leaf goal has depth 1
+        }
+        
+        int max_subgoal_depth = 0;
+        for (const Handle& subgoal : subgoals) {
+            int subgoal_depth = getGoalHierarchyDepth(subgoal);
+            max_subgoal_depth = std::max(max_subgoal_depth, subgoal_depth);
+        }
+        
+        int total_depth = 1 + max_subgoal_depth;
+        logger().debug() << "[TaskManager] Goal hierarchy depth for " << target_goal->get_name() 
+                        << ": " << total_depth;
+        
+        return total_depth;
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[TaskManager] Error calculating goal hierarchy depth: " << e.what();
+        return 0;
+    }
+}
+
+bool TaskManager::removeGoalFromHierarchy(const Handle& goal, bool preserve_orphans)
+{
+    if (goal == Handle::UNDEFINED) {
+        logger().error() << "[TaskManager] Cannot remove undefined goal from hierarchy";
+        return false;
+    }
+    
+    try {
+        logger().info() << "[TaskManager] Removing goal from hierarchy: " << goal->get_name() 
+                       << " (preserve_orphans: " << (preserve_orphans ? "true" : "false") << ")";
+        
+        // Get subgoals before removing the goal
+        std::vector<Handle> subgoals = getSubgoals(goal);
+        Handle parent = getParentGoal(goal);
+        
+        // Handle orphaned subgoals
+        if (preserve_orphans && parent != Handle::UNDEFINED) {
+            // Reconnect subgoals to parent
+            for (const Handle& subgoal : subgoals) {
+                addSubgoal(parent, subgoal->get_name());
+            }
+            logger().debug() << "[TaskManager] Reconnected " << subgoals.size() 
+                            << " orphaned subgoals to parent";
+        } else if (!preserve_orphans) {
+            // Recursively remove all subgoals
+            for (const Handle& subgoal : subgoals) {
+                removeGoalFromHierarchy(subgoal, false);
+            }
+            logger().debug() << "[TaskManager] Removed " << subgoals.size() << " subgoals";
+        }
+        
+        // Remove all links involving this goal
+        HandleSeq all_links;
+        _atomspace->get_handles_by_type(all_links, INHERITANCE_LINK);
+        
+        for (const Handle& link : all_links) {
+            HandleSeq link_outgoing = link->getOutgoingSet();
+            if (link_outgoing.size() == 2 && 
+                (link_outgoing[0] == goal || link_outgoing[1] == goal)) {
+                _atomspace->remove_atom(link);
+            }
+        }
+        
+        // Remove goal metadata
+        HandleSeq eval_links;
+        _atomspace->get_handles_by_type(eval_links, EVALUATION_LINK);
+        
+        for (const Handle& eval : eval_links) {
+            HandleSeq eval_outgoing = eval->getOutgoingSet();
+            if (eval_outgoing.size() >= 2) {
+                for (size_t i = 1; i < eval_outgoing.size(); ++i) {
+                    if (eval_outgoing[i] == goal) {
+                        _atomspace->remove_atom(eval);
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Clear from current goal if it matches
+        if (_current_goal == goal) {
+            _current_goal = Handle::UNDEFINED;
+            logger().info() << "[TaskManager] Cleared current goal reference";
+        }
+        
+        logger().info() << "[TaskManager] Successfully removed goal from hierarchy: " 
+                       << goal->get_name();
+                return true;
+        
+    } catch (const std::exception& e) {
+        logger().error() << "[TaskManager] Error removing goal from hierarchy: " << e.what();
+        return false;
+    }
+}
