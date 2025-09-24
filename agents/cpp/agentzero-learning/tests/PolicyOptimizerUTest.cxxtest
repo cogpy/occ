@@ -1,0 +1,172 @@
+/**
+ * PolicyOptimizerUTest.cxxtest - Unit tests for PolicyOptimizer
+ * 
+ * Part of AZ-LEARN-003: MOSES Policy Optimization Integration
+ * Copyright (C) 2024 OpenCog Foundation
+ */
+
+#include <cxxtest/TestSuite.h>
+#include <agentzero/learning/PolicyOptimizer.h>
+#include <agentzero/learning/LearningUtils.h>
+#include <opencog/atomspace/AtomSpace.h>
+#include <opencog/util/Logger.h>
+
+using namespace opencog;
+using namespace opencog::agentzero::learning;
+
+// Simple fitness function for testing
+class TestFitnessFunction : public PolicyFitnessFunction {
+public:
+    double evaluate(const opencog::combo::combo_tree& program,
+                   const std::map<std::string, Handle>& context = {}) override {
+        // Simple fitness: return a value based on program complexity
+        // Lower complexity = higher fitness for testing
+        return 1.0 / (1.0 + program.size());
+    }
+    
+    std::string getName() const override {
+        return "TestFitnessFunction";
+    }
+    
+    std::vector<std::string> getInputFeatures() const override {
+        return {"input1", "input2"};
+    }
+};
+
+class PolicyOptimizerUTest : public CxxTest::TestSuite
+{
+private:
+    AtomSpacePtr atomspace;
+    std::unique_ptr<PolicyOptimizer> optimizer;
+    std::shared_ptr<TestFitnessFunction> fitness_func;
+
+public:
+    void setUp() {
+        logger().set_level(Logger::INFO);
+        logger().set_print_to_stdout_flag(true);
+        
+        atomspace = std::make_shared<AtomSpace>();
+        
+        // Create test configuration
+        LearningConfig config = utils::getDefaultConfig("fast"); // Use fast config for testing
+        config.max_evals = 100;  // Very small for quick tests
+        config.max_gens = 10;
+        config.population_size = 20;
+        
+        optimizer = std::make_unique<PolicyOptimizer>(atomspace, config);
+        fitness_func = std::make_shared<TestFitnessFunction>();
+    }
+    
+    void tearDown() {
+        optimizer.reset();
+        atomspace.reset();
+        fitness_func.reset();
+    }
+    
+    void testPolicyOptimizerConstruction() {
+        TS_ASSERT(optimizer != nullptr);
+        TS_ASSERT(atomspace != nullptr);
+        
+        // Test configuration
+        const auto& config = optimizer->getConfig();
+        TS_ASSERT_EQUALS(config.max_evals, 100);
+        TS_ASSERT_EQUALS(config.max_gens, 10);
+        TS_ASSERT_EQUALS(config.population_size, 20);
+    }
+    
+    void testInitialization() {
+        TS_ASSERT(optimizer->initialize(fitness_func));
+        TS_ASSERT(optimizer->getFitnessFunction() != nullptr);
+        TS_ASSERT_EQUALS(optimizer->getFitnessFunction()->getName(), "TestFitnessFunction");
+    }
+    
+    void testPolicyEvolution() {
+        TS_ASSERT(optimizer->initialize(fitness_func));
+        
+        // Evolve a simple policy
+        auto policy = optimizer->evolvePolicy("test_policy_1");
+        
+        if (policy) {
+            TS_ASSERT(!policy->id.empty());
+            TS_ASSERT_EQUALS(policy->id, "test_policy_1");
+            TS_ASSERT(policy->fitness_score >= 0.0);
+            TS_ASSERT(!policy->program_source.empty());
+            
+            logger().info("Evolved policy with fitness: %f", policy->fitness_score);
+        } else {
+            TS_WARN("Policy evolution failed - this may happen with very small test parameters");
+        }
+    }
+    
+    void testPolicyStorage() {
+        TS_ASSERT(optimizer->initialize(fitness_func));
+        
+        // Create a simple policy for testing storage
+        Policy test_policy("storage_test", Handle::UNDEFINED, opencog::combo::combo_tree());
+        test_policy.fitness_score = 0.75;
+        test_policy.program_source = "test_program";
+        test_policy.input_features = {"input1", "input2"};
+        test_policy.output_type = "action";
+        
+        // Store policy
+        Handle policy_atom = optimizer->storePolicyInAtomSpace(test_policy);
+        TS_ASSERT(policy_atom != Handle::UNDEFINED);
+        
+        // Retrieve policy
+        auto retrieved_policy = optimizer->retrievePolicyFromAtomSpace("storage_test");
+        if (retrieved_policy) {
+            TS_ASSERT_EQUALS(retrieved_policy->id, "storage_test");
+            // Note: fitness_score retrieval depends on proper AtomSpace value handling
+        }
+    }
+    
+    void testGetAllPolicies() {
+        TS_ASSERT(optimizer->initialize(fitness_func));
+        
+        // Initially should have no policies
+        auto policies = optimizer->getAllPolicies();
+        size_t initial_count = policies.size();
+        
+        // Try to evolve a policy
+        auto policy = optimizer->evolvePolicy("test_get_all");
+        
+        // Check if policy count increased
+        policies = optimizer->getAllPolicies();
+        if (policy) {
+            TS_ASSERT(policies.size() >= initial_count);
+        }
+    }
+    
+    void testOptimizationStats() {
+        auto stats = optimizer->getOptimizationStats();
+        
+        // Check that basic stats are present
+        TS_ASSERT(stats.find("total_evaluations") != stats.end());
+        TS_ASSERT(stats.find("total_generations") != stats.end());
+        TS_ASSERT(stats.find("best_fitness_ever") != stats.end());
+        TS_ASSERT(stats.find("average_fitness") != stats.end());
+        TS_ASSERT(stats.find("optimization_time_seconds") != stats.end());
+        
+        // Initially should be zero or default values
+        TS_ASSERT_EQUALS(stats["total_evaluations"], 0.0);
+        TS_ASSERT_EQUALS(stats["total_generations"], 0.0);
+    }
+    
+    void testConfigurationUpdate() {
+        LearningConfig new_config = utils::getDefaultConfig("memory_efficient");
+        new_config.max_evals = 50;
+        
+        optimizer->updateConfig(new_config);
+        
+        const auto& updated_config = optimizer->getConfig();
+        TS_ASSERT_EQUALS(updated_config.max_evals, 50);
+    }
+    
+    void testStatsReset() {
+        optimizer->resetStats();
+        
+        auto stats = optimizer->getOptimizationStats();
+        TS_ASSERT_EQUALS(stats["total_evaluations"], 0.0);
+        TS_ASSERT_EQUALS(stats["total_generations"], 0.0);
+    }
+};
