@@ -224,35 +224,37 @@ Handle ExperienceManager::createExperienceAtom(const Experience& exp)
         std::string exp_id = "Experience_" + std::to_string(timestamp) + "_" + 
                             std::to_string(static_cast<int>(exp.type));
         
-        Handle experience_atom = _atomspace->add_node(CONCEPT_NODE, exp_id);
+        Handle experience_atom = _atomspace->add_node(CONCEPT_NODE, std::move(exp_id));
         
         // Create description atom
-        Handle desc_atom = _atomspace->add_node(CONCEPT_NODE, exp.description);
+        std::string desc_copy = exp.description;
+        Handle desc_atom = _atomspace->add_node(CONCEPT_NODE, std::move(desc_copy));
         Handle desc_link = _atomspace->add_link(INHERITANCE_LINK, {desc_atom, experience_atom});
         
         // Create type atom
         std::string type_str = "ExperienceType_" + std::to_string(static_cast<int>(exp.type));
-        Handle type_atom = _atomspace->add_node(CONCEPT_NODE, type_str);
+        Handle type_atom = _atomspace->add_node(CONCEPT_NODE, std::move(type_str));
         Handle type_link = _atomspace->add_link(INHERITANCE_LINK, {experience_atom, type_atom});
         
         // Create outcome atom
         std::string outcome_str = "ExperienceOutcome_" + std::to_string(static_cast<int>(exp.outcome));
-        Handle outcome_atom = _atomspace->add_node(CONCEPT_NODE, outcome_str);
+        Handle outcome_atom = _atomspace->add_node(CONCEPT_NODE, std::move(outcome_str));
         Handle outcome_link = _atomspace->add_link(EVALUATION_LINK, {
             _atomspace->add_node(PREDICATE_NODE, "hasOutcome"),
             _atomspace->add_link(LIST_LINK, {experience_atom, outcome_atom})
         });
         
         // Create timestamp atom
-        Handle timestamp_atom = _atomspace->add_node(NUMBER_NODE, std::to_string(timestamp));
+        std::string timestamp_str = std::to_string(timestamp);
+        Handle timestamp_atom = _atomspace->add_node(NUMBER_NODE, std::move(timestamp_str));
         Handle timestamp_link = _atomspace->add_link(EVALUATION_LINK, {
             _atomspace->add_node(PREDICATE_NODE, "timestamp"),
             _atomspace->add_link(LIST_LINK, {experience_atom, timestamp_atom})
         });
         
         // Create learning value atom
-        Handle learning_value_atom = _atomspace->add_node(NUMBER_NODE, 
-                                                         std::to_string(exp.learning_value));
+        std::string learning_value_str = std::to_string(exp.learning_value);
+        Handle learning_value_atom = _atomspace->add_node(NUMBER_NODE, std::move(learning_value_str));
         Handle learning_link = _atomspace->add_link(EVALUATION_LINK, {
             _atomspace->add_node(PREDICATE_NODE, "learningValue"),
             _atomspace->add_link(LIST_LINK, {experience_atom, learning_value_atom})
@@ -334,26 +336,31 @@ std::vector<Handle> ExperienceManager::extractPatternsFromExperience(const Exper
     try {
         // Pattern 1: Action-Outcome pattern
         if (!exp.actions.empty() && !exp.consequences.empty()) {
+            HandleSeq actions_copy = exp.actions;
+            HandleSeq consequences_copy = exp.consequences;
             Handle action_pattern = _atomspace->add_link(IMPLICATION_LINK, {
-                _atomspace->add_link(AND_LINK, exp.actions),
-                _atomspace->add_link(AND_LINK, exp.consequences)
+                _atomspace->add_link(AND_LINK, std::move(actions_copy)),
+                _atomspace->add_link(AND_LINK, std::move(consequences_copy))
             });
             patterns.push_back(action_pattern);
         }
         
         // Pattern 2: Context-Action pattern (what actions work in which contexts)
         if (!exp.context.environmental_state.empty() && !exp.actions.empty()) {
+            HandleSeq env_copy = exp.context.environmental_state;
+            HandleSeq actions_copy = exp.actions;
             Handle context_pattern = _atomspace->add_link(IMPLICATION_LINK, {
-                _atomspace->add_link(AND_LINK, exp.context.environmental_state),
-                _atomspace->add_link(AND_LINK, exp.actions)
+                _atomspace->add_link(AND_LINK, std::move(env_copy)),
+                _atomspace->add_link(AND_LINK, std::move(actions_copy))
             });
             patterns.push_back(context_pattern);
         }
         
         // Pattern 3: Goal-Achievement pattern
         if (!exp.context.active_goals.empty() && exp.outcome == ExperienceOutcome::SUCCESS) {
+            HandleSeq goals_copy = exp.context.active_goals;
             Handle goal_pattern = _atomspace->add_link(IMPLICATION_LINK, {
-                _atomspace->add_link(AND_LINK, exp.context.active_goals),
+                _atomspace->add_link(AND_LINK, std::move(goals_copy)),
                 _atomspace->add_node(CONCEPT_NODE, "SuccessfulOutcome")
             });
             patterns.push_back(goal_pattern);
@@ -361,9 +368,10 @@ std::vector<Handle> ExperienceManager::extractPatternsFromExperience(const Exper
         
         // Pattern 4: Skill application pattern
         if (!exp.context.applied_skills.empty()) {
+            HandleSeq skills_copy = exp.context.applied_skills;
             Handle skill_pattern = _atomspace->add_link(EVALUATION_LINK, {
                 _atomspace->add_node(PREDICATE_NODE, "skillApplicationPattern"),
-                _atomspace->add_link(LIST_LINK, exp.context.applied_skills)
+                _atomspace->add_link(LIST_LINK, std::move(skills_copy))
             });
             patterns.push_back(skill_pattern);
         }
@@ -599,7 +607,8 @@ std::vector<Handle> ExperienceManager::discoverSequentialPatterns(const std::vec
     // Create patterns for sequences that appear multiple times
     for (const auto& seq_pair : action_sequences) {
         if (seq_pair.second.size() >= 2) { // Pattern must appear at least twice
-            Handle pattern = _atomspace->add_node(CONCEPT_NODE, "SequentialPattern_" + seq_pair.first);
+            std::string pattern_name = "SequentialPattern_" + seq_pair.first;
+            Handle pattern = _atomspace->add_node(CONCEPT_NODE, std::move(pattern_name));
             
             // Link pattern to experiences
             for (const Handle& exp_atom : seq_pair.second) {
@@ -650,8 +659,8 @@ std::vector<Handle> ExperienceManager::discoverCausalPatterns(const std::vector<
             double success_rate = static_cast<double>(successes) / causal_pair.second.size();
             
             if (success_rate > 0.6 || success_rate < 0.4) { // Either high success or high failure
-                Handle pattern = _atomspace->add_node(CONCEPT_NODE, "CausalPattern_" + 
-                                                     std::to_string(patterns.size()));
+                std::string pattern_name = "CausalPattern_" + std::to_string(patterns.size());
+                Handle pattern = _atomspace->add_node(CONCEPT_NODE, std::move(pattern_name));
                 
                 // Set success rate as truth value
                 TruthValuePtr tv = SimpleTruthValue::createTV(success_rate, 0.8);
@@ -942,7 +951,7 @@ void ExperienceManager::integrateMOSESOptimization(const std::vector<Experience>
                 std::chrono::duration_cast<std::chrono::milliseconds>(
                     exp.context.timestamp.time_since_epoch()).count());
             
-            Handle policy_atom = _atomspace->add_node(CONCEPT_NODE, policy_name);
+            Handle policy_atom = _atomspace->add_node(CONCEPT_NODE, std::move(policy_name));
             _experience_to_policy_map[exp.experience_atom] = policy_atom;
             
             // Link to MOSES policy space
@@ -1025,7 +1034,7 @@ Handle ExperienceManager::optimizePolicyFromExperience(const Handle& policy_atom
     
     // Create an optimized policy variant
     std::string optimized_name = policy_atom->get_name() + "_optimized";
-    Handle optimized_policy = _atomspace->add_node(CONCEPT_NODE, optimized_name);
+    Handle optimized_policy = _atomspace->add_node(CONCEPT_NODE, std::move(optimized_name));
     
     // Link to original policy
     _atomspace->add_link(INHERITANCE_LINK, {optimized_policy, policy_atom});
