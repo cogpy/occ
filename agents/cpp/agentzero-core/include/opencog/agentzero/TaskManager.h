@@ -262,6 +262,75 @@ public:
      */
     std::string getGoalHierarchyInfo(const Handle& goal_atom = Handle::UNDEFINED) const;
     
+    // Enhanced GoalHierarchy management methods
+    /**
+     * Get all subgoals of a given goal
+     * @param parent_goal Handle to the parent goal
+     * @return vector of subgoal handles
+     */
+    std::vector<Handle> getSubgoals(const Handle& parent_goal) const;
+    
+    /**
+     * Get the parent goal of a given goal
+     * @param subgoal Handle to the subgoal
+     * @return Handle to parent goal, or Handle::UNDEFINED if top-level
+     */
+    Handle getParentGoal(const Handle& subgoal) const;
+    
+    /**
+     * Get all ancestors of a goal in the hierarchy
+     * @param goal Handle to the goal
+     * @return vector of ancestor goals from immediate parent to root
+     */
+    std::vector<Handle> getGoalAncestors(const Handle& goal) const;
+    
+    /**
+     * Calculate hierarchical goal achievement
+     * Considers achievement of all subgoals when calculating parent goal achievement
+     * @param goal Handle to the goal
+     * @return TruthValue representing hierarchical achievement
+     */
+    TruthValuePtr calculateHierarchicalGoalAchievement(const Handle& goal);
+    
+    /**
+     * Propagate goal priority through hierarchy
+     * High priority parent goals boost priority of subgoals
+     * @param goal Handle to the goal to propagate from
+     * @param priority Priority to propagate
+     * @return true if propagation was successful
+     */
+    bool propagateGoalPriority(const Handle& goal, Priority priority);
+    
+    /**
+     * Synchronize goal status across hierarchy
+     * Updates parent and child goal statuses based on completion states
+     * @param goal Handle to the goal to synchronize from
+     * @return true if synchronization was successful
+     */
+    bool synchronizeGoalHierarchy(const Handle& goal);
+    
+    /**
+     * Find all leaf goals (goals with no subgoals) in hierarchy
+     * @param root_goal Handle to start search from (defaults to current goal)
+     * @return vector of leaf goal handles
+     */
+    std::vector<Handle> getLeafGoals(const Handle& root_goal = Handle::UNDEFINED) const;
+    
+    /**
+     * Get goal hierarchy depth
+     * @param goal Handle to the goal (defaults to current goal)
+     * @return depth of the goal hierarchy starting from this goal
+     */
+    int getGoalHierarchyDepth(const Handle& goal = Handle::UNDEFINED) const;
+    
+    /**
+     * Remove a goal and all its subgoals from hierarchy
+     * @param goal Handle to the goal to remove
+     * @param preserve_orphans Whether to preserve orphaned subgoals
+     * @return true if removal was successful
+     */
+    bool removeGoalFromHierarchy(const Handle& goal, bool preserve_orphans = false);
+    
     /**
      * Process task management for one cycle
      * Called by the cognitive loop
