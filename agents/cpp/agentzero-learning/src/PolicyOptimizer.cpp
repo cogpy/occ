@@ -10,6 +10,7 @@
 #include "agentzero-learning/PolicyOptimizer.h"
 #include <opencog/util/Logger.h>
 #include <opencog/atomspace/AtomSpace.h>
+#include <opencog/atoms/atom_types/atom_types.h>
 
 using namespace opencog;
 using namespace opencog::agentzero;

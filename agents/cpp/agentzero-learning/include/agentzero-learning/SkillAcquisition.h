@@ -13,7 +13,7 @@
 #include <memory>
 #include <vector>
 #include <opencog/atomspace/AtomSpace.h>
-#include <opencog/atomspace/Handle.h>
+#include <opencog/atoms/base/Handle.h>
 
 namespace opencog { namespace agentzero {
 

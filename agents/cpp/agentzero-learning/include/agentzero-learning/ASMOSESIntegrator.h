@@ -32,7 +32,7 @@
 
 #include <opencog/util/Logger.h>
 #include <opencog/atomspace/AtomSpace.h>
-#include <opencog/atomspace/Handle.h>
+#include <opencog/atoms/base/Handle.h>
 
 // Forward declarations for MOSES types
 namespace opencog { namespace moses {
