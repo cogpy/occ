@@ -12,6 +12,7 @@ add_subdirectory(cpp)
 
 # Add specific Agent-Zero components
 add_subdirectory(cpp/agentzero-perception)
+add_subdirectory(cpp/agentzero-planning)  # AZ-SPATIAL-001: Added planning module
 
 # Future: Add other agent implementations here
 # add_subdirectory(python)  # For Python-based agents
