@@ -213,6 +213,52 @@ public:
      * @return Current configuration
      */
     const LearningConfig& getConfig() const;
+    
+    /**
+     * Record an experience with advanced classification (from main branch approach)
+     * @param description Human-readable description of the experience
+     * @param type Type of experience
+     * @param outcome Outcome classification
+     * @param actions Actions taken during the experience
+     * @param consequences Observed consequences
+     * @param confidence Confidence level in the classification
+     * @return Experience ID if successful, empty string if failed
+     */
+    ExperienceId recordExperience(const std::string& description,
+                                ExperienceType type,
+                                ExperienceOutcome outcome,
+                                const std::vector<Handle>& actions = {},
+                                const std::vector<Handle>& consequences = {},
+                                double confidence = 0.8);
+    
+    /**
+     * Discover patterns from accumulated experiences
+     * @return Number of patterns discovered
+     */
+    size_t discoverExperiencePatterns();
+    
+    /**
+     * Get experiences by type
+     * @param type Experience type to filter by
+     * @return Vector of matching experiences
+     */
+    std::vector<std::shared_ptr<Experience>> getExperiencesByType(ExperienceType type);
+    
+    /**
+     * Get experiences by outcome
+     * @param outcome Experience outcome to filter by
+     * @return Vector of matching experiences
+     */
+    std::vector<std::shared_ptr<Experience>> getExperiencesByOutcome(ExperienceOutcome outcome);
+    
+    /**
+     * Get successful patterns for decision making
+     * @param context Current context atoms
+     * @param min_success_rate Minimum success rate required
+     * @return Vector of successful experience patterns
+     */
+    std::vector<std::shared_ptr<Experience>> getSuccessfulPatterns(
+        const std::vector<Handle>& context, double min_success_rate = 0.7);
 
 private:
     // Core members
@@ -240,7 +286,32 @@ private:
     std::map<Handle, std::set<ExperienceId>> next_state_to_experiences_;
     mutable std::mutex index_maps_mutex_;
     
+    // Advanced structure handles (from main branch integration)
+    Handle _experience_base;
+    Handle _episodic_memory;
+    Handle _experience_patterns;
+    Handle _learning_outcomes;
+    Handle _skill_experiences;
+    Handle _goal_experiences;
+    Handle _temporal_context;
+    Handle _moses_policy_space;
+    
+    // Advanced configuration flags
+    bool _enable_pattern_discovery;
+    bool _enable_moses_integration;
+    bool _enable_temporal_modeling;
+    bool _enable_emotional_learning;
+    double _experience_retention_threshold;
+    size_t _max_recent_experiences;
+    double _pattern_significance_threshold;
+    bool _moses_available;
+    
     // Private methods
+    
+    /**
+     * Initialize advanced AtomSpace structures for sophisticated experience management
+     */
+    void initializeAdvancedStructures();
     
     /**
      * Generate unique experience ID

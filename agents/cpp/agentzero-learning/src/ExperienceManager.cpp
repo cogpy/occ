@@ -1,7 +1,9 @@
 /**
- * ExperienceManager.cpp - Implementation of Experience Memory Management
+ * ExperienceManager.cpp - Comprehensive Implementation of Experience Memory Management
  * 
- * Part of AZ-LEARN-003: MOSES Policy Optimization Integration
+ * Combines AZ-LEARN-003 MOSES Policy Optimization Integration with 
+ * sophisticated experience classification and pattern discovery
+ * 
  * Copyright (C) 2024 OpenCog Foundation
  */
 
@@ -13,31 +15,184 @@
 #include <opencog/atoms/base/Link.h>
 #include <opencog/atoms/value/FloatValue.h>
 #include <opencog/atoms/value/StringValue.h>
+#include <opencog/atoms/truthvalue/SimpleTruthValue.h>
+#include <opencog/atoms/atom_types/types.h>
 
 #include <algorithm>
 #include <numeric>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
+#include <random>
 
 namespace opencog {
 namespace agentzero {
 namespace learning {
 
 ExperienceManager::ExperienceManager(AtomSpacePtr atomspace, const LearningConfig& config)
-    : atomspace_(atomspace), config_(config), total_experiences_added_(0), total_reward_accumulated_(0.0) {
+    : atomspace_(atomspace), config_(config), total_experiences_added_(0), total_reward_accumulated_(0.0),
+      _experience_base(Handle::UNDEFINED),
+      _episodic_memory(Handle::UNDEFINED),
+      _experience_patterns(Handle::UNDEFINED),
+      _learning_outcomes(Handle::UNDEFINED),
+      _skill_experiences(Handle::UNDEFINED),
+      _goal_experiences(Handle::UNDEFINED),
+      _temporal_context(Handle::UNDEFINED),
+      _enable_pattern_discovery(true),
+      _enable_moses_integration(true),
+      _enable_temporal_modeling(true),
+      _enable_emotional_learning(false),
+      _experience_retention_threshold(0.3),
+      _max_recent_experiences(100),
+      _pattern_significance_threshold(0.6),
+      _moses_available(false),
+      _moses_policy_space(Handle::UNDEFINED) {
     
     if (!atomspace_) {
         throw LearningException("AtomSpace cannot be null");
     }
     
-    logger().info("ExperienceManager: Initializing with buffer size %zu", config_.experience_buffer_size);
+    logger().info("ExperienceManager: Initializing comprehensive experience management with buffer size %zu", config_.experience_buffer_size);
     
     initializeAtomSpaceStructures();
+    initializeAdvancedStructures();
     
-    logger().info("ExperienceManager: Initialization complete");
+    logger().info("ExperienceManager: Comprehensive initialization complete with pattern discovery and MOSES integration");
 }
 
 ExperienceManager::~ExperienceManager() {
     logger().info("ExperienceManager: Destroyed with %zu total experiences", 
                   total_experiences_added_.load());
+}
+
+// Additional method for advanced experience recording
+ExperienceId ExperienceManager::recordExperience(const std::string& description,
+                                                ExperienceType type,
+                                                ExperienceOutcome outcome,
+                                                const std::vector<Handle>& actions,
+                                                const std::vector<Handle>& consequences,
+                                                double confidence) {
+    try {
+        Experience exp;
+        exp.id = generateExperienceId();
+        exp.experience_type = type;
+        exp.outcome = outcome;
+        exp.confidence_level = confidence;
+        exp.timestamp = utils::getCurrentTimestamp();
+        
+        // Set importance based on outcome
+        switch (outcome) {
+            case ExperienceOutcome::SUCCESS:
+                exp.importance = ExperienceImportance::HIGH;
+                exp.reward = 1.0;
+                break;
+            case ExperienceOutcome::FAILURE:
+                exp.importance = ExperienceImportance::HIGH;
+                exp.reward = -1.0;
+                break;
+            case ExperienceOutcome::LEARNING_OPPORTUNITY:
+                exp.importance = ExperienceImportance::MEDIUM;
+                exp.reward = 0.5;
+                break;
+            default:
+                exp.importance = ExperienceImportance::MEDIUM;
+                exp.reward = 0.0;
+                break;
+        }
+        
+        // Store actions and consequences in context
+        for (size_t i = 0; i < actions.size(); ++i) {
+            exp.context_atoms["action_" + std::to_string(i)] = actions[i];
+        }
+        for (size_t i = 0; i < consequences.size(); ++i) {
+            exp.context_atoms["consequence_" + std::to_string(i)] = consequences[i];
+        }
+        
+        if (addExperience(exp)) {
+            utils::logExperienceUpdate(exp.id, "recorded_advanced");
+            return exp.id;
+        }
+        
+        return "";
+        
+    } catch (const std::exception& e) {
+        logger().error("ExperienceManager: Error recording advanced experience: %s", e.what());
+        return "";
+    }
+}
+
+// Pattern discovery method from main branch approach
+size_t ExperienceManager::discoverExperiencePatterns() {
+    if (!_enable_pattern_discovery) {
+        return 0;
+    }
+    
+    logger().info("ExperienceManager: Starting pattern discovery");
+    
+    size_t patterns_found = 0;
+    
+    try {
+        // Get successful experiences for pattern analysis
+        auto successful_experiences = getExperiencesByFilter([](const Experience& exp) {
+            return exp.outcome == ExperienceOutcome::SUCCESS;
+        });
+        
+        if (successful_experiences.size() < 3) {
+            logger().info("ExperienceManager: Not enough successful experiences for pattern discovery");
+            return 0;
+        }
+        
+        // Simple pattern discovery: find common action sequences
+        std::map<std::string, size_t> action_patterns;
+        
+        for (const auto& exp : successful_experiences) {
+            std::string pattern_key = "";
+            
+            // Create pattern from context actions
+            for (const auto& context_pair : exp->context_atoms) {
+                if (context_pair.first.find("action_") == 0) {
+                    pattern_key += context_pair.second->get_name() + "->";
+                }
+            }
+            
+            if (!pattern_key.empty()) {
+                action_patterns[pattern_key]++;
+                if (action_patterns[pattern_key] >= 3) { // Pattern significance threshold
+                    patterns_found++;
+                }
+            }
+        }
+        
+        logger().info("ExperienceManager: Discovered %zu experience patterns", patterns_found);
+        return patterns_found;
+        
+    } catch (const std::exception& e) {
+        logger().error("ExperienceManager: Error in pattern discovery: %s", e.what());
+        return 0;
+    }
+}
+
+// Get experiences by type
+std::vector<std::shared_ptr<Experience>> ExperienceManager::getExperiencesByType(ExperienceType type) {
+    return getExperiencesByFilter([type](const Experience& exp) {
+        return exp.experience_type == type;
+    });
+}
+
+// Get experiences by outcome
+std::vector<std::shared_ptr<Experience>> ExperienceManager::getExperiencesByOutcome(ExperienceOutcome outcome) {
+    return getExperiencesByFilter([outcome](const Experience& exp) {
+        return exp.outcome == outcome;
+    });
+}
+
+// Get successful patterns (simplified version)
+std::vector<std::shared_ptr<Experience>> ExperienceManager::getSuccessfulPatterns(
+    const std::vector<Handle>& context, double min_success_rate) {
+    
+    return getExperiencesByFilter([min_success_rate](const Experience& exp) {
+        return exp.outcome == ExperienceOutcome::SUCCESS && exp.confidence_level >= min_success_rate;
+    });
 }
 
 bool ExperienceManager::addExperience(const Experience& experience) {
@@ -504,7 +659,43 @@ void ExperienceManager::initializeAtomSpaceStructures() {
     // Create base nodes for experience storage
     atomspace_->add_node(CONCEPT_NODE, "ExperienceStorage");
     
-    logger().debug("ExperienceManager: AtomSpace structures initialized");
+    logger().debug("ExperienceManager: Basic AtomSpace structures initialized");
+}
+
+void ExperienceManager::initializeAdvancedStructures() {
+    try {
+        // Initialize advanced experience management structures from main branch approach
+        _experience_base = atomspace_->add_node(CONCEPT_NODE, "ExperienceBase");
+        _episodic_memory = atomspace_->add_node(CONCEPT_NODE, "EpisodicMemory");
+        _experience_patterns = atomspace_->add_node(CONCEPT_NODE, "ExperiencePatterns");
+        _learning_outcomes = atomspace_->add_node(CONCEPT_NODE, "LearningOutcomes");
+        _skill_experiences = atomspace_->add_node(CONCEPT_NODE, "SkillExperiences");
+        _goal_experiences = atomspace_->add_node(CONCEPT_NODE, "GoalExperiences");
+        _temporal_context = atomspace_->add_node(CONCEPT_NODE, "TemporalContext");
+        _moses_policy_space = atomspace_->add_node(CONCEPT_NODE, "MOSESPolicySpace");
+        
+        // Create hierarchical relationships
+        atomspace_->add_link(INHERITANCE_LINK, {_episodic_memory, _experience_base});
+        atomspace_->add_link(INHERITANCE_LINK, {_experience_patterns, _experience_base});
+        atomspace_->add_link(INHERITANCE_LINK, {_skill_experiences, _experience_base});
+        atomspace_->add_link(INHERITANCE_LINK, {_goal_experiences, _experience_base});
+        
+        // Create experience type nodes
+        atomspace_->add_node(CONCEPT_NODE, "ActionOutcomeExperience");
+        atomspace_->add_node(CONCEPT_NODE, "InteractionExperience");
+        atomspace_->add_node(CONCEPT_NODE, "ProblemSolvingExperience");
+        atomspace_->add_node(CONCEPT_NODE, "SkillApplicationExperience");
+        atomspace_->add_node(CONCEPT_NODE, "GoalPursuitExperience");
+        atomspace_->add_node(CONCEPT_NODE, "UnexpectedExperience");
+        atomspace_->add_node(CONCEPT_NODE, "LearningEpisodeExperience");
+        atomspace_->add_node(CONCEPT_NODE, "EmotionalExperience");
+        
+        logger().info("ExperienceManager: Advanced AtomSpace structures initialized with hierarchical organization");
+        
+    } catch (const std::exception& e) {
+        logger().error("ExperienceManager: Error initializing advanced structures: %s", e.what());
+        throw;
+    }
 }
 
 bool ExperienceManager::validateExperience(const Experience& experience) const {

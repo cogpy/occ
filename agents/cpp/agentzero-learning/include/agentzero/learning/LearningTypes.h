@@ -78,7 +78,40 @@ struct LearningConfig {
 };
 
 /**
- * Experience data structure for storing agent experiences
+ * Advanced experience classification from comprehensive experience management
+ */
+enum class ExperienceType {
+    ACTION_OUTCOME,     // Results of actions taken
+    INTERACTION,        // Social/environmental interactions
+    PROBLEM_SOLVING,    // Problem-solving episodes
+    SKILL_APPLICATION,  // Application of learned skills
+    GOAL_PURSUIT,       // Goal-directed behavior sequences
+    UNEXPECTED,         // Unexpected events or outcomes
+    LEARNING_EPISODE,   // Meta-learning experiences
+    EMOTIONAL           // Emotional experiences and reactions
+};
+
+// Experience outcome classification
+enum class ExperienceOutcome {
+    SUCCESS,            // Experience led to desired outcome
+    FAILURE,            // Experience did not achieve goal
+    PARTIAL_SUCCESS,    // Partially achieved desired outcome
+    UNEXPECTED_OUTCOME, // Outcome was different than expected
+    INCONCLUSIVE,       // Outcome unclear or mixed
+    LEARNING_OPPORTUNITY // Experience provided valuable learning
+};
+
+// Experience importance levels
+enum class ExperienceImportance {
+    CRITICAL = 100,     // Critical experiences for survival/success
+    HIGH = 75,         // High importance experiences
+    MEDIUM = 50,       // Medium importance experiences
+    LOW = 25,          // Low importance experiences
+    ROUTINE = 10       // Routine, common experiences
+};
+
+/**
+ * Comprehensive experience data structure combining both approaches
  */
 struct Experience {
     ExperienceId id;
@@ -89,9 +122,17 @@ struct Experience {
     bool terminal;            // Whether this is a terminal state
     uint64_t timestamp;       // When this experience occurred
     
+    // Advanced classification (from main branch)
+    ExperienceType experience_type = ExperienceType::ACTION_OUTCOME;
+    ExperienceOutcome outcome = ExperienceOutcome::INCONCLUSIVE;
+    ExperienceImportance importance = ExperienceImportance::MEDIUM;
+    double confidence_level = 0.5;  // Confidence in the experience classification
+    
     // Additional context
     std::map<std::string, Handle> context_atoms;
     std::map<std::string, double> numeric_features;
+    std::vector<Handle> environmental_state;  // Environmental context atoms
+    std::vector<Handle> agent_state;          // Agent internal state atoms
     
     Experience() : reward(0.0), terminal(false), timestamp(0) {}
     
@@ -99,6 +140,14 @@ struct Experience {
                Handle next_state, double r, bool term, uint64_t ts)
         : id(exp_id), state_atom(state), action_atom(action),
           next_state_atom(next_state), reward(r), terminal(term), timestamp(ts) {}
+    
+    // Constructor with advanced classification
+    Experience(const ExperienceId& exp_id, Handle state, Handle action,
+               Handle next_state, double r, bool term, uint64_t ts,
+               ExperienceType type, ExperienceOutcome out, ExperienceImportance imp)
+        : id(exp_id), state_atom(state), action_atom(action),
+          next_state_atom(next_state), reward(r), terminal(term), timestamp(ts),
+          experience_type(type), outcome(out), importance(imp) {}
 };
 
 /**

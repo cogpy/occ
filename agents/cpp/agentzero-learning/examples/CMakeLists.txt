@@ -1,22 +1,49 @@
-# Agent-Zero Learning Module Examples
-# Part of AZ-LEARN-003: MOSES Policy Optimization Integration
+# Comprehensive Examples for Agent-Zero Learning Module
+# Combines MOSES Policy Optimization with Advanced Experience Management
 
 cmake_minimum_required(VERSION 3.16)
 
-# Simple policy optimization example
-add_executable(policy_optimization_example
-    policy_optimization_example.cpp
-)
+# Find required packages
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(COGUTIL REQUIRED cogutil)
+pkg_check_modules(ATOMSPACE REQUIRED atomspace)
 
-target_link_libraries(policy_optimization_example
-    agentzero-learning
-    ${COGUTIL_LIBRARIES}
-    ${ATOMSPACE_LIBRARIES}
-    ${MOSES_LIBRARIES}
-    ${ASMOSES_LIBRARIES}
-)
+# Optional MOSES dependencies
+pkg_check_modules(MOSES moses)
+pkg_check_modules(ASMOSES asmoses)
 
-# Experience management example
+# Policy optimization example (requires MOSES)
+if(MOSES_FOUND OR ASMOSES_FOUND)
+    add_executable(policy_optimization_example
+        policy_optimization_example.cpp
+    )
+    
+    target_link_libraries(policy_optimization_example
+        agentzero-learning
+        ${COGUTIL_LIBRARIES}
+        ${ATOMSPACE_LIBRARIES}
+    )
+    
+    if(MOSES_LIBRARIES)
+        target_link_libraries(policy_optimization_example ${MOSES_LIBRARIES})
+    endif()
+    
+    if(ASMOSES_LIBRARIES)
+        target_link_libraries(policy_optimization_example ${ASMOSES_LIBRARIES})
+    endif()
+    
+    target_include_directories(policy_optimization_example PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ${COGUTIL_INCLUDE_DIRS}
+        ${ATOMSPACE_INCLUDE_DIRS}
+    )
+    
+    message(STATUS "Policy optimization example configured")
+else()
+    message(STATUS "Skipping policy optimization example - MOSES not found")
+endif()
+
+# Advanced experience management example
 add_executable(experience_management_example
     experience_management_example.cpp
 )
@@ -27,4 +54,36 @@ target_link_libraries(experience_management_example
     ${ATOMSPACE_LIBRARIES}
 )
 
-message(STATUS "Agent-Zero Learning examples configured")
+target_include_directories(experience_management_example PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${COGUTIL_INCLUDE_DIRS}
+    ${ATOMSPACE_INCLUDE_DIRS}
+)
+
+# Experience manager demo (from main branch)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/ExperienceManagerDemo.cpp)
+    add_executable(experience_manager_demo
+        ExperienceManagerDemo.cpp
+    )
+    
+    target_link_libraries(experience_manager_demo
+        agentzero-learning
+        ${COGUTIL_LIBRARIES}
+        ${ATOMSPACE_LIBRARIES}
+        ${Boost_LIBRARIES}
+    )
+    
+    target_include_directories(experience_manager_demo PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ${COGUTIL_INCLUDE_DIRS}
+        ${ATOMSPACE_INCLUDE_DIRS}
+    )
+    
+    set_target_properties(experience_manager_demo PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    )
+    
+    message(STATUS "Experience manager demo configured")
+endif()
+
+message(STATUS "Comprehensive Agent-Zero Learning examples configured")
