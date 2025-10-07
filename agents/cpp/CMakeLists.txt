@@ -171,11 +171,8 @@ else()
 endif()
 
 # Phase 6: Communication & NLP (depends on core)
-if(LG_ATOMESE_FOUND)
-    add_subdirectory(agentzero-communication)
-else()
-    message(STATUS "Skipping agentzero-communication: lg-atomese dependency not found")
-endif()
+# Communication module doesn't require lg-atomese - it uses core dependencies only
+add_subdirectory(agentzero-communication)
 
 # Phase 7: Memory & Context (depends on core)
 if(ATTENTION_FOUND)
