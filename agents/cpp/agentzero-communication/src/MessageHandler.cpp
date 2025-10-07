@@ -23,6 +23,7 @@
 
 using namespace opencog;
 using namespace opencog::agentzero;
+using opencog::HandleSeq;
 
 MessageHandler::MessageHandler(AtomSpacePtr atomspace)
     : _atomspace(atomspace)
@@ -77,24 +78,24 @@ Handle MessageHandler::messageToAtom(const Message& message) {
     Handle timestamp_atom = _atomspace->add_node(NUMBER_NODE, std::string(std::to_stringtimestamp))
     
     // Create relationships
-    _atomspace->add_link(EVALUATION_LINK, {
+    _atomspace->add_link(EVALUATION_LINK, HandleSeq{
         _atomspace->add_node(PREDICATE_NODE, std::string("sentBy"),
-        _atomspace->add_link(LIST_LINK, {message_atom, sender_atom})
+        _atomspace->add_link(LIST_LINK, HandleSeq{message_atom, sender_atom})
     });
     
-    _atomspace->add_link(EVALUATION_LINK, {
+    _atomspace->add_link(EVALUATION_LINK, HandleSeq{
         _atomspace->add_node(PREDICATE_NODE, std::string("sentTo"),
-        _atomspace->add_link(LIST_LINK, {message_atom, recipient_atom})
+        _atomspace->add_link(LIST_LINK, HandleSeq{message_atom, recipient_atom})
     });
     
-    _atomspace->add_link(EVALUATION_LINK, {
+    _atomspace->add_link(EVALUATION_LINK, HandleSeq{
         _atomspace->add_node(PREDICATE_NODE, std::string("hasContent"),
-        _atomspace->add_link(LIST_LINK, {message_atom, content_atom})
+        _atomspace->add_link(LIST_LINK, HandleSeq{message_atom, content_atom})
     });
     
-    _atomspace->add_link(EVALUATION_LINK, {
+    _atomspace->add_link(EVALUATION_LINK, HandleSeq{
         _atomspace->add_node(PREDICATE_NODE, std::string("atTime"),
-        _atomspace->add_link(LIST_LINK, {message_atom, timestamp_atom})
+        _atomspace->add_link(LIST_LINK, HandleSeq{message_atom, timestamp_atom})
     });
     
     // Add metadata if present
@@ -102,9 +103,9 @@ Handle MessageHandler::messageToAtom(const Message& message) {
         Handle key_atom = _atomspace->add_node(CONCEPT_NODE, std::string("MetaKey:" + key));
         Handle value_atom = _atomspace->add_node(CONCEPT_NODE, std::string("MetaValue:" + value));
         
-        _atomspace->add_link(EVALUATION_LINK, {
+        _atomspace->add_link(EVALUATION_LINK, HandleSeq{
             _atomspace->add_node(PREDICATE_NODE, std::string("hasMetadata"),
-            _atomspace->add_link(LIST_LINK, {message_atom, key_atom, value_atom})
+            _atomspace->add_link(LIST_LINK, HandleSeq{message_atom, key_atom, value_atom})
         });
     }
     

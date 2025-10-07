@@ -18,6 +18,8 @@
 
 #include "opencog/agentzero/ConversationState.h"
 
+using opencog::HandleSeq;
+
 using namespace opencog;
 using namespace opencog::agentzero;
 
@@ -36,8 +38,8 @@ ConversationState::ConversationState(const std::string& conversation_id, AtomSpa
     _participants_atom = _atomspace->add_node(CONCEPT_NODE, std::string("Participants:" + _conversation_id));
     
     // Link context and participants to conversation
-    _atomspace->add_link(MEMBER_LINK, {_context_atom, _conversation_atom});
-    _atomspace->add_link(MEMBER_LINK, {_participants_atom, _conversation_atom});
+    _atomspace->add_link(MEMBER_LINK, HandleSeq{_context_atom, _conversation_atom});
+    _atomspace->add_link(MEMBER_LINK, HandleSeq{_participants_atom, _conversation_atom});
     
     logger().debug("ConversationState created for %s", _conversation_id.c_str());
 }
@@ -96,7 +98,7 @@ void ConversationState::addParticipant(const std::string& participant_id) {
         
         // Update AtomSpace representation
         Handle participant_atom = _atomspace->add_node(CONCEPT_NODE, std::string(participant_id));
-        _atomspace->add_link(MEMBER_LINK, {participant_atom, _participants_atom});
+        _atomspace->add_link(MEMBER_LINK, HandleSeq{participant_atom, _participants_atom});
     }
 }
 
@@ -123,9 +125,9 @@ void ConversationState::setTopic(const std::string& topic) {
     // Update AtomSpace representation
     if (!topic.empty()) {
         Handle topic_atom = _atomspace->add_node(CONCEPT_NODE, std::string("Topic:" + topic));
-        _atomspace->add_link(EVALUATION_LINK, {
+        _atomspace->add_link(EVALUATION_LINK, HandleSeq{
             _atomspace->add_node(PREDICATE_NODE, std::string("hasTopic"),
-            _atomspace->add_link(LIST_LINK, {_conversation_atom, topic_atom})
+            _atomspace->add_link(LIST_LINK, HandleSeq{_conversation_atom, topic_atom})
         });
     }
 }
@@ -144,16 +146,16 @@ void ConversationState::updateAtomSpace() {
     auto timestamp = std::chrono::system_clock::to_time_t(now);
     
     Handle timestamp_atom = _atomspace->add_node(NUMBER_NODE, std::string(std::to_stringtimestamp))
-    _atomspace->add_link(EVALUATION_LINK, {
+    _atomspace->add_link(EVALUATION_LINK, HandleSeq{
         _atomspace->add_node(PREDICATE_NODE, std::string("lastActivity"),
-        _atomspace->add_link(LIST_LINK, {_conversation_atom, timestamp_atom})
+        _atomspace->add_link(LIST_LINK, HandleSeq{_conversation_atom, timestamp_atom})
     });
     
     // Update active status
     Handle active_atom = _atomspace->add_node(CONCEPT_NODE, _is_active ? "Active" : "Inactive");
-    _atomspace->add_link(EVALUATION_LINK, {
+    _atomspace->add_link(EVALUATION_LINK, HandleSeq{
         _atomspace->add_node(PREDICATE_NODE, std::string("hasStatus"),
-        _atomspace->add_link(LIST_LINK, {_conversation_atom, active_atom})
+        _atomspace->add_link(LIST_LINK, HandleSeq{_conversation_atom, active_atom})
     });
 }
 

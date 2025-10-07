@@ -32,6 +32,7 @@
 
 using namespace opencog;
 using namespace opencog::agentzero;
+using opencog::HandleSeq;
 
 LanguageProcessor::LanguageProcessor(AtomSpacePtr atomspace)
     : _atomspace(atomspace)
@@ -208,7 +209,7 @@ Handle LanguageProcessor::textToAtoms(const std::string& text) {
             word_atoms.push_back(word_atom);
             
             // Link word to text
-            _atomspace->add_link(MEMBER_LINK, {word_atom, text_atom});
+            _atomspace->add_link(MEMBER_LINK, HandleSeq{word_atom, text_atom});
         }
     }
     

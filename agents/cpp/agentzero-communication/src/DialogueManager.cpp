@@ -28,6 +28,7 @@
 
 using namespace opencog;
 using namespace opencog::agentzero;
+using opencog::HandleSeq;
 
 // Message implementation
 std::string Message::generateMessageId() const {
@@ -463,7 +464,7 @@ Handle DialogueManager::conversationToAtom(const std::string& conversation_id) {
     Handle conv_atom = _atomspace->add_node(CONCEPT_NODE, std::string("Conversation:" + conversation_id));
     
     // Link to active conversations
-    _atomspace->add_link(MEMBER_LINK, {conv_atom, _active_conversations_atom});
+    _atomspace->add_link(MEMBER_LINK, HandleSeq{conv_atom, _active_conversations_atom});
     
     return conv_atom;
 }
@@ -476,18 +477,18 @@ void DialogueManager::updateDialogueAtoms() {
         // Update conversation properties
         if (!context->topic.empty()) {
             Handle topic_atom = _atomspace->add_node(CONCEPT_NODE, std::string("Topic:" + context->topic));
-            _atomspace->add_link(EVALUATION_LINK, {
+            _atomspace->add_link(EVALUATION_LINK, HandleSeq{
                 _atomspace->add_node(PREDICATE_NODE, std::string("hasTopic")),
-                _atomspace->add_link(LIST_LINK, {conv_atom, topic_atom})
+                _atomspace->add_link(LIST_LINK, HandleSeq{conv_atom, topic_atom})
             });
         }
         
         // Add participants
         for (const auto& participant : context->participants) {
             Handle participant_atom = _atomspace->add_node(CONCEPT_NODE, std::string(participant));
-            _atomspace->add_link(EVALUATION_LINK, {
+            _atomspace->add_link(EVALUATION_LINK, HandleSeq{
                 _atomspace->add_node(PREDICATE_NODE, std::string("participatesIn")),
-                _atomspace->add_link(LIST_LINK, {participant_atom, conv_atom})
+                _atomspace->add_link(LIST_LINK, HandleSeq{participant_atom, conv_atom})
             });
         }
     }
@@ -500,10 +501,10 @@ void DialogueManager::createConversationAtoms(const std::string& conversation_id
     conv_atom->setTruthValue(SimpleTruthValue::createTV(1.0, 1.0));
     
     // Link to agent and active conversations
-    _atomspace->add_link(MEMBER_LINK, {conv_atom, _active_conversations_atom});
-    _atomspace->add_link(EVALUATION_LINK, {
+    _atomspace->add_link(MEMBER_LINK, HandleSeq{conv_atom, _active_conversations_atom});
+    _atomspace->add_link(EVALUATION_LINK, HandleSeq{
         _atomspace->add_node(PREDICATE_NODE, std::string("manages")),
-        _atomspace->add_link(LIST_LINK, {_agent_self_atom, conv_atom})
+        _atomspace->add_link(LIST_LINK, HandleSeq{_agent_self_atom, conv_atom})
     });
 }
 
@@ -517,19 +518,19 @@ Handle DialogueManager::createMessageAtom(const Message& message) {
     Handle content_atom = _atomspace->add_node(CONCEPT_NODE, std::string("Content:" + message.content));
     
     // Create relationships
-    _atomspace->add_link(EVALUATION_LINK, {
+    _atomspace->add_link(EVALUATION_LINK, HandleSeq{
         _atomspace->add_node(PREDICATE_NODE, std::string("sentBy")),
-        _atomspace->add_link(LIST_LINK, {msg_atom, sender_atom})
+        _atomspace->add_link(LIST_LINK, HandleSeq{msg_atom, sender_atom})
     });
     
-    _atomspace->add_link(EVALUATION_LINK, {
+    _atomspace->add_link(EVALUATION_LINK, HandleSeq{
         _atomspace->add_node(PREDICATE_NODE, std::string("sentTo")),
-        _atomspace->add_link(LIST_LINK, {msg_atom, recipient_atom})
+        _atomspace->add_link(LIST_LINK, HandleSeq{msg_atom, recipient_atom})
     });
     
-    _atomspace->add_link(EVALUATION_LINK, {
+    _atomspace->add_link(EVALUATION_LINK, HandleSeq{
         _atomspace->add_node(PREDICATE_NODE, std::string("hasContent")),
-        _atomspace->add_link(LIST_LINK, {msg_atom, content_atom})
+        _atomspace->add_link(LIST_LINK, HandleSeq{msg_atom, content_atom})
     });
     
     return msg_atom;
