@@ -17,6 +17,21 @@
 
 using namespace opencog;
 using namespace opencog::agentzero;
+/**
+ * ExperienceManagerUTest.cxxtest - Unit tests for ExperienceManager
+ * 
+ * Part of AZ-LEARN-003: MOSES Policy Optimization Integration
+ * Copyright (C) 2024 OpenCog Foundation
+ */
+
+#include <cxxtest/TestSuite.h>
+#include <agentzero/learning/ExperienceManager.h>
+#include <agentzero/learning/LearningUtils.h>
+#include <opencog/atomspace/AtomSpace.h>
+#include <opencog/util/Logger.h>
+
+using namespace opencog;
+using namespace opencog::agentzero::learning;
 
 class ExperienceManagerUTest : public CxxTest::TestSuite
 {
@@ -380,5 +395,234 @@ public:
         Handle new_exp = experience_manager->recordExperience(ExperienceType::LEARNING, test_context, test_task, test_outcome, 0.7);
         TS_ASSERT(new_exp != Handle::UNDEFINED);
         TS_ASSERT_EQUALS(experience_manager->getExperienceCount(), 1);
+    std::unique_ptr<ExperienceManager> manager;
+
+public:
+    void setUp() {
+        logger().set_level(Logger::INFO);
+        logger().set_print_to_stdout_flag(true);
+        
+        atomspace = std::make_shared<AtomSpace>();
+        
+        // Create test configuration with small buffer for testing
+        LearningConfig config = utils::getDefaultConfig("fast");
+        config.experience_buffer_size = 10;  // Small buffer for testing overflow
+        
+        manager = std::make_unique<ExperienceManager>(atomspace, config);
+    }
+    
+    void tearDown() {
+        manager.reset();
+        atomspace.reset();
+    }
+    
+    void testExperienceManagerConstruction() {
+        TS_ASSERT(manager != nullptr);
+        TS_ASSERT(atomspace != nullptr);
+        
+        // Test initial state
+        TS_ASSERT_EQUALS(manager->getExperienceCount(), 0);
+        TS_ASSERT_EQUALS(manager->getBufferSizeLimit(), 10);
+    }
+    
+    void testAddExperience() {
+        // Create test atoms
+        Handle state_atom = atomspace->add_node(CONCEPT_NODE, "TestState1");
+        Handle action_atom = atomspace->add_node(CONCEPT_NODE, "TestAction1");
+        Handle next_state_atom = atomspace->add_node(CONCEPT_NODE, "TestState2");
+        
+        // Add experience
+        ExperienceId exp_id = manager->addExperience(state_atom, action_atom, next_state_atom, 1.0, false);
+        
+        TS_ASSERT(!exp_id.empty());
+        TS_ASSERT_EQUALS(manager->getExperienceCount(), 1);
+        
+        // Retrieve the experience
+        auto experience = manager->getExperience(exp_id);
+        TS_ASSERT(experience != nullptr);
+        TS_ASSERT_EQUALS(experience->state_atom, state_atom);
+        TS_ASSERT_EQUALS(experience->action_atom, action_atom);
+        TS_ASSERT_EQUALS(experience->next_state_atom, next_state_atom);
+        TS_ASSERT_EQUALS(experience->reward, 1.0);
+        TS_ASSERT_EQUALS(experience->terminal, false);
+    }
+    
+    void testExperienceObject() {
+        Handle state_atom = atomspace->add_node(CONCEPT_NODE, "TestState");
+        Handle action_atom = atomspace->add_node(CONCEPT_NODE, "TestAction");
+        Handle next_state_atom = atomspace->add_node(CONCEPT_NODE, "TestNextState");
+        
+        Experience exp("test_exp", state_atom, action_atom, next_state_atom, 0.5, true, 12345);
+        
+        TS_ASSERT(manager->addExperience(exp));
+        TS_ASSERT_EQUALS(manager->getExperienceCount(), 1);
+        
+        auto retrieved = manager->getExperience("test_exp");
+        TS_ASSERT(retrieved != nullptr);
+        TS_ASSERT_EQUALS(retrieved->id, "test_exp");
+        TS_ASSERT_EQUALS(retrieved->reward, 0.5);
+        TS_ASSERT_EQUALS(retrieved->terminal, true);
+        TS_ASSERT_EQUALS(retrieved->timestamp, 12345);
+    }
+    
+    void testBufferLimit() {
+        // Add more experiences than buffer limit
+        for (int i = 0; i < 15; ++i) {
+            Handle state = atomspace->add_node(CONCEPT_NODE, "State" + std::to_string(i));
+            Handle action = atomspace->add_node(CONCEPT_NODE, "Action" + std::to_string(i));
+            Handle next_state = atomspace->add_node(CONCEPT_NODE, "NextState" + std::to_string(i));
+            
+            manager->addExperience(state, action, next_state, i * 0.1, false);
+        }
+        
+        // Should be limited to buffer size
+        TS_ASSERT_EQUALS(manager->getExperienceCount(), 10);
+    }
+    
+    void testGetRecentExperiences() {
+        // Add some experiences
+        for (int i = 0; i < 5; ++i) {
+            Handle state = atomspace->add_node(CONCEPT_NODE, "RecentState" + std::to_string(i));
+            Handle action = atomspace->add_node(CONCEPT_NODE, "RecentAction" + std::to_string(i));
+            Handle next_state = atomspace->add_node(CONCEPT_NODE, "RecentNextState" + std::to_string(i));
+            
+            manager->addExperience(state, action, next_state, i * 0.2, false);
+        }
+        
+        auto recent = manager->getRecentExperiences(3);
+        TS_ASSERT_EQUALS(recent.size(), 3);
+        
+        // Should get the most recent ones
+        if (recent.size() >= 2) {
+            // Last added should have highest reward (4 * 0.2 = 0.8)
+            TS_ASSERT_EQUALS(recent.back()->reward, 0.8);
+        }
+    }
+    
+    void testSampleExperiences() {
+        // Add some experiences
+        for (int i = 0; i < 8; ++i) {
+            Handle state = atomspace->add_node(CONCEPT_NODE, "SampleState" + std::to_string(i));
+            Handle action = atomspace->add_node(CONCEPT_NODE, "SampleAction" + std::to_string(i));
+            Handle next_state = atomspace->add_node(CONCEPT_NODE, "SampleNextState" + std::to_string(i));
+            
+            manager->addExperience(state, action, next_state, i * 0.1, false);
+        }
+        
+        // Test uniform sampling
+        auto sampled = manager->sampleExperiences(5, false);
+        TS_ASSERT_EQUALS(sampled.size(), 5);
+        
+        // Test prioritized sampling (should work even if not fully implemented)
+        auto prioritized = manager->sampleExperiences(3, true);
+        TS_ASSERT_EQUALS(prioritized.size(), 3);
+    }
+    
+    void testGetExperiencesByRewardRange() {
+        // Add experiences with different rewards
+        for (int i = 0; i < 5; ++i) {
+            Handle state = atomspace->add_node(CONCEPT_NODE, "RewardState" + std::to_string(i));
+            Handle action = atomspace->add_node(CONCEPT_NODE, "RewardAction" + std::to_string(i));
+            Handle next_state = atomspace->add_node(CONCEPT_NODE, "RewardNextState" + std::to_string(i));
+            
+            double reward = i * 0.25; // 0.0, 0.25, 0.5, 0.75, 1.0
+            manager->addExperience(state, action, next_state, reward, false);
+        }
+        
+        // Get experiences with reward between 0.3 and 0.8
+        auto filtered = manager->getExperiencesByRewardRange(0.3, 0.8);
+        
+        // Should get experiences with rewards 0.5 and 0.75
+        TS_ASSERT_EQUALS(filtered.size(), 2);
+        
+        for (const auto& exp : filtered) {
+            TS_ASSERT(exp->reward >= 0.3 && exp->reward <= 0.8);
+        }
+    }
+    
+    void testGetExperiencesByState() {
+        Handle target_state = atomspace->add_node(CONCEPT_NODE, "TargetState");
+        Handle action1 = atomspace->add_node(CONCEPT_NODE, "Action1");
+        Handle action2 = atomspace->add_node(CONCEPT_NODE, "Action2");
+        Handle other_state = atomspace->add_node(CONCEPT_NODE, "OtherState");
+        
+        // Add experiences involving target_state as current state
+        manager->addExperience(target_state, action1, other_state, 1.0, false);
+        manager->addExperience(target_state, action2, other_state, 0.5, false);
+        
+        // Add experience with target_state as next_state
+        manager->addExperience(other_state, action1, target_state, 0.8, false);
+        
+        // Add unrelated experience
+        manager->addExperience(other_state, action2, other_state, 0.3, false);
+        
+        // Get experiences involving target_state
+        auto experiences = manager->getExperiencesByState(target_state, true);
+        
+        // Should get 3 experiences (2 as current state, 1 as next state)
+        TS_ASSERT_EQUALS(experiences.size(), 3);
+    }
+    
+    void testExperienceStats() {
+        // Add some experiences
+        for (int i = 0; i < 3; ++i) {
+            Handle state = atomspace->add_node(CONCEPT_NODE, "StatsState" + std::to_string(i));
+            Handle action = atomspace->add_node(CONCEPT_NODE, "StatsAction" + std::to_string(i));
+            Handle next_state = atomspace->add_node(CONCEPT_NODE, "StatsNextState" + std::to_string(i));
+            
+            manager->addExperience(state, action, next_state, i * 0.5, false);
+        }
+        
+        auto stats = manager->getExperienceStats();
+        
+        TS_ASSERT(stats.find("total_experiences") != stats.end());
+        TS_ASSERT(stats.find("current_buffer_size") != stats.end());
+        TS_ASSERT(stats.find("buffer_size_limit") != stats.end());
+        TS_ASSERT(stats.find("total_reward") != stats.end());
+        TS_ASSERT(stats.find("average_reward") != stats.end());
+        
+        TS_ASSERT_EQUALS(stats["current_buffer_size"], 3.0);
+        TS_ASSERT_EQUALS(stats["buffer_size_limit"], 10.0);
+    }
+    
+    void testRewardStats() {
+        // Add experiences with known rewards
+        double rewards[] = {0.1, 0.5, 0.3, 0.9, 0.7};
+        
+        for (int i = 0; i < 5; ++i) {
+            Handle state = atomspace->add_node(CONCEPT_NODE, "RewardStatsState" + std::to_string(i));
+            Handle action = atomspace->add_node(CONCEPT_NODE, "RewardStatsAction" + std::to_string(i));
+            Handle next_state = atomspace->add_node(CONCEPT_NODE, "RewardStatsNextState" + std::to_string(i));
+            
+            manager->addExperience(state, action, next_state, rewards[i], false);
+        }
+        
+        auto reward_stats = manager->getRewardStats();
+        
+        TS_ASSERT(reward_stats.find("min") != reward_stats.end());
+        TS_ASSERT(reward_stats.find("max") != reward_stats.end());
+        TS_ASSERT(reward_stats.find("mean") != reward_stats.end());
+        TS_ASSERT(reward_stats.find("std_dev") != reward_stats.end());
+        
+        TS_ASSERT_EQUALS(reward_stats["min"], 0.1);
+        TS_ASSERT_EQUALS(reward_stats["max"], 0.9);
+        TS_ASSERT_DELTA(reward_stats["mean"], 0.5, 0.01); // Mean of [0.1, 0.3, 0.5, 0.7, 0.9] = 0.5
+    }
+    
+    void testClearMemory() {
+        // Add some experiences
+        for (int i = 0; i < 5; ++i) {
+            Handle state = atomspace->add_node(CONCEPT_NODE, "ClearState" + std::to_string(i));
+            Handle action = atomspace->add_node(CONCEPT_NODE, "ClearAction" + std::to_string(i));
+            Handle next_state = atomspace->add_node(CONCEPT_NODE, "ClearNextState" + std::to_string(i));
+            
+            manager->addExperience(state, action, next_state, i * 0.1, false);
+        }
+        
+        TS_ASSERT_EQUALS(manager->getExperienceCount(), 5);
+        
+        manager->clearMemory();
+        
+        TS_ASSERT_EQUALS(manager->getExperienceCount(), 0);
     }
 };
