@@ -171,10 +171,10 @@ else()
 endif()
 
 # Phase 6: Communication & NLP (depends on core)
-if(LG_ATOMESE_FOUND)
-    add_subdirectory(agentzero-communication)
-else()
-    message(STATUS "Skipping agentzero-communication: lg-atomese dependency not found")
+# Note: HumanInterface (AZ-HUMAN-001) has basic functionality without lg-atomese
+add_subdirectory(agentzero-communication)
+if(NOT LG_ATOMESE_FOUND)
+    message(STATUS "agentzero-communication: lg-atomese not found - NLP features will be basic")
 endif()
 
 # Phase 7: Memory & Context (depends on core)
