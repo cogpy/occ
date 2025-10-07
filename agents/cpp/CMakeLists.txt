@@ -163,6 +163,7 @@ else()
 endif()
 
 # Phase 5: Learning & Adaptation (depends on core)
+# Note: agentzero-learning now exists and integrates MOSES for policy optimization (AZ-LEARN-003)
 if(MOSES_FOUND)
     add_subdirectory(agentzero-learning)
 else()
