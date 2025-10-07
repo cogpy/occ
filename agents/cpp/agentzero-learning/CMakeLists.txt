@@ -54,4 +54,10 @@ if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+# Add examples
+option(BUILD_EXAMPLES "Build examples" ON)
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+
 message(STATUS "Agent-Zero Learning module configured successfully")
