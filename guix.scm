@@ -184,3 +184,4 @@ Additionally includes:
 
 ;; Return the package for building
 opencog-collection
+)
