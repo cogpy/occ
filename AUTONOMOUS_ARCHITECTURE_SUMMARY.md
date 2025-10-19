@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation adds a complete cognitive architecture framework to the OpenCog Collection (OCC), establishing infrastructure for exploring cognitive synergy and AGI research.
+This implementation adds a foundational cognitive architecture framework to the OpenCog Collection (OCC), establishing infrastructure for exploring cognitive synergy and AGI research.
 
 ## Components Implemented
 
@@ -187,7 +187,7 @@ LD_LIBRARY_PATH=<paths to libs> ./cognitive_demo
 
 **Demo Output Metrics** (sample values from demo run):
 - Active Shards: 3 (reasoning, learning, perception)
-- Acceleration Factor: 2.5x (configurable parameter)
+- Acceleration Factor: 2.5x (theoretical speedup target, not measured performance)
 - Active Agents: 2 (ResearchBot, TutorBot)
 - Initial Synergy Level: 0.25
 - Progress Tracking: 6.25% (calculated from initial goals)
