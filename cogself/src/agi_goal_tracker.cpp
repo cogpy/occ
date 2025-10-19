@@ -6,6 +6,7 @@
 #include <map>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 namespace cogself {
 
