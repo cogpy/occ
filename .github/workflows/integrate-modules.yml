@@ -52,7 +52,7 @@ jobs:
           make test || npm test || echo "No tests available for this component"
 
       - name: Upload ${{ matrix.component }} Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.component }}-artifact
           path: ${{ matrix.component }}/build  # Ensure this path matches the actual output directory
@@ -66,7 +66,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Download all component artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: integrated_output
 
@@ -77,7 +77,7 @@ jobs:
           # Additional integration steps, e.g., merging files or creating an archive
 
       - name: Upload Final Integrated Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: integrated-final
           path: final_output
