@@ -31,6 +31,12 @@ OPTION(BUILD_LEARN "Build symbolic learning" ON)
 OPTION(BUILD_AGENTS "Build interactive agents" ON)
 OPTION(BUILD_SENSORY "Build sensory dataflow system" ON)
 
+# New cognitive architecture components
+OPTION(BUILD_COGGML "Build CogGML self-aware microkernel" ON)
+OPTION(BUILD_COGSELF "Build CogSelf AGI synergy framework" ON)
+OPTION(BUILD_ATOMSPACE_ACCELERATOR "Build AtomSpace accelerator inference engine" ON)
+OPTION(BUILD_AGENTIC_CHATBOTS "Build agentic chatbots integration" ON)
+
 # External integration packages
 OPTION(BUILD_GNUCASH "Build Gnucash cognitive accounting integration" OFF)
 OPTION(BUILD_KOBOLDCPP "Build KoboldCpp story/world modeling integration" OFF)
@@ -42,9 +48,21 @@ IF(BUILD_COGUTIL)
     add_subdirectory(cogutil)
 ENDIF()
 
+# CogGML Microkernel - foundational for cognitive architecture
+IF(BUILD_COGGML)
+    MESSAGE(STATUS "Building CogGML Microkernel...")
+    add_subdirectory(coggml)
+ENDIF()
+
 IF(BUILD_ATOMSPACE AND BUILD_COGUTIL)
     MESSAGE(STATUS "Building AtomSpace...")
     add_subdirectory(atomspace)
+ENDIF()
+
+# AtomSpace Accelerator - depends on AtomSpace
+IF(BUILD_ATOMSPACE_ACCELERATOR AND BUILD_ATOMSPACE)
+    MESSAGE(STATUS "Building AtomSpace Accelerator Inference Engine...")
+    add_subdirectory(atomspace-accelerator)
 ENDIF()
 
 IF(BUILD_COGSERVER AND BUILD_ATOMSPACE)
@@ -70,6 +88,18 @@ ENDIF()
 IF(BUILD_SENSORY AND BUILD_ATOMSPACE)
     MESSAGE(STATUS "Building Sensory...")
     add_subdirectory(sensory)
+ENDIF()
+
+# Agentic Chatbots - integrates with AtomSpace
+IF(BUILD_AGENTIC_CHATBOTS AND BUILD_ATOMSPACE)
+    MESSAGE(STATUS "Building Agentic Chatbots...")
+    add_subdirectory(agentic-chatbots)
+ENDIF()
+
+# CogSelf AGI Framework - coordinates all cognitive components
+IF(BUILD_COGSELF AND BUILD_COGGML)
+    MESSAGE(STATUS "Building CogSelf AGI Cognitive Synergy Framework...")
+    add_subdirectory(cogself)
 ENDIF()
 
 # External integration packages
@@ -107,6 +137,8 @@ MESSAGE(STATUS "")
 MESSAGE(STATUS "OpenCog Collection Configuration Summary:")
 MESSAGE(STATUS "========================================")
 MESSAGE(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+MESSAGE(STATUS "")
+MESSAGE(STATUS "Core Components:")
 MESSAGE(STATUS "CogUtil: ${BUILD_COGUTIL}")
 MESSAGE(STATUS "AtomSpace: ${BUILD_ATOMSPACE}")
 MESSAGE(STATUS "CogServer: ${BUILD_COGSERVER}")
@@ -114,6 +146,14 @@ MESSAGE(STATUS "Matrix: ${BUILD_MATRIX}")
 MESSAGE(STATUS "Learn: ${BUILD_LEARN}")
 MESSAGE(STATUS "Agents: ${BUILD_AGENTS}")
 MESSAGE(STATUS "Sensory: ${BUILD_SENSORY}")
+MESSAGE(STATUS "")
+MESSAGE(STATUS "Cognitive Architecture Components:")
+MESSAGE(STATUS "CogGML Microkernel (self-aware shards): ${BUILD_COGGML}")
+MESSAGE(STATUS "CogSelf AGI Framework: ${BUILD_COGSELF}")
+MESSAGE(STATUS "AtomSpace Accelerator (inference engine): ${BUILD_ATOMSPACE_ACCELERATOR}")
+MESSAGE(STATUS "Agentic Chatbots: ${BUILD_AGENTIC_CHATBOTS}")
+MESSAGE(STATUS "")
+MESSAGE(STATUS "Extended Components:")
 MESSAGE(STATUS "AtomSpace Storage: ${BUILD_ATOMSPACE_STORAGE}")
 MESSAGE(STATUS "AtomSpace Extensions: ${BUILD_ATOMSPACE_EXTENSIONS}")
 MESSAGE(STATUS "")
