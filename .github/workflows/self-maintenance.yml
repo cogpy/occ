@@ -83,7 +83,7 @@ jobs:
         cat self_improvement_report.md
     
     - name: Upload Self-Improvement Report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: self-improvement-report
         path: self_improvement_report.md
@@ -176,7 +176,7 @@ jobs:
         cat improvement_plan.md
     
     - name: Upload Improvement Plan
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: improvement-plan
         path: improvement_plan.md

@@ -35,7 +35,7 @@ jobs:
         ]
     steps:
       - name: Checkout code for ${{ matrix.component }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           path: ${{ matrix.component }}
 
@@ -63,7 +63,7 @@ jobs:
     needs: build_and_upload
     steps:
       - name: Checkout repository for integration
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Download all component artifacts
         uses: actions/download-artifact@v4
