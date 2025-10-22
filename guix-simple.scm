@@ -63,7 +63,7 @@
      (list python-numpy
            python-pandas
            python-scikit-learn))
-    (home-page "https://github.com/rzonedevops/occ")
+    (home-page "https://github.com/cogpy/occ")
     (synopsis "OpenCog Collection - Simplified Build")
     (description
      "This is a simplified version of the OpenCog Collection package

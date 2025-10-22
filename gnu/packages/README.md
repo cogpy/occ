@@ -86,7 +86,7 @@ To use these packages as a Guix channel, add the following to your `~/.config/gu
 ```scheme
 (cons* (channel
         (name 'opencog-collection)
-        (url "https://github.com/rzonedevops/occ.git"))
+        (url "https://github.com/cogpy/occ.git"))
        %default-channels)
 ```
 
