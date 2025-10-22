@@ -14,6 +14,9 @@ jobs:
   ai-assessment:
     runs-on: ubuntu-latest
     name: AI-Powered Current State Assessment
+    permissions:
+      contents: read
+      actions: read
     outputs:
       build_status: ${{ steps.assessment.outputs.build_status }}
       improvement_priority: ${{ steps.assessment.outputs.improvement_priority }}
@@ -345,6 +348,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: ai-assessment
     name: Dynamic Improvement Implementation
+    permissions:
+      contents: read
+      actions: read
     if: needs.ai-assessment.outputs.build_status != 'HEALTHY'
     
     steps:
@@ -429,6 +435,9 @@ jobs:
     needs: [ai-assessment, dynamic-improvement-implementation]
     if: always()
     name: Continuous Learning & Adaptation
+    permissions:
+      contents: read
+      actions: read
     
     steps:
     - uses: actions/checkout@v4
