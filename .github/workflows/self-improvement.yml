@@ -159,7 +159,7 @@ jobs:
                     # Count warnings
                     warning_matches = re.findall(r'warning:', content, re.IGNORECASE)
                     if warning_matches:
-                        insights[component]['warnings'] = len(warning_matches)
+                        insights[component]['warnings'] = warning_matches
                 
                 return insights
             
@@ -227,11 +227,11 @@ jobs:
                                     ]
                                 })
                     
-                    if data['warnings'] > 10:
+                    if len(data['warnings']) > 10:
                         improvements.append({
                             'priority': 'MEDIUM',
                             'component': component,
-                            'issue': f'{data["warnings"]} compiler warnings detected',
+                            'issue': f'{len(data["warnings"])} compiler warnings detected',
                             'action': f'Clean up compiler warnings in {component}',
                             'micro_tasks': [
                                 'Enable -Werror to treat warnings as errors',
