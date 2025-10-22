@@ -44,11 +44,18 @@ jobs:
           echo "Updating Guix channels..."
           export PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin:$PATH"
           
+          # Install glibc-locales to prevent hanging on locale-related operations
+          echo "Installing glibc-locales..."
+          sudo -i guix install glibc-locales || echo "Warning: glibc-locales install failed"
+          
+          # Set GUIX_LOCPATH for locale support
+          export GUIX_LOCPATH="/root/.guix-profile/lib/locale"
+          
           # Update Guix to ensure all modules are available
-          sudo -i guix pull || echo "Warning: guix pull failed"
+          sudo -i bash -c "export GUIX_LOCPATH=/root/.guix-profile/lib/locale && guix pull" || echo "Warning: guix pull failed"
           
           # Update packages in the default profile
-          sudo -i guix package -u || echo "Warning: guix package -u failed"
+          sudo -i bash -c "export GUIX_LOCPATH=/root/.guix-profile/lib/locale && guix package -u" || echo "Warning: guix package -u failed"
           
           # Source the Guix profile
           echo "Sourcing Guix profile..."
