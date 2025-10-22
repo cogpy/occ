@@ -23,7 +23,7 @@
     (name "opencog")
     (version "latest-git")
     (source (git-checkout
-             (url "https://github.com/rzonedevops/occ.git")
+             (url "https://github.com/cogpy/occ.git")
              (commit "HEAD")))
     (build-system cmake-build-system)
     (arguments
@@ -53,7 +53,7 @@
            gsl))
     (synopsis "OpenCog AGI Framework")
     (description "The OpenCog cognitive architecturing toolkit for AGI research and development.")
-    (home-page "https://github.com/rzonedevops/occ")
+    (home-page "https://github.com/cogpy/occ")
     (license license:mit)))
 
 ;; Return the package for building
