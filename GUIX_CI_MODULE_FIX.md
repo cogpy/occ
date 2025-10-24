@@ -1,7 +1,7 @@
 # Guix CI Module Not Found Fix
 
 **Date:** 2025-10-22  
-**Status:** ✅ FIXED
+**Status:** ✅ FIXED (see also GUIX_HANGING_FIX.md for timeout improvements)
 
 ## Problem
 
@@ -110,9 +110,11 @@ The workflow now:
 
 The workflow should now successfully:
 1. Install Guix
-2. Update Guix channels and profile
+2. Update Guix channels and profile (with timeout protection - see GUIX_HANGING_FIX.md)
 3. Validate package definitions
 4. Run dry-run builds to check syntax
 5. Attempt actual builds (which may still fail due to dependencies, but will no longer fail due to missing modules)
 
 Any remaining build failures will be related to actual dependencies or build system issues, not missing Guix modules.
+
+**Note**: For timeout protection on `guix pull` and other network operations, see GUIX_HANGING_FIX.md.
