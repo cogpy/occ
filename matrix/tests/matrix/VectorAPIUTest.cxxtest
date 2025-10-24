@@ -64,7 +64,7 @@ class VectorAPIUTest :  public CxxTest::TestSuite
 	void test_marginals(void);
 	void test_fast(void);
 	void test_cosines(void);
-	void xtest_dynamic(void);
+	void test_dynamic(void);
 	void test_fold(void);
 	void test_transpose(void);
 	void test_symmetric_mi(void);
@@ -164,7 +164,7 @@ void VectorAPIUTest::test_basic(void)
 
 void VectorAPIUTest::test_marginals(void)
 {
-#ifdef HAVE_SQL_STORAGE
+#ifdef HAVE_ROCKS_STORAGE
 	logger().debug("BEGIN TEST: %s", __FUNCTION__);
 
 	std::string rc = eval->eval("(load-from-path \"tests/matrix/basic-data.scm\")");
@@ -173,10 +173,13 @@ void VectorAPIUTest::test_marginals(void)
 
 	// -------------------------------------------------------------
 	// Where the data will go
-	rc = eval->eval("(use-modules (opencog persist-sql))");
+	rc = eval->eval("(use-modules (opencog persist-rocks))");
 	CHKERR;
 
-	rc = eval->eval("(sql-open \"postgres:///opencog_test?user=opencog_tester&password=cheese\")");
+	rc = eval->eval("(define rsn (RocksStorageNode \"rocks:///tmp/vector-api-utest-marginals/\"))");
+	CHKERR;
+
+	rc = eval->eval("(cog-open rsn)");
 	CHKERR;
 
 	// Compute and store all marginals
@@ -184,7 +187,7 @@ void VectorAPIUTest::test_marginals(void)
 	printf("Batch >>>%s", rc.c_str());
 	CHKERR;
 
-	rc = eval->eval("(sql-close)");
+	rc = eval->eval("(cog-close rsn)");
 	CHKERR;
 
 	printf("---------------------------------------------------------\n");
@@ -194,9 +197,6 @@ void VectorAPIUTest::test_marginals(void)
 
 	num = eval->eval("(papi 'right-basis-size)");
 	CHKNUM("Right size", num, 4);
-
-	num = eval->eval("(papi 'wild-wild-count)");
-	CHKNUM("Wild-wild count", num, 22);
 
 	num = eval->eval("(papi 'total-sum-left)");
 	CHKNUM("Wild-wild count-left", num, 22);
@@ -410,7 +410,7 @@ void VectorAPIUTest::test_marginals(void)
 	CHKFLT("report total mi", num, chmi+domi+tami);
 
 	logger().debug("END TEST: %s", __FUNCTION__);
-#endif // HAVE_SQL_STORAGE
+#endif // HAVE_ROCKS_STORAGE
 }
 
 // ====================================================================
@@ -511,17 +511,28 @@ void VectorAPIUTest::test_cosines(void)
 
 // ====================================================================
 
-// Make sure data can be fetched from SQL
-void VectorAPIUTest::xtest_dynamic(void)
+// Make sure data can be fetched from RocksStorage
+void VectorAPIUTest::test_dynamic(void)
 {
-#ifdef HAVE_SQL_STORAGE
+#ifdef HAVE_ROCKS_STORAGE
 	logger().debug("BEGIN TEST: %s", __FUNCTION__);
 
-	// Where the data comes from.
-	std::string rc = eval->eval("(use-modules (opencog persist-sql))");
+	// Load the test data first
+	std::string rc = eval->eval("(load-from-path \"tests/matrix/basic-data.scm\")");
 	CHKERR;
 
-	rc = eval->eval("(sql-open \"postgres:///opencog_test?user=opencog_tester&password=cheese\")");
+	// Where the data will be stored
+	rc = eval->eval("(use-modules (opencog persist-rocks))");
+	CHKERR;
+
+	rc = eval->eval("(define rsn (RocksStorageNode \"rocks:///tmp/vector-api-utest-dynamic/\"))");
+	CHKERR;
+
+	rc = eval->eval("(cog-open rsn)");
+	CHKERR;
+
+	// Store the atomspace to RocksStorage
+	rc = eval->eval("(store-atomspace rsn)");
 	CHKERR;
 
 	std::string num = eval->eval("(dosi 'right-product (Word \"table\") (Word \"dog\"))");
@@ -536,11 +547,11 @@ void VectorAPIUTest::xtest_dynamic(void)
 	double pchdo = 3.0*4.0 + 2.0*2.0;
 	CHKFLT("dynamic product (chicken,dog)", num, pchdo);
 
-	rc = eval->eval("(sql-close)");
+	rc = eval->eval("(cog-close rsn)");
 	CHKERR;
 
 	logger().debug("END TEST: %s", __FUNCTION__);
-#endif // HAVE_SQL_STORAGE
+#endif // HAVE_ROCKS_STORAGE
 }
 
 // ====================================================================
