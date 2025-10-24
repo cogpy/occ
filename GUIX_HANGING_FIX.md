@@ -39,7 +39,10 @@ The issue occurred in the "Update Guix channels and profile" step of `.github/wo
 ## Solution History
 
 ### Initial Fix (2025-10-22)
-Added timeout protection and graceful degradation to prevent indefinite hanging with timeouts on `guix pull`, `glibc-locales`, and `guix package -u`.
+Added timeout protection and graceful degradation to prevent indefinite hanging:
+- 5-minute timeout on `glibc-locales` installation
+- 10-minute timeout on `guix pull`
+- 5-minute timeout on `guix package -u`
 
 ### Final Fix (2025-10-24) - Complete Removal
 **Even with timeouts, the update step was still causing issues and preventing the main build from running.**
@@ -97,12 +100,12 @@ The chosen approach prioritizes reliability (will never hang) and focuses on get
 
 Potential enhancements (if channel updates are needed later):
 
-1. **Cache mechanism**: Cache Guix channels between runs
-2. **Conditional updates**: Only update on schedule, not every build  
-3. **Separate workflow**: Have a dedicated workflow for updating Guix, separate from builds
-4. **Network diagnostics**: Check connectivity before attempting updates
+1. **Cache mechanism**: Cache Guix channels between runs (complex to implement, may have limited benefit)
+2. **Conditional updates**: Only update on schedule, not every build (adds workflow complexity)
+3. **Separate workflow**: Have a dedicated workflow for updating Guix, separate from builds (better isolation but more maintenance)
+4. **Network diagnostics**: Check connectivity before attempting updates (adds overhead)
 
-For now, the focus is on getting the main build working reliably.
+For now, the focus is on getting the main build working reliably. These improvements can be considered if channel updates become necessary in the future, but each adds complexity that must be weighed against the benefit.
 
 ## Verification
 
@@ -125,7 +128,7 @@ The key success criterion is that the workflow **completes successfully** and th
 ## Summary
 
 ✅ **Problem**: `guix pull` and update operations hanging/timing out, preventing main build  
-✅ **Solution**: Completely removed the "Update Guix channels and profile" step  
+✅ **Solution**: Completely removed the "Update Guix channels and profile" step from `.github/workflows/guix-build.yml`  
 ✅ **Impact**: Workflow can no longer hang on updates  
 ✅ **Trade-off**: No channel updates, but fresh installation has all needed modules  
 ✅ **Result**: Reliable CI builds that focus on the main build process
