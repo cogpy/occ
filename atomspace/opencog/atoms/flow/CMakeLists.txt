@@ -3,22 +3,23 @@
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_BINARY_DIR})
 
 ADD_LIBRARY (atomflow
+	AtomSpaceOfLink.cc
 	CollectionOfLink.cc
 	ConcatenateLink.cc
 	FilterLink.cc
-	FormulaPredicateLink.cc
 	IncomingOfLink.cc
 	IncrementValueLink.cc
+	JsonSplitLink.cc
+	KeysOfLink.cc
 	LinkSignatureLink.cc
+	MessagesOfLink.cc
 	NumberOfLink.cc
 	PromiseLink.cc
-	SetTVLink.cc
 	SetValueLink.cc
 	SizeOfLink.cc
 	SplitLink.cc
 	StreamValueOfLink.cc
 	StringOfLink.cc
-	TruthValueOfLink.cc
 	TypeOfLink.cc
 	ValueOfLink.cc
 	ValueShimLink.cc
@@ -38,22 +39,23 @@ INSTALL (TARGETS atomflow EXPORT AtomSpaceTargets
 )
 
 INSTALL (FILES
+	AtomSpaceOfLink.h
 	CollectionOfLink.h
 	ConcatenateLink.h
 	FilterLink.h
-	FormulaPredicateLink.h
 	IncomingOfLink.h
 	IncrementValueLink.h
+	JsonSplitLink.h
+	KeysOfLink.h
 	LinkSignatureLink.h
+	MessagesOfLink.h
 	NumberOfLink.h
 	PromiseLink.h
-	SetTVLink.h
 	SetValueLink.h
 	SizeOfLink.h
 	SplitLink.h
 	StreamValueOfLink.h
 	StringOfLink.h
-	TruthValueOfLink.h
 	TypeOfLink.h
 	ValueOfLink.h
 	ValueShimLink.h

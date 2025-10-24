@@ -22,11 +22,9 @@
  */
 
 #include <opencog/guile/SchemeEval.h>
-#include <opencog/atoms/truthvalue/SimpleTruthValue.h>
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/util/Logger.h>
 #include <cxxtest/TestSuite.h>
-#include "imply.h"
 
 using namespace opencog;
 
@@ -73,7 +71,6 @@ public:
 	void test_disconnected_binary_get(void);
 	void test_disconnected_empty(void);
 	void test_not_equal(void);
-	void test_disconnected_const_eval(void);
 	void test_quote_equal(void);
 	void test_plus_pattern_get(void);
 
@@ -220,7 +217,7 @@ void GetLinkUTest::test_disconnected_binary_get(void)
 	eval->eval("(load-from-path \"tests/query/get-link.scm\")");
 
 	Handle g_take_contain = eval->eval_h("g-take-contain");
-	Handle hgnd = satisfying_set(as, g_take_contain);
+	Handle hgnd = HandleCast(g_take_contain->execute(as.get()));
 	Handle hans = eval->eval_h(
 		"(SetLink "
 		"(ListLink (ConceptNode \"John\") (ConceptNode \"compound-A\")))");
@@ -255,7 +252,7 @@ void GetLinkUTest::test_disconnected_empty(void) {
 		            an(VARIABLE_NODE, "$Y")),
 		pat = al(AND_LINK, comp_1, comp_2),
 		gl = al(GET_LINK, pat),
-		result = satisfying_set(as, gl),
+		result = HandleCast(gl->execute(as.get())),
 		expect = al(SET_LINK, HandleSeq());
 
 	printf("Expected this: %s\n", expect->to_string().c_str());
@@ -278,7 +275,6 @@ void GetLinkUTest::test_not_equal(void)
 
 	Handle P = an(PREDICATE_NODE, "P");
 	Handle Q = an(PREDICATE_NODE, "Q");
-	Q->setTruthValue(SimpleTruthValue::TRUE_TV());
 
 	Handle Qvar = an(VARIABLE_NODE, "$Q");
 	Handle vardecl = al(VARIABLE_LIST,
@@ -290,62 +286,12 @@ void GetLinkUTest::test_not_equal(void)
 	                 al(PRESENT_LINK, Qvar));
 	Handle gl = al(GET_LINK, vardecl, body);
 
-	Handle result = satisfying_set(as, gl);
+	Handle result = HandleCast(gl->execute(as.get()));
 	Handle expect = al(SET_LINK, Q);
 
 	printf("Expected this: %s\n", expect->to_string().c_str());
 	printf("Found this answer: %s\n", result->to_string().c_str());
 
-	TS_ASSERT_EQUALS(result, expect);
-
-	logger().debug("END TEST: %s", __FUNCTION__);
-}
-
-/*
- * Two disconnected components, one evaluatable is constant
- */
-void GetLinkUTest::test_disconnected_const_eval(void)
-{
-	logger().debug("BEGIN TEST: %s", __FUNCTION__);
-
-	as->clear();
-
-	Handle inh_ground = al(INHERITANCE_LINK,
-	                       an(CONCEPT_NODE, "A"),
-	                       an(CONCEPT_NODE, "B"));
-
-	Handle real_comp = al(INHERITANCE_LINK,
-	                      an(VARIABLE_NODE, "$A"),
-	                      an(VARIABLE_NODE, "$B"));
-
-	Handle virt_comp_pos = al(EVALUATION_LINK,
-	                          an(GROUNDED_PREDICATE_NODE, "scm: cog-tv"),
-	                          al(LIST_LINK,
-	                             an(CONCEPT_NODE, "A")));
-
-	Handle virt_comp_neg = al(NOT_LINK, virt_comp_pos);
-
-	Handle pattern_pos = al(AND_LINK, real_comp, virt_comp_pos);
-	Handle getlink_pos = al(GET_LINK, pattern_pos);
-
-	Handle pattern_neg = al(AND_LINK, real_comp, virt_comp_neg);
-	Handle getlink_neg = al(GET_LINK, pattern_neg);
-
-	// Evaluatable constant clause is satisfied
-	Handle result = satisfying_set(as, getlink_pos);
-	Handle expect = al(SET_LINK,
-	                   al(LIST_LINK,
-	                      an(CONCEPT_NODE, "A"),
-	                      an(CONCEPT_NODE, "B")));
-	printf("Expected this: %s\n", expect->to_string().c_str());
-	printf("Found this answer: %s\n", result->to_string().c_str());
-	TS_ASSERT_EQUALS(result, expect);
-
-	// Evaluatable constant clause is not satisfied
-	result = satisfying_set(as, getlink_neg);
-	expect = al(SET_LINK, HandleSeq());
-	printf("Expected this: %s\n", expect->to_string().c_str());
-	printf("Found this answer: %s\n", result->to_string().c_str());
 	TS_ASSERT_EQUALS(result, expect);
 
 	logger().debug("END TEST: %s", __FUNCTION__);
@@ -363,7 +309,7 @@ void GetLinkUTest::test_quote_equal(void)
 	eval->eval("(load-from-path \"tests/query/get-link-equal.scm\")");
 
 	Handle gl = eval->eval_h("gl");
-	Handle result = satisfying_set(as, gl);
+	Handle result = HandleCast(gl->execute(as.get()));
 	Handle expect = eval->eval_h("expect");
 
 	printf("Expected this: %s\n", expect->to_string().c_str());

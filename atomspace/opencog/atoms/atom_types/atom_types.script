@@ -29,6 +29,7 @@ TOP_TYPE
 ARG <- TOP_TYPE
 BOOL_ARG <- ARG
 FLOAT_ARG <- ARG
+FLOAT32_ARG <- ARG
 INT_ARG <- ARG
 HANDLE_ARG <- ARG
 STRING_ARG <- ARG
@@ -37,6 +38,7 @@ VOID_ARG <- ARG
 
 BOOL_VEC_ARG <-  ARG
 FLOAT_VEC_ARG <-  ARG
+FLOAT32_VEC_ARG <-  ARG
 HANDLE_VEC_ARG <-  ARG
 STRING_VEC_ARG <-  ARG
 VALUE_VEC_ARG <-  ARG
@@ -46,11 +48,12 @@ VALUE_VEC_ARG <-  ARG
 // Think of them as decorations that can be hung on an Atom.
 VALUE <- TOP_TYPE
 
-VOID_VALUE <- VALUE,VOID_ARG          // singleton Value holding nothing at all.
+VOID_VALUE <- VALUE,VOID_ARG              // singleton Value holding nothing.
 BOOL_VALUE <- VALUE,BOOL_VEC_ARG,INT_ARG  // vector of booleans
-FLOAT_VALUE <- VALUE,FLOAT_VEC_ARG    // vector of floats
-STRING_VALUE <- VALUE,STRING_VEC_ARG  // vector of strings
-LINK_VALUE <- VALUE,VALUE_VEC_ARG     // vector of Values ("link" holding Values)
+FLOAT_VALUE <- VALUE,FLOAT_VEC_ARG        // vector of double-precision floats
+FLOAT32_VALUE <- VALUE,FLOAT32_VEC_ARG    // vector of single-precision floats
+STRING_VALUE <- VALUE,STRING_VEC_ARG      // vector of strings
+LINK_VALUE <- VALUE,VALUE_VEC_ARG         // vector of Values ("Link")
 
 // StreamValue is used in Sensory and other projects to distinguish
 // between LinkValues that are static and serve to package together
@@ -90,28 +93,6 @@ UNISET_VALUE <- CONTAINER_VALUE
 // A stream of Values, computed by a function held in the AtomSpace.
 // Just like FormulaStream, but for vectors of Values.
 FUTURE_STREAM <- STREAM_VALUE,HANDLE_VEC_ARG
-
-// ===========================================================
-// TruthValues are an older concept in Atomese. They are deprecated and
-// are in a slow process of being removed, in favor of the more flexible
-// and more general Value concept.
-//
-// TruthValues are the subobject classifiers for Atomese; they are used
-// to generalize the notion of a subset (in exactly the same way that
-// a subobject classifier does so in an arbitrary topos.) In some cases,
-// these will be probabilities; in other cases, these are probabilities
-// with additional evidence associated to them. In yet other cases,
-// these resemble the truth values of "fuzzy logic", and so on.
-// (FuzzyTruthValue, etc has been removed.)
-//
-// Many Atoms and operations on Atoms explicitly require TruthValues
-// -- for example, PredicateNodes and EvaluationLinks -- and so these
-// remain important for the core infrastructure.
-//
-TRUTH_VALUE                <- FLOAT_VALUE
-SIMPLE_TRUTH_VALUE         <- TRUTH_VALUE
-COUNT_TRUTH_VALUE          <- TRUTH_VALUE
-FORMULA_TRUTH_VALUE        <- SIMPLE_TRUTH_VALUE, FORMULA_STREAM
 
 // ===========================================================
 // Base of the Atom hierarchy. Atoms are globally unique; the AtomSpace
@@ -244,16 +225,6 @@ LIST_LINK <- ORDERED_LINK,COLLECTION_LINK
 // Unordered multi-set (Classical Set-Theory set)
 SET_LINK <- UNORDERED_LINK,COLLECTION_LINK
 
-// Measure-theoretic (probabilistic) versions of AND_LINK, OR_LINK
-// These use probabilistic formulas to compute TruthValues.
-// See issue opencog/atomspace#2814 for a discussion.
-// XXX OBSOLETE -- These are unused, unimplemented, and are candidates
-// for removal.
-UNION_LINK <- UNORDERED_LINK,COLLECTION_LINK
-INTERSECTION_LINK <- UNORDERED_LINK,COLLECTION_LINK
-COMPLEMENT_LINK <- UNORDERED_LINK,COLLECTION_LINK
-SET_DIFFERENCE_LINK <- ORDERED_LINK,COLLECTION_LINK
-
 // Set membership. Declaration: individual belongs to set.
 // See also the section of relation-links below (including equality,
 // etc.) Perhaps the definition of MemberLink and SubsetLink should
@@ -266,6 +237,8 @@ SUBSET_LINK <- ORDERED_LINK
 // ContextLink: Universe of discourse. This behaves like set subtraction
 // in that the set of things outside of the context have no bearing on
 // the probability.
+// Unused and probably obsolete. Wiki documentation says some
+// interesting things, but nothing works that way.
 CONTEXT_LINK <- ORDERED_LINK
 
 // Binary-valued (0/1, T/F) Boolean algebra operations and logical
@@ -338,12 +311,14 @@ PRESENT_LINK <- SET_LINK,CRISP_OUTPUT_LINK
 ABSENT_LINK <- PRESENT_LINK
 
 // The other adjoint.
-// Exists == left adjoint to the pullback functor of a relation.
-//           where PresentLink is `Exists` for the pattern matcher.
-// ForAll == right adjoint to the pullback functor of a relation.
-//           We invent AlwaysLink, since `ForAll` is already taken
-//           up by PLN.
-// This is used in the pattern matcher, to implement an "always the
+// Exists == left adjoint to the pullback functor of the set-membership
+//           relation. The PresentLink is the unscoped variant of
+//           `ExistsLink`, implemented in the pattern matcher.
+// ForAll == right adjoint to the pullback functor of the set-membership
+//           relation. We call it AlwaysLink, since `ForAll` is already
+//           taken up by PLN (and is used in a scoped, contextualized
+//           setting.)
+// This is implemented in the pattern matcher, to provide an "always the
 // case" condition during matching. It's a kind-of `ForAll`, just like
 // Present is a kind-of `ThereExists`.
 ALWAYS_LINK <- PRESENT_LINK
@@ -1055,10 +1030,9 @@ VALUE_OF_LINK <- FUNCTION_LINK
 BOOL_VALUE_OF_LINK <- VALUE_OF_LINK,BOOLEAN_OUTPUT_LINK
 FLOAT_VALUE_OF_LINK <- VALUE_OF_LINK,NUMERIC_OUTPUT_LINK
 STREAM_VALUE_OF_LINK <- VALUE_OF_LINK,NUMERIC_OUTPUT_LINK
-TRUTH_VALUE_OF_LINK <- FLOAT_VALUE_OF_LINK
-STRENGTH_OF_LINK <- FLOAT_VALUE_OF_LINK
-CONFIDENCE_OF_LINK <- FLOAT_VALUE_OF_LINK
-COUNT_OF_LINK <- FLOAT_VALUE_OF_LINK
+
+// Return the AtomSpace that the wrapped Atom is in.
+ATOM_SPACE_OF_LINK <- VALUE_OF_LINK
 
 // Return size of the wrapped link. If it's a NumberNode
 // or a Value, return the length of the underlying vector.
@@ -1069,6 +1043,24 @@ TYPE_OF_LINK <- VALUE_OF_LINK
 
 // Grab an IncomingSet of an Atom, and return it as a LinkValue.
 INCOMING_OF_LINK <- VALUE_OF_LINK
+
+// Return all of the keys that are in use on the given Atom.
+// All of these are placed into a LinkValue, and returned as that.
+KEYS_OF_LINK <- VALUE_OF_LINK
+
+// Return crisp true/false, whether this Atom is used anywhere
+// as a key. We do not track, at this time, where it is used as
+// a key; this would eat up a lot of RAM and we don't want to do
+// that, if we can avoid it.
+IS_KEY_LINK <- VIRTUAL_LINK
+
+// Return all of the messages supported by the given ObjectNode.
+// All of these are placed into a LinkValue, and returned as that.
+MESSAGES_OF_LINK <- VALUE_OF_LINK
+
+// Return crisp true/false, whether this Atom is used anywhere
+// as a message. The providers of the message are not tracked.
+IS_MESSAGE_LINK <- VIRTUAL_LINK
 
 // Convert between Link/LinkValue types. If no type is specified,
 // then convert to SetLink. Primarily intended to convert a LinkValue
@@ -1086,7 +1078,6 @@ STRING_OF_LINK <- FUNCTION_LINK
 // Opposite of the ValueOfLink; attach a Value to an Atom.
 // Verb: "to set", and not noun "a set (collection)"
 SET_VALUE_LINK <- FUNCTION_LINK
-SET_TV_LINK <- SET_VALUE_LINK,EVALUATABLE_LINK "SetTVLink"
 
 // Numeric increment. Combined (SetValue (Plus (FloatValueOf ...)))
 // Its atomic, so thread-safe.
@@ -1108,6 +1099,12 @@ VALUE_SHIM_LINK <- EXECUTABLE_LINK,NUMERIC_OUTPUT_LINK
 // into multiple strings, according to whitespace.
 SPLIT_LINK <- COLLECTION_OF_LINK
 
+// JsonSplitLink will take a StringValue, holding a json string, and
+// parse it into a nested structure composed of LinkValues and
+// StringValues. The key-value pairs in json become pairs of StringValue,
+// wrapped in a LinkValue.
+JSON_SPLIT_LINK <- COLLECTION_OF_LINK
+
 // -----------
 // Similar to ValueOfLink, but this returns a promise to return a Value
 // sometime in the future. This is accomplished by returning a either
@@ -1115,25 +1112,6 @@ SPLIT_LINK <- COLLECTION_OF_LINK
 // then cough up the actual Value later on, when interrogated. Used to
 // create dynamically executable computation chains.
 PROMISE_LINK <- VALUABLE_LINK,EXECUTABLE_LINK
-
-// Return a FormulaTruthValue when evaluated. Same as above, but for
-// TruthValues only.  This can be used to wrap any Atom that returns a
-// TruthValue. The effect is to defer to the future the evaluation of
-// that predicate. Used to create dynamically evaluatable formulas.
-PROMISE_PREDICATE_LINK <- EVALUATABLE_LINK, PROMISE_LINK
-
-// Return a SimpleTruthValue when evaluated.
-// This is used to wrap any Atom that returns a FloatValue; all this
-// does is to provide some formatting.  It is not strictly needed,
-// because any LambdaLink returning FloatValue is enough. But this is
-// handy to have while a transition is made to a more general setting.
-// Its handy because it looks a lot like a GROUNDED_PREDICATE_NODE,
-// except that the formula is in the Atomese, not scheme/python.
-//
-// Its a ScopeLink, because in general it will contain variables that
-// are scoped, bound. The Lambda provides the mechanism to access/shield
-// the variables.
-FORMULA_PREDICATE_LINK <- SCOPE_LINK,EVALUATABLE_LINK
 
 // FilterLink was called MapLink (but this name was wrong) or
 // FilterMapLink or UnPutLink.  UnPut, because it undoes a beta-
@@ -1187,15 +1165,11 @@ SLEEP_LINK <- FUNCTION_LINK,NUMERIC_INPUT_LINK
 // ====================================================================
 // Performance scripting links.
 //
-// ParallelLink launches multiple threads, but does not wait for any of
-// them to return.  ThreadJoinLink launches multiple threads, and waits
-// for all of them to return, and then returns the boolean And of their
-// TruthValues.
-PARALLEL_LINK <- UNORDERED_LINK,EVALUATABLE_LINK
-THREAD_JOIN_LINK <- PARALLEL_LINK
+// ParallelLink launches multiple threads, but does not wait for any
+// of them to return. Return values are entirely ignored.
+PARALLEL_LINK <- UNORDERED_LINK,EXECUTABLE_LINK
 
-// Somewhat like ThreadJoinLink, except that this works with executable,
-// not evaluatable links.
+// Like above, but collects return values into a QueueValue.
 EXECUTE_THREADED_LINK <- EXECUTABLE_LINK
 
 // Everything under a PureExecLink is executed in a different AtomSpace.
@@ -1218,6 +1192,11 @@ PURE_EXEC_LINK <- EXECUTABLE_LINK
 // some external object or device: a file, a library function, a socket,
 // a database, etc.
 OBJECT_NODE <- NODE
+//
+// The ObjectNode is the base class for StorageNode, because all
+// StorageNodes are stateful objects, existing in the real physical
+// world, and accept the messages that define the storage API.
+STORAGE_NODE <- OBJECT_NODE
 //
 // These form the foundation for a different way of looking at
 // Values and Predicates: they generalize the notion of "predicate"
@@ -1321,29 +1300,9 @@ DIRECTLY_EVALUATABLE_LINK <- LINK
 IMPLICATION_LINK <- ORDERED_LINK, DIRECTLY_EVALUATABLE_LINK
 INHERITANCE_LINK <- ORDERED_LINK, DIRECTLY_EVALUATABLE_LINK
 
-// Logical quantifiers (adjoints to pullbacks of relations). Both are
-// scoped.
+// ------------------------------------------------------------
+// FIXME .. Delete these, they are unused/obsolete.
 //
-// Exists == left adjoint to the pullback functor of a relation. (The
-//           set-membership relation.) Note that PRESENT_LINK above is
-//           the unscoped variant of this, used in the pattern matcher.
-// ForAll == right adjoint to the pullback functor of a relation. (The
-//           set-membership relation.) Note that ALWAYS_LINK below is
-//           the unscoped variant of this, used in the pattern matcher.
-//
-// At least, that's the fancy definition. It's not used anywhere. The
-// plain definition is just the conventional first-order-logic definition.
-// Since they have a conventional and well-known meaning, I guess they
-// can stay in the core AtomSpace, as a part of the set of links useful
-// for knowledge representation.
-//
-// In reality, its a mish-mash. Currently, these are used only in unit
-// tests.  They're somewhat poorly defined. They are currently defined
-// to inherit from CollectionLink, thus allowing them to be set-valued,
-// and used in probabilistic contexts.
-FORALL_LINK <- SCOPE_LINK,COLLECTION_LINK "ForAllLink"
-EXISTS_LINK <- SCOPE_LINK,COLLECTION_LINK
-
 // These are used only in unit tests, at this point.
 // No clear role assigned, other than that there is some "association"
 // Perhaps this should be a base type for ... some knowledge

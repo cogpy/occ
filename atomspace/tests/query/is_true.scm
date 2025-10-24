@@ -2,15 +2,18 @@
 ; is_true.scm for IsTrueUTest.cxxtest
 ;
 
-;; True atom
-(Concept "A" (stv 1 1))
+;; True atom with BoolValue
+(cog-set-value! (Concept "A") (Predicate "*-TruthValueKey-*") (BoolValue #t))
 
-;; Non-true atom
-(Concept "B")
+;; False atom with BoolValue
+(cog-set-value! (Concept "B") (Predicate "*-TruthValueKey-*") (BoolValue #f))
+
+;; Empty atom
+(Concept "C")
 
 ;; Query all concepts
 (define query
-  (Get
+  (Meet
     (TypedVariable
       (Variable "$C")
       (Type 'Concept))
@@ -18,7 +21,7 @@
 
 ;; Query only true concepts
 (define true-query
-  (Get
+  (Meet
     (TypedVariable
       (Variable "$C")
       (Type 'Concept))
