@@ -29,10 +29,41 @@ NetworkServer::NetworkServer(unsigned short port, const char* name) :
     _name(name),
     _port(port),
     _running(false),
-    _acceptor(_io_service,
-        asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
+    _acceptor(_io_service)
 {
     logger().debug("[NetworkServer] constructor for %s at %d", name, port);
+
+    // Try IPv6 dual-stack mode first (accepts both IPv6 and IPv4)
+    bool ipv6_success = false;
+    try {
+        _acceptor.open(asio::ip::tcp::v6());
+        _acceptor.set_option(asio::socket_base::reuse_address(true));
+        _acceptor.set_option(asio::ip::v6_only(false));
+        _acceptor.bind(asio::ip::tcp::endpoint(asio::ip::tcp::v6(), port));
+        _acceptor.listen();
+        logger().info("[NetworkServer] dual-stack IPv4/IPv6 mode enabled");
+        ipv6_success = true;
+    }
+    catch (const std::system_error& e) {
+        logger().info("[NetworkServer] IPv6 not available (%s), falling back to IPv4-only mode",
+                      e.what());
+    }
+
+    // Fall back to IPv4-only if IPv6 failed
+    if (!ipv6_success) {
+        try {
+            _acceptor.open(asio::ip::tcp::v4());
+            _acceptor.set_option(asio::socket_base::reuse_address(true));
+            _acceptor.bind(asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port));
+            _acceptor.listen();
+            logger().info("[NetworkServer] IPv4-only mode enabled");
+        }
+        catch (const std::system_error& e) {
+            logger().error("[NetworkServer] Failed to bind to port %d: %s", port, e.what());
+            throw;
+        }
+    }
+
     _start_time = time(nullptr);
     _last_connect = 0;
     _nconnections = 0;
@@ -143,7 +174,7 @@ std::string NetworkServer::display_stats(int nlines)
     strftime(nbuf, 40, "%d %b %H:%M:%S %Y", &tm);
 
     // Current max_open_sockets is 60 which requires a terminal
-    // size of 66x80 to display correctly. So reserve a reasonble
+    // size of 66x80 to display correctly. So reserve a reasonable
     // string size.
     std::string rc;
     rc.reserve(4000);
@@ -203,7 +234,7 @@ std::string NetworkServer::display_stats(int nlines)
     rc += buff;
 
     // The above chews up 8 lines of display. Byobu/tmux needs a line.
-    // Blank line for accepting commmands. So subtract 10.
+    // Blank line for accepting commands. So subtract 10.
     rc += "\n";
     rc += ServerSocket::display_stats(nlines - 10);
 

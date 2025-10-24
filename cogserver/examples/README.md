@@ -31,9 +31,22 @@ chatting the MCP protocol can connect to the CogServer at port 18888
 and work directly with the Atoms in the AtomSpace.
 
 The mcp subdirectory also includes some debug and checking tools.
-One of these verifies that the CogServer is responding corrrectly.
+One of these verifies that the CogServer is responding correctly.
 Two more are network proxies that can be used to escape network
 sandboxes. These are useful when running Claude over TOR or a VPN.
+
+The [python](./python) subdirectory demonstrates how to start the
+cogserver from a python shell, so that the AtomSpace used by the python
+shell is the same one as that used by the cogserver.
+
+The demo for running the cogserver from scheme is almost trivial.
+Just do this:
+```
+(use-modules (opencog) (opencog cogserver))
+(start-cogserver)
+```
+That's it. Scheme documentation available from the guile REPL, by
+saying `,describe start-cogserver`.
 
 The [module](./module) subdirectory provides a template for creating
 a custom module. Most developers should NOT be interested in this
