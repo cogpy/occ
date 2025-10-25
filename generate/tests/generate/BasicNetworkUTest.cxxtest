@@ -91,7 +91,7 @@ void BasicNetworkUTest::setup_dict()
 	dict->add_pole_pair(any, any);
 
 	// The lexis to use XXX we should generate not read from file.
-	HandleSet lex;
+	UnorderedHandleSet lex;
 	as->get_handles_by_type(lex, SECTION);
 	dict->add_to_lexis(lex);
 }
