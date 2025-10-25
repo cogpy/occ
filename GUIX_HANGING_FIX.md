@@ -1,7 +1,7 @@
 # Guix Build Hanging Issue - Fixed
 
-**Date:** 2025-10-22  
-**Status:** ✅ FIXED
+**Date:** 2025-10-22 (Updated: 2025-10-24)  
+**Status:** ✅ FIXED (Updated with complete removal)
 
 ## Problem
 
@@ -36,79 +36,58 @@ The issue occurred in the "Update Guix channels and profile" step of `.github/wo
 
 3. **Resource Intensive Operations**: Without limiting parallel jobs, `guix pull` could consume excessive resources, further slowing down the process.
 
-## Solution
+## Solution History
 
+### Initial Fix (2025-10-22)
 Added timeout protection and graceful degradation to prevent indefinite hanging:
+- 5-minute timeout on `glibc-locales` installation
+- 10-minute timeout on `guix pull`
+- 5-minute timeout on `guix package -u`
 
-### Changes Made to `.github/workflows/guix-build.yml`
+### Final Fix (2025-10-24) - Complete Removal
+**Even with timeouts, the update step was still causing issues and preventing the main build from running.**
 
-#### 1. Added Timeout to `glibc-locales` Installation (Line 49)
-```bash
-timeout 300 sudo -i guix install glibc-locales || echo "Warning: glibc-locales install timed out or failed (continuing anyway)"
-```
-- **Timeout**: 5 minutes (300 seconds)
-- **Behavior**: Continues even if installation fails or times out
+The entire "Update Guix channels and profile" step has been **completely removed** from `.github/workflows/guix-build.yml`.
 
-#### 2. Added Timeout to `guix pull` (Lines 56-60)
-```bash
-timeout 600 sudo -i bash -c "export GUIX_LOCPATH=/root/.guix-profile/lib/locale && guix pull --max-jobs=2 --fallback" || {
-  echo "Warning: guix pull timed out or failed after 10 minutes"
-  echo "Continuing with existing Guix installation - this is acceptable for most builds"
-}
-```
-- **Timeout**: 10 minutes (600 seconds)
-- **Additional flags**: 
-  - `--max-jobs=2`: Limits parallel jobs to reduce resource consumption
-  - `--fallback`: Uses fallback build methods if substitutes fail
-- **Behavior**: Gracefully continues with existing Guix installation if timeout occurs
+#### What was removed:
+- `guix install glibc-locales` (with 5-minute timeout)
+- `guix pull --max-jobs=2 --fallback` (with 10-minute timeout)
+- `guix package -u` (with 5-minute timeout)
+- All profile sourcing and GUIX_LOCPATH setup related to updates
 
-#### 3. Added Timeout to `guix package -u` (Lines 63-67)
-```bash
-timeout 300 sudo -i bash -c "export GUIX_LOCPATH=/root/.guix-profile/lib/locale && guix package -u" || {
-  echo "Warning: guix package -u timed out or failed"
-  echo "Continuing with existing packages"
-}
-```
-- **Timeout**: 5 minutes (300 seconds)
-- **Behavior**: Continues with existing packages if update fails
+#### Why this works:
+- The fresh Guix installation already includes all necessary modules for the build
+- The workflow proceeds directly from "Setup Guix environment" to "Verify Guix files"
+- No network-dependent update operations that can hang or timeout
+- Faster CI builds since no time is spent on updates
 
 ## Impact
 
 These changes ensure that:
 
-1. **No Indefinite Hanging**: All network operations have hard time limits
-2. **Graceful Degradation**: The workflow continues even if updates fail
-3. **Better Resource Management**: Limited parallel jobs prevent resource exhaustion
-4. **Informative Output**: Clear messages explain what's happening and why
-5. **Acceptable Builds**: Most builds work fine with the fresh Guix installation without requiring the latest updates
-
-## Timeout Values
-
-The timeout values were chosen based on:
-
-- **glibc-locales (5 min)**: Small package, should install quickly
-- **guix pull (10 min)**: Large operation downloading channel updates; 10 minutes is generous but prevents indefinite hangs
-- **guix package -u (5 min)**: Package updates; typically quick or unnecessary
-
-These timeouts can be adjusted if needed, but they should prevent the hanging issue while allowing sufficient time for normal operations.
+1. **No Hanging**: The problematic update step is completely removed
+2. **Faster Builds**: No time wasted on network-dependent update operations
+3. **Reliable CI**: Workflow always completes successfully without network-related failures
+4. **Acceptable Builds**: The fresh Guix installation includes all necessary modules for building
 
 ## Testing
 
 To verify the fix works:
 
-1. The workflow should complete within the 60-minute timeout even if network is slow
-2. Failed/timed-out updates should not prevent the build from proceeding
-3. Clear warning messages should indicate when operations time out
-4. The actual build steps should still execute even if updates fail
+1. The workflow should complete within the 60-minute timeout
+2. No update operations should occur - workflow goes directly to verification and build
+3. The build steps should execute using the fresh Guix installation
+4. No network-related hanging or timeout messages
 
 ## Alternative Approaches Considered
 
-1. **Skip `guix pull` entirely**: Would work, but updating ensures latest bug fixes
+1. **Add timeouts to update operations** (Previous approach): Still caused issues with timeouts
 2. **Use substitutes only**: Faster, but may not always be available
 3. **Cache Guix installation**: Complex to implement in GitHub Actions
 4. **Longer timeouts**: Would still risk hanging, just for longer
+5. **Complete removal** (Current approach): Most reliable, uses fresh installation which already has needed modules
 
-The chosen approach balances reliability (won't hang) with functionality (tries to update when possible).
+The chosen approach prioritizes reliability (will never hang) and focuses on getting the main build working first.
 
 ## Related Files
 
@@ -119,31 +98,37 @@ The chosen approach balances reliability (won't hang) with functionality (tries 
 
 ## Future Improvements
 
-Potential enhancements:
+Potential enhancements (if channel updates are needed later):
 
-1. **Cache mechanism**: Cache Guix channels between runs
-2. **Conditional updates**: Only update on schedule, not every build
-3. **Parallel timeout strategy**: Try fast substitutes first, fall back to builds with timeout
-4. **Network diagnostics**: Check connectivity before attempting updates
+1. **Cache mechanism**: Cache Guix channels between runs (complex to implement, may have limited benefit)
+2. **Conditional updates**: Only update on schedule, not every build (adds workflow complexity)
+3. **Separate workflow**: Have a dedicated workflow for updating Guix, separate from builds (better isolation but more maintenance)
+4. **Network diagnostics**: Check connectivity before attempting updates (adds overhead)
+
+For now, the focus is on getting the main build working reliably. These improvements can be considered if channel updates become necessary in the future, but each adds complexity that must be weighed against the benefit.
 
 ## Verification
 
-Run the workflow and verify:
+The workflow should now show a clean progression:
 
 ```bash
-# The workflow should show output like:
-Attempting guix pull with 10 minute timeout...
-# ... either completes or shows:
-Warning: guix pull timed out or failed after 10 minutes
-Continuing with existing Guix installation - this is acceptable for most builds
+# Setup steps
+Install GNU Guix non-interactively (SSR safe)
+Setup Guix environment
+# Then directly to:
+Verify Guix files
+Build with Guix (dry-run)
+Build with Guix (actual build - may be slow)
 ```
 
-The key success criterion is that the workflow **completes** rather than hanging indefinitely.
+No update-related output or timeout warnings should appear.
+
+The key success criterion is that the workflow **completes successfully** and the main build runs without hanging.
 
 ## Summary
 
-✅ **Problem**: `guix pull` hanging indefinitely during channel updates  
-✅ **Solution**: Added `timeout` command with 10-minute limit  
-✅ **Impact**: Workflow can no longer hang indefinitely  
-✅ **Trade-off**: May skip updates, but builds still work with fresh installation  
-✅ **Result**: Reliable CI builds that complete within expected timeframes
+✅ **Problem**: `guix pull` and update operations hanging/timing out, preventing main build  
+✅ **Solution**: Completely removed the "Update Guix channels and profile" step from `.github/workflows/guix-build.yml`  
+✅ **Impact**: Workflow can no longer hang on updates  
+✅ **Trade-off**: No channel updates, but fresh installation has all needed modules  
+✅ **Result**: Reliable CI builds that focus on the main build process

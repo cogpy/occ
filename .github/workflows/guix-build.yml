@@ -39,44 +39,6 @@ jobs:
           echo "Verifying guix daemon..."
           guix describe || echo "Warning: guix describe failed"
           
-      - name: Update Guix channels and profile
-        run: |
-          echo "Updating Guix channels..."
-          export PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin:$PATH"
-          
-          # Install glibc-locales to prevent hanging on locale-related operations
-          echo "Installing glibc-locales..."
-          timeout 300 sudo -i guix install glibc-locales || echo "Warning: glibc-locales install timed out or failed (continuing anyway)"
-          
-          # Set GUIX_LOCPATH for locale support
-          export GUIX_LOCPATH="/root/.guix-profile/lib/locale"
-          
-          # Update Guix to ensure all modules are available
-          # Use timeout to prevent indefinite hanging on network operations
-          echo "Attempting guix pull with 10 minute timeout..."
-          timeout 600 sudo -i bash -c "export GUIX_LOCPATH=/root/.guix-profile/lib/locale && guix pull --max-jobs=2 --fallback" || {
-            echo "Warning: guix pull timed out or failed after 10 minutes"
-            echo "Continuing with existing Guix installation - this is acceptable for most builds"
-          }
-          
-          # Update packages in the default profile (with timeout)
-          echo "Attempting guix package update with 5 minute timeout..."
-          timeout 300 sudo -i bash -c "export GUIX_LOCPATH=/root/.guix-profile/lib/locale && guix package -u" || {
-            echo "Warning: guix package -u timed out or failed"
-            echo "Continuing with existing packages"
-          }
-          
-          # Source the Guix profile
-          echo "Sourcing Guix profile..."
-          source /etc/profile || true
-          
-          # Set and verify GUIX_PROFILE
-          export GUIX_PROFILE="/var/guix/profiles/per-user/root/guix-profile"
-          source $GUIX_PROFILE/etc/profile || echo "Warning: could not source profile"
-          
-          # Verify Guix is working
-          guix describe || echo "Warning: guix describe failed after update"
-          
       - name: Verify Guix files
         run: |
           export PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin:$PATH"
