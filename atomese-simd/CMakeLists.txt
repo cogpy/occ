@@ -13,9 +13,14 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 
 # These must be explicitly set, as otherwise warnings are printed.
+#   cmake --help-policy CMP0003
 CMAKE_POLICY(SET CMP0003 NEW)
 CMAKE_POLICY(SET CMP0037 NEW)
 CMAKE_POLICY(SET CMP0045 NEW)
+
+IF(CMAKE_VERSION VERSION_GREATER 3.31)
+   CMAKE_POLICY(SET CMP0177 NEW)
+ENDIF(CMAKE_VERSION VERSION_GREATER 3.31)
 
 PROJECT(atomese-simd)
 
@@ -135,18 +140,27 @@ ELSE (CLANG STREQUAL "CLANG-NOTFOUND")
 	MESSAGE(STATUS "clang found: ${CLANG}")
 	ADD_DEFINITIONS(-DHAVE_CLANG)
 	SET(HAVE_CLANG 1)
-ENDIF (CLANG STREQUAL "CLANG-NOTFOUND")
 
-# TODO: also accept newer versions of llvm-spirv
-# Debian stable has llvm-spriv-15 available
-FIND_PROGRAM(LLVM_SPIRV llvm-spirv-14)
-IF (LLVM_SPIRV STREQUAL "LLVM_SPIRV-NOTFOUND")
-	MESSAGE(STATUS "llvm-spirv not found; offline compile will not be done.")
-ELSE (LLVM_SPIRV STREQUAL "LLVM_SPIRV-NOTFOUND")
-	MESSAGE(STATUS "llvm-spirv found: ${LLVM_SPIRV}")
-	ADD_DEFINITIONS(-DHAVE_LLVM_SPIRV)
-	SET(HAVE_LLVM_SPIRV 1)
-ENDIF (LLVM_SPIRV STREQUAL "LLVM_SPIRV-NOTFOUND")
+	# Look for version of llvm-spirv that matches clang.
+	# Bit of a mess, but whatever.
+	execute_process(
+		COMMAND ${CLANG} --version
+		OUTPUT_VARIABLE CLANG_VERSION_OUTPUT
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+	string(REGEX MATCH "[0-9]+" CLANG_MAJOR_VERSION "${CLANG_VERSION_OUTPUT}")
+	message(STATUS "Clang major version: ${CLANG_MAJOR_VERSION}")
+
+	FIND_PROGRAM(LLVM_SPIRV llvm-spirv-${CLANG_MAJOR_VERSION})
+	IF (LLVM_SPIRV STREQUAL "LLVM_SPIRV-NOTFOUND")
+		MESSAGE(STATUS "llvm-spirv not found; offline compile will not be done.")
+	ELSE (LLVM_SPIRV STREQUAL "LLVM_SPIRV-NOTFOUND")
+		MESSAGE(STATUS "llvm-spirv found: ${LLVM_SPIRV}")
+		ADD_DEFINITIONS(-DHAVE_LLVM_SPIRV)
+		SET(HAVE_LLVM_SPIRV 1)
+	ENDIF (LLVM_SPIRV STREQUAL "LLVM_SPIRV-NOTFOUND")
+
+ENDIF (CLANG STREQUAL "CLANG-NOTFOUND")
 
 # ----------------------------------------------------------
 # Find CUDA (optional; for experimental prototyping.)
