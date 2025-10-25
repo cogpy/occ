@@ -37,9 +37,15 @@ For more detailed instructions, please see our [Getting Started Guide](docs/gett
 
 ## Documentation
 
+### Core Documentation
 - **[Architecture Overview](docs/architecture.md)**: A detailed look at the OCC architecture and its components.
 - **[Cognitive Synergy](docs/cognitive-synergy.md)**: An explanation of the principles of cognitive synergy and how they are applied in the OCC.
 - **[Contributing Guide](CONTRIBUTING.md)**: How to contribute to the OpenCog Collection.
+
+### AGI-OS / AGI-Kern Evaluation
+- **[AGI Kernel Evaluation](docs/AGI_KERNEL_EVALUATION.md)**: Comprehensive evaluation of OCC against traditional OS kernel primitives for AGI-OS development.
+- **[AGI-OS Integration Guide](docs/AGI_OS_INTEGRATION_GUIDE.md)**: Technical specifications for integrating 5 OpenCog repositories into a unified AGI Operating System.
+- **[AGI-Kern Coverage Summary](docs/AGI_KERN_COVERAGE_SUMMARY.md)**: Quick reference guide for kernel feature coverage and integration roadmap.
 
 ---
 
