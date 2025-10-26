@@ -49,6 +49,38 @@
 (use-modules (opencog))
 
 ; ---------------------------------------------------------------------
+; ---------------------------------------------------------------------
+; Some obsolete utilities, removed from the core AtomSpace.
+
+; ---------------------------------------------------------------------
+(define-public (cog-get-reference refptr)
+"
+  Given a reference structure, return the referenced list entries.
+  That is, given a structure of the form
+
+     ReferenceLink
+         SomeAtom
+         ListLink
+            AnotherAtom
+            AnotherAtom
+            ...
+
+  Then, given, as input, \"SomeAtom\", this returns a list of the \"OtherAtom\"
+
+  XXX! Caution/error! This implicitly assumes that there is only one
+  such ReferenceLink in the system, total. This is wrong !!!
+  XXX! You probably want to be using either StateLink or DefineLink
+  for this.
+"
+	(let ((lst (cog-chase-link 'ReferenceLink 'ListLink refptr)))
+		(if (null? lst)
+			'()
+			(cog-outgoing-set (car lst))
+		)
+	)
+)
+
+; ---------------------------------------------------------------------
 (define-public (document-get-sentences DOCO)
 "
   document-get-sentences DOCO -- Get sentences in document DOCO
@@ -74,7 +106,7 @@
   Basically, chase a ParseLink to a ParseNode
   Throws an error if sent-node is not a SentenceNode
 "
-	(cog-chase-link-chk 'ParseLink 'ParseNode sent-node 'SentenceNode)
+	(cog-chase-link 'ParseLink 'ParseNode sent-node 'SentenceNode)
 )
 
 ; -----------------------------------------------------------------------
