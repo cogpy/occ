@@ -35,7 +35,7 @@
   'right-dim        -- The number of columns
   'num-pairs        -- The number of non-zero entries
   'total-count      -- Total number of observations on all pairs
-                       (Identical to the 'wild-wild-count on the
+                       (Identical to the 'total-sum-left on the
                        support-api object)
 
   'left-entropy     -- The sum H_left = -sum_y P(*,y) log_2 P(*,y)
@@ -220,7 +220,7 @@
 			(cog-value-ref (cog-value wild-atom r-norm-key) 3))
 
 		; ----------------------------------------------------
-		(define (get-total-count) (supobj 'wild-wild-count))
+		(define (get-total-count) (supobj 'total-sum-left))
 
 		;-------------------------------------------
 
@@ -339,10 +339,7 @@
 				0.0
 				(wild-obj 'left-basis)))
 
-			; TODO - some future day, use 'total-count-right
-			; For now, too many existing datasets don't store this value.
-			; (define total (len-obj 'total-count-right))
-			(define total (len-obj 'wild-wild-count))
+			(define total (len-obj 'total-sum-right))
 
 			(/ weighted-avg total))
 
@@ -364,10 +361,7 @@
 				0.0
 				(wild-obj 'right-basis)))
 
-			; TODO - some future day, use 'total-count-left
-			; For now, too many existing datasets don't store this value.
-			; (define total (len-obj 'total-count-left))
-			(define total (len-obj 'wild-wild-count))
+			(define total (len-obj 'total-sum-left))
 
 			(/ weighted-avg total))
 
@@ -659,7 +653,7 @@
 			(format PORT "Error: left and right total pairs not equal! ~A ~A\n"
 				lsize rsize))
 
-		; lobs should equal robs should equal (sup-obj 'wild-wild-count)
+		; lobs should equal robs should equal (sup-obj 'total-sum-left)
 		(if (not (equal? nlobs nrobs))
 			(format PORT "Error: left and right total counts not equal! ~A ~A\n"
 				lobs robs))
