@@ -78,7 +78,6 @@ bool ScopeLink::skip_init(Type t)
 	// sequence. We can't use virtual init() in the ctor, so just
 	// do an if-statement here.
 	if (PUT_LINK == t) return true;
-	if (FORMULA_PREDICATE_LINK == t) return true;
 	if (nameserver().isA(t, PATTERN_LINK)) return true;
 	return false;
 }
@@ -290,7 +289,7 @@ bool ScopeLink::is_equal(const Handle& other, bool silent) const
 		{
 			const Handle& h(_outgoing[i + vardecl_offset]);
 			const Handle& other_h(otho[i + other_vardecl_offset]);
-			if (h->operator!=(*((AtomPtr) other_h))) return false;
+			if (h->operator!=(*other_h)) return false;
 		}
 		return true;
 	}
@@ -305,7 +304,7 @@ bool ScopeLink::is_equal(const Handle& other, bool silent) const
 		other_h = scother->_variables.substitute_nocheck(other_h,
 		                                                 _variables.varseq, silent);
 		// Compare them, they should match.
-		if (*((AtomPtr)h) != *((AtomPtr) other_h)) return false;
+		if (*h != *other_h) return false;
 	}
 
 	return true;
