@@ -14,6 +14,7 @@
              (guix build cmake-build-system)
              ((guix licenses) #:prefix license:)
              (gnu packages)
+             (gnu packages base)  ; Base packages like coreutils, tar, gzip
              (gnu packages python)
              (gnu packages python-xyz)
              (gnu packages python-science)
