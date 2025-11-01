@@ -478,7 +478,7 @@
 "
   Given a concept node C, return all its members
 "
-  (let* ((member-links (cog-filter 'MemberLink (cog-incoming-set C)))
+  (let* ((member-links (cog-incoming-by-type C 'MemberLink))
          (member-of-C (lambda (x) (equal? C (gdr x))))
          (members (map gar (filter member-of-C member-links))))
     members))
@@ -492,6 +492,14 @@
 (define (size-ge db ms)
   (let* ((result (>= (get-cardinality db) (cog-number ms))))
     (bool->tv result)))
+
+(define (cog-cp ATOMSPACE ATOM-LIST)
+"
+  cog-cp ATOMSPACE ATOM-LIST - Copy the atoms in ATOM-LIST to ATOMSPACE.
+  Returns the list of copied atoms.
+"
+  (map (lambda (AT) (cog-new-atom AT ATOMSPACE)) ATOM-LIST)
+)
 
 (define (db->atomspace db)
 "
