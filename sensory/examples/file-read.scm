@@ -16,7 +16,7 @@
 ; the (TextFile "file:///tmp/demo.txt") object will cause one line
 ; to be read from the file, and returned as a StringValue.
 
-;; Memoize the TextFileNode in scheme. This does tow things:
+;; Memoize the TextFileNode in scheme. This does two things:
 ;; 1) Avoids typing, below.
 ;; 2) Avoids hitting the AtomSpace repeatedly.
 (define file-node (TextFile "file:///tmp/demo.txt"))
@@ -46,7 +46,7 @@
 ; Each examination of the stream will return a line from the file,
 ; in sequential order.
 
-; But first, let's rewind to the begining. And change the return type,
+; But first, let's rewind to the beginning. And change the return type,
 ; just for grins.
 (cog-execute!
 	(SetValue file-node (Predicate "*-open-*") (Type 'Concept)))
@@ -70,7 +70,7 @@ txt-stream
 ; stored in the Atomspace, and it would be better to be able to get
 ; that stream directly. This is done with the *-stream-* message.
 
-; Again, let's rewind to the begining.
+; Again, let's rewind to the beginning.
 (cog-execute!
 	(SetValue file-node (Predicate "*-open-*") (Type 'Item)))
 
@@ -88,9 +88,13 @@ txt-stream
 ; as a Value on some Atom, where it can be accessed and processed.
 ;
 ; Anchor the text stream at "some place", where it can be found.
+; The DontExecLink allows the stream to be installed at "some place",
+; without touching the stream during installation. Without it, the
+; ValueOf would have been executed, and the file pointer would have
+; been off by one.
 (cog-execute!
 	(SetValue (Concept "foo") (Predicate "some place")
-		(ValueOf file-node (Predicate "*-stream-*"))))
+		(DontExec (ValueOf file-node (Predicate "*-stream-*")))))
 
 ; The stream can be accessed by just fetching it from "some place",
 ; the location it is anchored at.
@@ -166,7 +170,7 @@ txt-stream
 ; Demo: Perform processing on the stream. In this case, parse the
 ; input stream into token pairs. Use the LG "any" parser for this.
 
-(use-modules (opencog nlp) (opencog nlp lg-parse))
+(use-modules (opencog lg))
 
 ; As above: rewind the stream to the beginning:
 (cog-execute!
