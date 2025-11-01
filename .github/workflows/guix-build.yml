@@ -41,7 +41,10 @@ jobs:
           
           # Verify daemon is accessible and pull latest guix if needed
           echo "Verifying guix daemon..."
-          guix describe || guix pull
+          if ! guix describe; then
+            echo "Pulling latest guix..."
+            guix pull
+          fi
           
       - name: Verify Guix files
         run: |
@@ -62,10 +65,7 @@ jobs:
           
           # Use guix repl instead of system guile for validation to ensure Guix modules are available
           echo "Validating guix.scm syntax using guix repl..."
-          guix repl -- <<EOF || {
-            echo "Syntax validation failed"
-            exit 1
-          }
+          if ! guix repl -- <<EOF
           (use-modules (guix packages))
           (with-input-from-file "guix.scm" 
             (lambda () 
@@ -74,6 +74,10 @@ jobs:
                   (loop (read))))))
           (display "guix.scm: Syntax OK\n")
           EOF
+          then
+            echo "Syntax validation failed"
+            exit 1
+          fi
           
       - name: Build with Guix (dry-run)
         run: |
