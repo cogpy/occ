@@ -26,6 +26,10 @@ jobs:
           # Use $(whoami) for reliable user detection instead of $USER
           export PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin:$PATH"
           
+          # Set up Guix environment variables
+          export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
+          export GUIX_PACKAGE_PATH="$GITHUB_WORKSPACE"
+          
           # Ensure guix daemon is running
           echo "Starting guix daemon..."
           sudo systemctl start guix-daemon || {
@@ -35,13 +39,17 @@ jobs:
             sleep 5
           }
           
-          # Verify daemon is accessible
+          # Verify daemon is accessible and pull latest guix if needed
           echo "Verifying guix daemon..."
-          guix describe || echo "Warning: guix describe failed"
+          guix describe || guix pull
           
       - name: Verify Guix files
         run: |
           export PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin:$PATH"
+          
+          # Set up Guix environment variables
+          export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
+          export GUIX_PACKAGE_PATH="$GITHUB_WORKSPACE"
           
           # Source Guix profile to ensure modules are available
           export GUIX_PROFILE="/var/guix/profiles/per-user/root/guix-profile"
@@ -51,20 +59,31 @@ jobs:
           # Set GUILE_LOAD_PATH and GUILE_LOAD_COMPILED_PATH for Guile to find Guix modules
           export GUILE_LOAD_PATH="$GUIX_PROFILE/share/guile/site/3.0"
           export GUILE_LOAD_COMPILED_PATH="$GUIX_PROFILE/lib/guile/3.0/site-ccache"
-          export GUIX_PACKAGE_PATH="$PWD"
           
-          echo "Installing Guile for validation..."
-          sudo apt-get update -qq
-          sudo apt-get install -y guile-3.0
-          
-          echo "Running validation script..."
-          bash .guix/validate-ssr-fix.sh
+          # Use guix repl instead of system guile for validation to ensure Guix modules are available
+          echo "Validating guix.scm syntax using guix repl..."
+          guix repl -- <<EOF || {
+            echo "Syntax validation failed"
+            exit 1
+          }
+          (use-modules (guix packages))
+          (with-input-from-file "guix.scm" 
+            (lambda () 
+              (let loop ((expr (read)))
+                (unless (eof-object? expr)
+                  (loop (read))))))
+          (display "guix.scm: Syntax OK\n")
+          EOF
           
       - name: Build with Guix (dry-run)
         run: |
           # Use $(whoami) for consistent PATH construction
           export PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin:$PATH"
           
+          # Set up Guix environment variables
+          export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
+          export GUIX_PACKAGE_PATH="$GITHUB_WORKSPACE"
+          
           # Source Guix profile to ensure modules are available
           export GUIX_PROFILE="/var/guix/profiles/per-user/root/guix-profile"
           source $GUIX_PROFILE/etc/profile || true
@@ -73,18 +92,29 @@ jobs:
           # Set GUILE_LOAD_PATH and GUILE_LOAD_COMPILED_PATH for Guile to find Guix modules
           export GUILE_LOAD_PATH="$GUIX_PROFILE/share/guile/site/3.0"
           export GUILE_LOAD_COMPILED_PATH="$GUIX_PROFILE/lib/guile/3.0/site-ccache"
-          export GUIX_PACKAGE_PATH="$PWD"
           
           echo "Running dry-run build to check package definition..."
           guix build -f guix.scm --dry-run --verbosity=1 || {
-            echo "Dry-run failed, checking package syntax..."
-            guile --no-auto-compile -c "(use-modules (guix packages)) (with-input-from-file \"guix.scm\" (lambda () (let loop ((expr (read))) (unless (eof-object? expr) (loop (read))))))"
+            echo "Dry-run failed, checking package syntax with guix repl..."
+            guix repl -- <<EOF
+            (use-modules (guix packages))
+            (with-input-from-file "guix.scm" 
+              (lambda () 
+                (let loop ((expr (read)))
+                  (unless (eof-object? expr)
+                    (loop (read))))))
+            (display "Package syntax check passed\n")
+          EOF
             exit 1
           }
           
       - name: Build with Guix (actual build - may be slow)
         run: |
           export PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin:$PATH"
+          
+          # Set up Guix environment variables
+          export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
+          export GUIX_PACKAGE_PATH="$GITHUB_WORKSPACE"
           
           # Source Guix profile to ensure modules are available
           export GUIX_PROFILE="/var/guix/profiles/per-user/root/guix-profile"
