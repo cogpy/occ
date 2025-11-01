@@ -60,3 +60,17 @@ The OpenCog project is a community-driven effort. We welcome contributions from 
 
 *The OpenCog Collection is a continuation of the OpenCog project, pioneered by Dr. Ben Goertzel.*
 
+## Cognitive Synergy Enhancements
+
+To enforce and test the cognitive synergy between the various components (C++, Python, Rust), a unified entry point has been created.
+
+### Unified Synergy Check
+
+Run the following script to build all components, and perform mock interoperability and demo tests:
+
+```bash
+./synergy.sh
+```
+
+This script ensures that the entire collection is a coherent whole, a key principle for achieving cognitive synergy.
+

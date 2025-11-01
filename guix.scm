@@ -132,7 +132,7 @@
                 (when (file-exists? "requirements.txt")
                   (install-file "requirements.txt" share))
                 
-                #t)))))
+                #t))))))
     (native-inputs
      (list pkg-config
            cmake
@@ -146,8 +146,6 @@
            python-matplotlib
            guile-3.0
            boost
-           blas
-           lapack
            gsl))
     (propagated-inputs
      (list python-numpy
@@ -184,4 +182,3 @@ Additionally includes:
 
 ;; Return the package for building
 opencog-collection
-)
