@@ -38,8 +38,6 @@
 #include <opencog/atoms/value/Value.h>
 #include <opencog/atoms/atom_types/types.h>
 
-#include <opencog/atoms/truthvalue/TruthValue.h>
-
 #include <opencog/atomspace/AtomSpace.h>
 
 namespace opencog {
@@ -127,12 +125,10 @@ private:
 	static SCM value_ref(const ValuePtr&, size_t);
 
 	// Property setters on atoms
-	static SCM ss_set_tv(SCM, SCM);
 	static SCM ss_set_value(SCM, SCM, SCM);
 	static SCM set_value(const Handle&, const Handle&,
 	                     const ValuePtr&, SCM, const char*);
 	static SCM ss_set_values(SCM, SCM);
-	static SCM ss_inc_count(SCM, SCM);
 	static SCM ss_inc_value(SCM, SCM, SCM, SCM);
 	static SCM ss_update_value(SCM, SCM, SCM);
 	static SCM ss_set_value_ref(SCM, SCM, SCM, SCM);
@@ -143,10 +139,6 @@ private:
 	static SCM from_type(const ValuePtr&);
 	static SCM ss_type(SCM);
 	static SCM ss_arity(SCM);
-	static SCM ss_tv(SCM);
-	static SCM ss_get_mean(SCM);
-	static SCM ss_get_confidence(SCM);
-	static SCM ss_get_count(SCM);
 	static SCM ss_keys(SCM);
 	static SCM ss_keys_alist(SCM);
 	static SCM ss_value(SCM, SCM);
@@ -167,11 +159,6 @@ private:
 	static SCM ss_subtype_p(SCM, SCM);
 	static SCM ss_count(SCM, SCM);
 
-	// Truth values
-	static SCM ss_tv_get_mean(SCM);
-	static SCM ss_tv_get_confidence(SCM);
-	static SCM ss_tv_get_count(SCM);
-
 	// Atom Spaces
 	static SCM ss_new_as(SCM);
 	static SCM ss_add_as(SCM);
@@ -189,17 +176,12 @@ private:
 	static SCM make_as(const AtomSpacePtr&);
 	static const AtomSpacePtr& ss_to_atomspace(SCM);
 
-	// Free variables
-	static SCM ss_get_free_variables(SCM);
-	static SCM ss_is_closed(SCM);
-
 	// Misc utilities
 	static SCM convert_to_utf8(void *, SCM, SCM);
 	static std::string to_string(SCM);
 	static std::string protom_to_string(SCM);
 	static std::string protom_to_server_string(SCM);
 	static std::string misc_to_string(SCM);
-	static TruthValuePtr get_tv_from_list(SCM);
 	static const AtomSpacePtr& get_as_from_list(SCM);
 	static Handle set_values(const Handle&, const AtomSpacePtr&, SCM);
 
@@ -220,7 +202,6 @@ private:
 	static Type verify_type(SCM, const char *, int pos = 1);
 	static Handle verify_handle(SCM, const char *, int pos = 1);
 	static ValuePtr verify_protom(SCM, const char *, int pos = 1);
-	static TruthValuePtr verify_tv(SCM, const char *, int pos = 1);
 	static HandleSeq verify_handle_list_msg (SCM, const char*,
 	                                         int, const char*,  const char*);
 	static HandleSeq verify_handle_list (SCM, const char *,

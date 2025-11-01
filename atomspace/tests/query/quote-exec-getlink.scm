@@ -1,7 +1,7 @@
 (use-modules (opencog) (opencog exec))
 
 (define (foo arg)
-    (stv 1 1)
+    #t
 )
 
 (define z-eval
@@ -17,7 +17,8 @@
 )
 
 (define z-get
-    (GetLink
+    (CollectionOf
+    (MeetLink
        (TypedVariableLink
           (VariableNode "$effect")
           (TypeNode "ConceptNode")
@@ -29,6 +30,7 @@
              (VariableNode "$effect")
           )
        )
+    )
     )
 )
 

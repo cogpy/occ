@@ -46,24 +46,34 @@ class StringValue
 protected:
 	mutable std::vector<std::string> _value;
 
+	virtual void update() const {}
+	std::string to_string(const std::string&, Type) const;
+
+	StringValue(Type t, const std::vector<std::string>& v)
+		: Value(t), _value(v) {}
+
 public:
 	StringValue(const std::string& v)
 		: Value(STRING_VALUE) { _value.push_back(v); }
 	StringValue(const std::vector<std::string>& v)
 		: Value(STRING_VALUE), _value(v) {}
-	StringValue(Type t, const std::vector<std::string>& v)
-		: Value(t), _value(v) {}
 
 	virtual ~StringValue() {}
 
-	const std::vector<std::string>& value() const { return _value; }
-	size_t size() const {return _value.size(); }
+	const std::vector<std::string>& value() const { update(); return _value; }
+	size_t size() const { return _value.size(); }
 
 	/** Returns a string representation of the value.  */
-	virtual std::string to_string(const std::string& indent = "") const;
+	virtual std::string to_string(const std::string& indent = "") const
+	{ return to_string(indent, _type); }
 
 	/** Returns true if the two atoms are equal.  */
 	virtual bool operator==(const Value&) const;
+
+	/** Optimized less-than comparison for StringValue.
+	 * Compares by type first, then vector length, then individual strings.
+	 * Much faster than the base class to_string() comparison. */
+	virtual bool operator<(const Value& other) const;
 };
 
 VALUE_PTR_DECL(StringValue);

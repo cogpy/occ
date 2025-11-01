@@ -125,7 +125,7 @@ void PatternCrashUTest::test_one_thing(void)
 	             (ConceptNode "Tweety")
 	             (ConceptNode "Yello")
 	             )
-	            (BindLink
+	            (Query
 	             (VariableList
 	              (VariableNode "$A")
 	              (VariableNode "$B")
@@ -144,10 +144,7 @@ void PatternCrashUTest::test_one_thing(void)
 	               (ImplicationLink
 	                (VariableNode "$A")
 	                (VariableNode "$B")
-	                )
-	               )
-	              )
-	             )
+	                ))))
 	            (ListLink
 	             (InheritanceLink
 	              (ConceptNode "Fritz")
@@ -241,17 +238,17 @@ void PatternCrashUTest::test_one_thing(void)
 	            )");
 
 	Handle htarget = _eval->eval_h(R"(
-	                               (AndLink (stv 1.000000 0.000000)
-	                                (InheritanceLink (stv 1.000000 0.000000)
+	                               (AndLink
+	                                (InheritanceLink
 	                                 (VariableNode "$Z")
 	                                 (ConceptNode "Frog")
 	                                 )
-	                                (ImplicationLink (stv 1.000000 0.000000)
-	                                 (InheritanceLink (stv 1.000000 0.000000)
+	                                (ImplicationLink
+	                                 (InheritanceLink
 	                                  (VariableNode "$Z")
 	                                  (ConceptNode "Frog")
 	                                  )
-	                                 (InheritanceLink (stv 1.000000 0.000000)
+	                                 (InheritanceLink
 	                                  (VariableNode "$Z")
 	                                  (ConceptNode "green")
 	                                  )
@@ -267,8 +264,8 @@ void PatternCrashUTest::test_one_thing(void)
 	for (auto& h : fv.varset)
 	   vars.push_back(h);
 
-	Handle htarget_vardecl = _as->add_atom(createVariableList(std::move(vars)));
-	Handle hpattern = _as->add_atom(createPatternLink(htarget_vardecl, htarget));
+	Handle htarget_vardecl = _as->add_atom(Handle(createVariableList(std::move(vars))));
+	Handle hpattern = _as->add_atom(Handle(createPatternLink(htarget_vardecl, htarget)));
 
 	PatternLinkPtr sl = PatternLinkCast(hpattern);
 	PMCB pmcb(_as.get());
