@@ -5,7 +5,7 @@
 #
 # Steps:
 # 1. docker build --no-cache -t opencog/atomspace .
-# 2. docker create --name atomspace -p 17001:17001
+# 2. docker create --name atomspace -p 17001:17001 -p 18080:18080
 #       -v /ABSOLUTE/PATH/TO/YOUR/WORKING/DIRECTORY/On/Your/PC/:/opencog
 #       -w /opencog
 #       -it opencog/atomspace
@@ -13,6 +13,13 @@
 #
 
 FROM opencog/opencog-deps:latest
+# FROM opencog/opencog-deps:ubuntu-20.04
+# FROM opencog/opencog-deps:ubuntu-22.04
+# FROM opencog/opencog-deps:ubuntu-24.04
+# FROM opencog/opencog-deps:ubuntu-25.10
+# FROM opencog/opencog-deps:debian-bullseye
+# FROM opencog/opencog-deps:debian-bookworm
+# FROM opencog/opencog-deps:debian-trixie
 
 # The apt installs below will fail, unless we are at the latest.
 # Bump the date, if there are DNS failures!
@@ -22,26 +29,27 @@ RUN apt-get -y update; apt-get -y upgrade; apt-get -y autoremove
 # Basic tools that allow this image to be minimally usable.
 #  * Networking tools (ping, ifconfig, telnet, netcat)
 #  * Terminal sharing tools (tmux, byobu)
-#  * Debug tools (gdb, xxd)
+#  * Debug tools (gdb, xxd, jq)
 #  * Webserver (apache2, php)
-RUN apt-get -y install \
+#
+# Oddly, the xxd package is sometimes missing; use --ignore-missing.
+# The || true is needed to prevent docker from dying when xxd is not
+# found.
+RUN apt-get -y --ignore-missing install \
+	lsof \
 	net-tools iputils-ping netcat-openbsd traceroute iptraf \
 	rlwrap telnet \
 	tmux byobu \
-	gdb time xxd \
-	apache2 php
+	gdb time xxd jq \
+	apache2 php \
+	|| true
 
 # Install cogutil
-ENV LAST_COGUTIL_UPDATE=2025-09-03
+ENV LAST_COGUTIL_UPDATE=2025-09-06
 RUN  /tmp/octool -c && ccache -C
 
-# Update Link Grammar.
-# This installs the latest release tarball, and NOT github master.
-ENV LAST_LINK_GRAMMAR_UPDATE=2024-05-02
-RUN  /tmp/octool -v -l default && ccache -C
-
 # Install core AtomSpace.
-ENV LAST_ATOMSPACE_UPDATE=2025-09-03
+ENV LAST_ATOMSPACE_UPDATE=2025-10-16
 RUN  /tmp/octool -a && ccache -C
 
 USER opencog
