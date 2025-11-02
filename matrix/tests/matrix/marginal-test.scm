@@ -11,6 +11,10 @@
 
 (use-modules (opencog matrix))
 
+(define tvkey (Predicate "*-TruthValueKey-*"))
+(define (get-count ATOM)
+	(cog-value-ref ATOM tvkey 2))
+
 (opencog-test-runner)
 
 ; ---------------------------------------------------------------
@@ -32,20 +36,20 @@
 
 ; Add one atom, verify that the marginals are updated.
 (mgi 'pair-inc (Concept "foo") (Concept "bar") 42)
-(test-equal "left-marg" 42.0 (cog-count (epa 'left-wildcard (Concept "bar"))))
-(test-equal "right-marg" 42.0 (cog-count (epa 'right-wildcard (Concept "foo"))))
-(test-equal "tot" 42.0 (cog-count (epa 'wild-wild)))
+(test-equal "left-marg" 42.0 (get-count (epa 'left-wildcard (Concept "bar"))))
+(test-equal "right-marg" 42.0 (get-count (epa 'right-wildcard (Concept "foo"))))
+(test-equal "tot" 42.0 (get-count (epa 'wild-wild)))
 
 ; Add a few more atoms.
 (mgi 'pair-inc (Concept "foo") (Concept "bar2") 0.5)
 (mgi 'pair-inc (Concept "foo2") (Concept "bar") 1.5)
 
 ; The original pair is untouched.
-(test-equal "pair" 42.0 (cog-count (epa 'make-pair (Concept "foo") (Concept "bar"))))
+(test-equal "pair" 42.0 (get-count (epa 'make-pair (Concept "foo") (Concept "bar"))))
 
 ; The marginals should be accumulating.
-(test-equal "left-marg" 43.5 (cog-count (epa 'left-wildcard (Concept "bar"))))
-(test-equal "right-marg" 42.5 (cog-count (epa 'right-wildcard (Concept "foo"))))
-(test-equal "tot" 44.0 (cog-count (epa 'wild-wild)))
+(test-equal "left-marg" 43.5 (get-count (epa 'left-wildcard (Concept "bar"))))
+(test-equal "right-marg" 42.5 (get-count (epa 'right-wildcard (Concept "foo"))))
+(test-equal "tot" 44.0 (get-count (epa 'wild-wild)))
 
 (test-end tmarg)
