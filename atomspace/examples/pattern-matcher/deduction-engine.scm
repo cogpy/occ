@@ -7,7 +7,7 @@
 ; goal of this example is to show how to do that.
 ;
 ;; XXX under construction, incomplete. The correct fix is to remove
-;; BindLink everywhere below, and use UnifierLink instead, according
+;; QueryLink everywhere below, and use UnifierLink instead, according
 ;; to the examples demoing the unifier.
 ;
 ; Critiques:
@@ -52,7 +52,7 @@
 			(VariableNode "$X"))))
 
 ;;; The equivalent imperative form of the above.
-(BindLink
+(QueryLink
 	(VariableNode "$X")
 	(EvaluationLink
 		(PredicateNode "likes")
@@ -137,7 +137,7 @@
 ;; pattern match first half of implication, if found
 ;; try to check member again.
 
-(cog-evaluate! (DefinedPredicateNode "Does Bill like X?"))
+(cog-execute! (DefinedPredicateNode "Does Bill like X?"))
 
 ;; A quasi-generic rule implicator.
 ;; Searches for all implication links (of a very specific form)
@@ -194,9 +194,9 @@
 								(VariableNode "$vvv")))))))
 		get-impl))
 
-;; Same as above, but using BindLink, so order is reversed.
+;; Same as above, but using QueryLink, so order is reversed.
 (define b-impl
-(BindLink
+(QueryLink
 	;; Search for ImplicationLinks, and dissect them.
 	(VariableList
 		(TypedVariableLink (VariableNode "$fpred") (TypeNode "PredicateNode"))
@@ -220,8 +220,8 @@
 						(VariableNode "$B")
 						(VariableNode "$V"))))))
 
-	; If an ImplicationLink was found, create a matching BindLink
-	(BindLink
+	; If an ImplicationLink was found, create a matching QueryLink
+	(QueryLink
 		(VariableNode "$V")
 		(EvaluationLink
 			(VariableNode "$fpred")
