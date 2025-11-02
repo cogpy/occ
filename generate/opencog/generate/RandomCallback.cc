@@ -23,6 +23,7 @@
 #include <uuid/uuid.h>
 
 #include <opencog/atoms/base/Link.h>
+#include <opencog/atoms/value/FloatValue.h>
 
 #include "RandomCallback.h"
 
