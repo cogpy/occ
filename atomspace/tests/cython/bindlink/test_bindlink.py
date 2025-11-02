@@ -2,7 +2,6 @@ import unittest
 import os
 
 from opencog.atomspace import Atom, types
-from opencog.execute import evaluate_atom
 
 from opencog.type_constructors import *
 
@@ -127,8 +126,7 @@ class BindlinkTest(unittest.TestCase):
             )
         )
 
-        tv = evaluate_atom(self.atomspace, satisfaction_atom)
-        self.assertTrue(tv is not None and tv.mean <= 0.5)
+        tv = self.atomspace.execute(satisfaction_atom)
         self.assertEqual(green_count(), 2)
         self.assertEqual(red_count(), 1)
 
@@ -147,7 +145,7 @@ class BindlinkTest(unittest.TestCase):
         self.assertEqual(result, list_link)
 
     def test_evaluate_atom(self):
-        result = evaluate_atom(self.atomspace,
+        result = self.atomspace.execute(
                 EvaluationLink(
                     GroundedPredicateNode("py: test_functions.bogus_tv"),
                     ListLink(
@@ -156,7 +154,7 @@ class BindlinkTest(unittest.TestCase):
                     )
                 )
             )
-        self.assertEqual(result, TruthValue(0.6, 0.234))
+        self.assertEqual(result, BoolValue(True))
 
     def test_execute_atom_no_return_value(self):
         result = PutLink(DeleteLink(VariableNode("X")),
@@ -178,7 +176,7 @@ class BindlinkTest(unittest.TestCase):
         result = get.execute()
         self.assertFalse(result.out)
         self.assertFalse(self.atomspace.is_node_in_atomspace(types.ConceptNode, 'barleycorn'))
-        test_functions.func_one_result = TruthValue(1,1)
+        test_functions.func_one_result = FloatValue([1,1,1])
         result = get.execute()
         self.assertTrue(result.out)
         # still should not be in the current namespace

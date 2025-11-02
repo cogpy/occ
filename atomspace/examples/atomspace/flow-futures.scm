@@ -22,11 +22,14 @@
 ; Below is a toy pair-counting framework.  It increments counts
 ; on pairs, as well as on marginals.
 
+; Counts are located in the third slot of the TV predicate.
+(define tvp (PredicateNode "*-TruthValueKey-*"))
+
 (define (incr-counts THING-A THING-B)
-	(cog-inc-count! (List THING-A THING-B) 1.0)
-	(cog-inc-count! (List (AnyNode "left wildcard") THING-B) 1.0)
-	(cog-inc-count! (List THING-A (AnyNode "right wildcard")) 1.0)
-	(cog-inc-count! (AnyNode "grand total") 1.0))
+	(cog-inc-value! (List THING-A THING-B) tvp 1.0 2)
+	(cog-inc-value! (List (AnyNode "left wildcard") THING-B) tvp 1.0 2)
+	(cog-inc-value! (List THING-A (AnyNode "right wildcard")) tvp 1.0 2)
+	(cog-inc-value! (AnyNode "grand total") tvp 1.0 2))
 
 ; Same as above, but works with strings. It counts how often a pair
 ; was "observed".
@@ -42,9 +45,6 @@
 
 ; -------------------------------------------------------------
 ; Set up the pipeline.
-
-; Counts are located in the third slot of the TV predicate.
-(define tvp (PredicateNode "*-TruthValueKey-*"))
 
 ; We will use the formula MI(a,b) = log_2 N(a,b) N(*,*) / N(a,*) N(*,b)
 ; to compute the MI of a pair.
@@ -62,12 +62,16 @@
 					(FloatValueOf (List (Any "left wildcard") (Variable "$R")) tvp))))))
 
 ; A utility to install the above formula on a pair.
-; The formula does no good if unless we stick it on the object.
+; The CollectionOfLink is used to wrap the formula with a FormulaStream.
+; The stream is accessed whenever the (Predicate "MI Key") is accessed.
+; This implements dynamic update of the MI, so that looking at it always
+; returns the correct value at that given time.
 (define (install-formula THING-A THING-B)
 	(define pair (List THING-A THING-B))
-	(cog-set-value! pair (Predicate "MI Key")
-		(FormulaStream
-			(ExecutionOutput (DefinedProcedure "dynamic MI") pair))))
+	(cog-execute!
+		(SetValue pair (Predicate "MI Key")
+			(CollectionOf (Type 'FormulaStream) (OrderedLink
+				(ExecutionOutput (DefinedProcedure "dynamic MI") pair))))))
 
 ; Convenience wrapper, works with strings.
 (define (install-mi STRING-A STRING-B)
@@ -155,11 +159,14 @@
 					(make-deci (List (Variable "$L") (Any "right wildcard")))
 					(make-deci (List (Any "left wildcard") (Variable "$R"))))))))
 
+
+; As before.
 (define (install-scalar THING-A THING-B)
 	(define pair (List THING-A THING-B))
-	(cog-set-value! pair (Predicate "Alt MI Key")
-		(FormulaStream
-			(ExecutionOutput (DefinedProcedure "scalar MI") pair))))
+	(cog-execute!
+		(SetValue pair (Predicate "Alt MI Key")
+			(CollectionOf (Tpe 'FormulaStream) (OrderedLink
+				(ExecutionOutput (DefinedProcedure "scalar MI") pair))))))
 
 ; Convenience wrapper, works with strings.
 (define (install-scalar-mi STRING-A STRING-B)

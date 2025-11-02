@@ -22,7 +22,7 @@
 
 
 ; --------------------------------------------------------------------
-;; The Bindlink from bug opencog/opencog#1520, with one change:
+;; The QueryLink from bug opencog/opencog#1520, with one change:
 ;; Use NotLink instead of AbsentLink.
 ;;
 ;; Absence is looking for the lack of a pattern.
@@ -32,7 +32,7 @@
 ;; use EqualLink instead of the GPN.
 
 (define pln-rule-deduction
-    (BindLink
+    (QueryLink
         (VariableList
             (TypedVariableLink
                 (VariableNode "$A")
@@ -91,15 +91,11 @@
 ; --------------------------------------------------------------------
 ; Check whether two nodes are equal.
 ;
-; If they are equal then it will return TRUE_TV else it returns
-; FALSE_TV.
+; If they are equal then it will return true else it returns false.
 ;
 ; --------------------------------------------------------------------
 (define (cog-equal? atom-1 atom-2)
-    (if (equal? atom-1 atom-2)
-        (stv 1 1)
-        (stv 0 1)
-    )
+    (equal? atom-1 atom-2)
 )
 
 ; Do nothing except for returning the arguments wrapped in a QuoteLink
@@ -109,7 +105,7 @@
 ; Same as above, but using the built-in EqualLink for atom equality.
 
 (define pln-alt
-    (BindLink
+    (QueryLink
         (VariableList
             (TypedVariableLink
                 (VariableNode "$A")

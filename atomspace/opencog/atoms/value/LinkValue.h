@@ -43,11 +43,13 @@ class LinkValue
 	: public Value
 {
 	friend class TransposeColumn;
+	friend class FlatStream;
 
 protected:
 	mutable std::vector<ValuePtr> _value;
 	virtual void update() const {}
 
+	std::string to_string(const std::string&, Type) const;
 	LinkValue(Type t) : Value(t) {}
 public:
 	LinkValue(void)
@@ -62,6 +64,7 @@ public:
 	LinkValue(ValueSeq&& vlist)
 		: Value(LINK_VALUE), _value(std::move(vlist)) {}
 
+protected:
 	LinkValue(Type t, const ValueSeq& vlist)
 		: Value(t), _value(vlist) {}
 
@@ -69,28 +72,23 @@ public:
 		: Value(t), _value(std::move(vlist)) {}
 
 	LinkValue(Type t, const ValueSet& vset)
-		: Value(t)
-	{ for (const ValuePtr& v: vset) _value.emplace_back(v); }
+		: Value(t), _value(vset.begin(), vset.end()) {}
 
 	LinkValue(Type t, const HandleSeq& hseq)
-		: Value(t)
-	{ for (const Handle& h: hseq) _value.emplace_back(h); }
+		: Value(t), _value(hseq.begin(), hseq.end()) {}
 
 	LinkValue(Type t, const HandleSet& hset)
-		: Value(t)
-	{ for (const Handle& h: hset) _value.emplace_back(h); }
+		: Value(t), _value(hset.begin(), hset.end()) {}
 
+public:
 	LinkValue(const ValueSet& vset)
-		: Value(LINK_VALUE)
-	{ for (const ValuePtr& v: vset) _value.emplace_back(v); }
+		: Value(LINK_VALUE), _value(vset.begin(), vset.end()) {}
 
 	LinkValue(const HandleSeq& hseq)
-		: Value(LINK_VALUE)
-	{ for (const Handle& h: hseq) _value.emplace_back(h); }
+		: Value(LINK_VALUE), _value(hseq.begin(), hseq.end()) {}
 
 	LinkValue(const HandleSet& hset)
-		: Value(LINK_VALUE)
-	{ for (const Handle& h: hset) _value.emplace_back(h); }
+		: Value(LINK_VALUE), _value(hset.begin(), hset.end()) {}
 
 	virtual ~LinkValue() {}
 
@@ -100,11 +98,16 @@ public:
 	size_t size() const { return _value.size(); }
 
 	/** Returns a string representation of the value.  */
-	virtual std::string to_string(const std::string& indent = "") const;
+	virtual std::string to_string(const std::string& indent = "") const
+	{ return to_string(indent, _type); }
 	virtual std::string to_short_string(const std::string& indent = "") const;
 
 	/** Returns true if the two atoms are equal, else false.  */
 	virtual bool operator==(const Value&) const;
+
+	/** Optimized less-than comparison for LinkValue.
+	 * Compares by type name first, then vector length, then individual values. */
+	virtual bool operator<(const Value& other) const;
 };
 
 VALUE_PTR_DECL(LinkValue);
