@@ -87,12 +87,28 @@ bool LinkValue::operator==(const Value& other) const
 	return true;
 }
 
+bool LinkValue::operator<(const Value& other) const
+{
+	// Compare by type name.
+	if (_type != other.get_type())
+		return nameserver().getTypeName(_type) < nameserver().getTypeName(other.get_type());
+
+	// Compare by vector length.
+	const LinkValue* lov = (const LinkValue*) &other;
+	if (_value.size() != lov->_value.size())
+		return _value.size() < lov->_value.size();
+
+	// Compare individual values lexicographically.
+	// This works because std::less<ValuePtr> is specialized to compare content.
+	return _value < lov->_value;
+}
+
 // ==============================================================
 
-std::string LinkValue::to_string(const std::string& indent) const
+std::string LinkValue::to_string(const std::string& indent, Type t) const
 {
 	std::string more_indent = indent + "  "; // two spaces, same as Link
-	std::string rv = indent + "(" + nameserver().getTypeName(_type) + "\n";
+	std::string rv = indent + "(" + nameserver().getTypeName(t) + "\n";
 
 	SAFE_UPDATE(rv,
 	{
@@ -131,5 +147,5 @@ std::string LinkValue::to_short_string(const std::string& indent) const
 }
 
 // Adds factory when library is loaded.
-DEFINE_VALUE_FACTORY(LINK_VALUE,
-                     createLinkValue, std::vector<ValuePtr>)
+DEFINE_VALUE_FACTORY(LINK_VALUE, createLinkValue, ValueSeq&&)
+DEFINE_VALUE_FACTORY(LINK_VALUE, createLinkValue, const HandleSeq&)
