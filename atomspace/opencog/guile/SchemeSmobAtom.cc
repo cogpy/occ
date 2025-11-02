@@ -32,8 +32,6 @@
 #include <opencog/atoms/value/Value.h>
 #include <opencog/atoms/core/NumberNode.h>
 #include <opencog/atoms/core/FindUtils.h>
-#include <opencog/atoms/truthvalue/CountTruthValue.h>
-#include <opencog/atoms/truthvalue/TruthValue.h>
 #include <opencog/guile/SchemeSmob.h>
 
 using namespace opencog;
@@ -255,81 +253,7 @@ SCM SchemeSmob::ss_arity (SCM svalue)
 }
 
 /* ============================================================== */
-/* Truth value setters/getters */
-
-SCM SchemeSmob::ss_tv (SCM satom)
-{
-	Handle h = verify_handle(satom, "cog-tv");
-	return protom_to_scm(ValueCast(h->getTruthValue()));
-}
-
-/**
- * Return the truth value mean on the atom.
- * This is meant to be the fastest possible way of accessing the mean.
- */
-SCM SchemeSmob::ss_get_mean(SCM satom)
-{
-	Handle h = verify_handle(satom, "cog-mean");
-	return scm_from_double(h->getTruthValue()->get_mean());
-}
-
-/**
- * Return the truth value confidence on the atom.
- * This is meant to be the fastest possible way of accessing the confidence.
- */
-SCM SchemeSmob::ss_get_confidence(SCM satom)
-{
-	Handle h = verify_handle(satom, "cog-confidence");
-	return scm_from_double(h->getTruthValue()->get_confidence());
-}
-
-/**
- * Return the truth value count on the atom.
- * This is meant to be the fastest possible way of accessing the count.
- */
-SCM SchemeSmob::ss_get_count(SCM satom)
-{
-	Handle h = verify_handle(satom, "cog-count");
-	return scm_from_double(h->getTruthValue()->get_count());
-}
-
-SCM SchemeSmob::ss_set_tv (SCM satom, SCM stv)
-{
-	Handle h = verify_handle(satom, "cog-set-tv!");
-	TruthValuePtr tv = verify_tv(stv, "cog-set-tv!", 2);
-	scm_remember_upto_here_1(stv);
-
-	const AtomSpacePtr& asp = ss_get_env_as("cog-set-tv!");
-	try
-	{
-		Handle newh = asp->set_truthvalue(h, tv);
-
-		if (h == newh) return satom;
-		return handle_to_scm(newh);
-	}
-	catch (const std::exception& ex)
-	{
-		throw_exception(ex, "cog-set-tv!", satom);
-	}
-}
-
-/// Atomic increment the count, keeping mean and confidence as-is.
-/// Converts existing truth value to a CountTruthValue.
-SCM SchemeSmob::ss_inc_count (SCM satom, SCM scnt)
-{
-	Handle h = verify_handle(satom, "cog-inc-count!");
-	double cnt = verify_real(scnt, "cog-inc-count!", 2);
-
-	const AtomSpacePtr& asp = ss_get_env_as("cog-inc-count!");
-	Handle ha(asp->increment_countTV(h, cnt));
-	if (ha == h)
-		return satom;
-	return handle_to_scm(ha);
-}
-
-/* ============================================================== */
 /// Atomic increment the count of some generic FloatValue.
-/// Just like ss_inc_count but generic.
 /// key == key for value
 /// cnt == how much to increment
 /// ref == list-ref, which location to increment.
@@ -673,26 +597,6 @@ SCM SchemeSmob::ss_count (SCM stype, SCM aspace)
 
 	size_t cnt = asp->get_num_atoms_of_type(t);
 	return scm_from_size_t(cnt);
-}
-
-SCM SchemeSmob::ss_get_free_variables(SCM satom)
-{
-	Handle h = verify_handle(satom, "cog-free-variables");
-
-	SCM list = SCM_EOL;
-	for (const Handle& fv : get_free_variables(h))
-		list = scm_cons(handle_to_scm(fv), list);
-
-	return list;
-}
-
-/**
- * Return true if the atom is closed (has no variable)
- */
-SCM SchemeSmob::ss_is_closed(SCM satom)
-{
-	Handle h = verify_handle(satom, "cog-closed?");
-	return is_closed(h) ? SCM_BOOL_T : SCM_BOOL_F;
 }
 
 /* ===================== END OF FILE ============================ */
