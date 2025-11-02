@@ -1,23 +1,9 @@
-;;; spreading.scm --- Echo Propagation Engine: Spreading Activation
+;;; spreading-v2.scm --- Echo Propagation Engine: Spreading Activation (Clean Version)
 ;;;
 ;;; Copyright (C) 2025 Deep Tree Echo Project
 ;;;
 ;;; This file implements the spreading activation algorithm for the Echo
-;;; Propagation Engine. Activation spreads from source atoms through the
-;;; hypergraph, enabling associative memory and emergent cognitive patterns.
-;;;
-;;; Commentary:
-;;;
-;;; Spreading activation is inspired by neural networks and cognitive science.
-;;; Activation represents "cognitive energy" that flows through the knowledge
-;;; graph, activating related concepts and enabling pattern recognition.
-;;;
-;;; Key features:
-;;; - Breadth-first propagation with decay
-;;; - Truth value and attention value weighting
-;;; - Bidirectional propagation (forward and backward through links)
-;;; - Threshold-based pruning
-;;; - Multiple normalization strategies
+;;; Propagation Engine. This is a cleaner rewrite with simpler structure.
 ;;;
 ;;; Code:
 
@@ -69,13 +55,13 @@
   (%make-propagation-params decay-rate threshold max-hops normalization
                            bidirectional? use-truth-values? use-attention?)
   propagation-params?
-  (decay-rate params-decay-rate)              ; Activation decay per hop [0.0, 1.0]
-  (threshold params-threshold)                ; Minimum activation to propagate
-  (max-hops params-max-hops)                  ; Maximum propagation distance
-  (normalization params-normalization)        ; Normalization strategy
-  (bidirectional? params-bidirectional?)      ; Allow backward propagation
-  (use-truth-values? params-use-truth-values?) ; Weight by truth values
-  (use-attention? params-use-attention?))     ; Weight by attention values
+  (decay-rate params-decay-rate)
+  (threshold params-threshold)
+  (max-hops params-max-hops)
+  (normalization params-normalization)
+  (bidirectional? params-bidirectional?)
+  (use-truth-values? params-use-truth-values?)
+  (use-attention? params-use-attention?))
 
 (define* (make-propagation-params
           #:key
@@ -86,18 +72,7 @@
           (bidirectional? #t)
           (use-truth-values? #t)
           (use-attention? #f))
-  "Create propagation parameters.
-  
-  DECAY-RATE: Activation multiplier per hop (0.0 to 1.0)
-  THRESHOLD: Minimum activation to continue propagating
-  MAX-HOPS: Maximum distance from source atoms
-  NORMALIZATION: 'none, 'sum, 'max, or 'softmax
-  BIDIRECTIONAL?: Propagate backward through links
-  USE-TRUTH-VALUES?: Weight propagation by link truth values
-  USE-ATTENTION?: Weight propagation by attention values
-  
-  Example:
-    (make-propagation-params #:decay-rate 0.8 #:max-hops 3)"
+  "Create propagation parameters."
   (unless (and (>= decay-rate 0.0) (<= decay-rate 1.0))
     (error "Decay rate must be between 0.0 and 1.0" decay-rate))
   (unless (and (>= threshold 0.0) (<= threshold 1.0))
@@ -124,30 +99,30 @@
 ;;;
 
 (define (make-activation-map)
-  "Create a new activation map (hash table: UUID -> activation value)."
+  "Create a new activation map."
   (make-hash-table))
 
 (define (get-activation activation-map atom-or-link)
-  "Get activation value for ATOM-OR-LINK from ACTIVATION-MAP."
+  "Get activation value for ATOM-OR-LINK."
   (let ((uuid (if (link? atom-or-link)
                   (link-uuid atom-or-link)
                   (atom-uuid atom-or-link))))
     (hash-table-ref/default activation-map uuid 0.0)))
 
 (define (set-activation! activation-map atom-or-link value)
-  "Set activation value for ATOM-OR-LINK in ACTIVATION-MAP to VALUE."
+  "Set activation value for ATOM-OR-LINK."
   (let ((uuid (if (link? atom-or-link)
                   (link-uuid atom-or-link)
                   (atom-uuid atom-or-link))))
     (hash-table-set! activation-map uuid value)))
 
 (define (clear-activations! activation-map)
-  "Clear all activations from ACTIVATION-MAP."
+  "Clear all activations."
   (hash-table-walk activation-map 
     (lambda (k v) (hash-table-delete! activation-map k))))
 
 (define (get-activated-atoms atomspace activation-map threshold)
-  "Get all atoms from ATOMSPACE with activation above THRESHOLD."
+  "Get all atoms with activation above THRESHOLD."
   (let ((activated '()))
     (hash-table-walk activation-map
       (lambda (uuid activation)
@@ -165,76 +140,57 @@
   "Clamp VALUE between MIN-VAL and MAX-VAL."
   (max min-val (min max-val value)))
 
-(define (get-link-weight link params)
-  "Calculate weight for LINK based on PARAMS."
+(define (is-link-type? atom)
+  "Check if ATOM is a link type."
+  (member (atom-type atom) '(InheritanceLink EvaluationLink ListLink)))
+
+(define (get-weight atom params)
+  "Calculate weight for ATOM based on PARAMS."
   (let ((weight 1.0))
-    ;; Weight by truth value strength
-    (when (params-use-truth-values? params)
-      (let* ((tv (link-tv link))
-             (strength (tv-strength tv)))
-        (set! weight (* weight strength))))
-    
-    ;; Weight by attention value (normalized STI)
+    (when (and (is-link-type? atom) (params-use-truth-values? params))
+      (set! weight (* weight (tv-strength (atom-tv atom)))))
     (when (params-use-attention? params)
-      (let* ((av (link-av link))
-             (sti (av-sti av))
-             (normalized-sti (/ (+ sti 1000) 2000))) ; Normalize [-1000, 1000] to [0, 1]
+      (let* ((sti (av-sti (atom-av atom)))
+             (normalized-sti (/ (+ sti 1000) 2000)))
         (set! weight (* weight normalized-sti))))
-    
     weight))
 
 (define (normalize-activations! activation-map strategy)
-  "Normalize all activations in ACTIVATION-MAP using STRATEGY.
-  
-  Strategies:
-  - 'none: No normalization
-  - 'sum: Divide by sum of all activations
-  - 'max: Divide by maximum activation
-  - 'softmax: Apply softmax function"
+  "Normalize all activations using STRATEGY."
   (case strategy
-    ((none) #t) ; Do nothing
-    
+    ((none) #t)
     ((sum)
      (let ((total 0.0))
-       ;; Calculate sum
        (hash-table-walk activation-map
          (lambda (k v) (set! total (+ total v))))
-       ;; Normalize
        (when (> total 0.0)
          (hash-table-walk activation-map
            (lambda (k v)
              (hash-table-set! activation-map k (/ v total)))))))
-    
     ((max)
      (let ((max-val 0.0))
-       ;; Find maximum
        (hash-table-walk activation-map
          (lambda (k v) (set! max-val (max max-val v))))
-       ;; Normalize
        (when (> max-val 0.0)
          (hash-table-walk activation-map
            (lambda (k v)
              (hash-table-set! activation-map k (/ v max-val)))))))
-    
     ((softmax)
      (let ((exp-sum 0.0)
            (exp-values (make-hash-table)))
-       ;; Calculate exp values and sum
        (hash-table-walk activation-map
          (lambda (k v)
            (let ((exp-v (exp v)))
              (hash-table-set! exp-values k exp-v)
              (set! exp-sum (+ exp-sum exp-v)))))
-       ;; Normalize
        (when (> exp-sum 0.0)
          (hash-table-walk exp-values
            (lambda (k exp-v)
              (hash-table-set! activation-map k (/ exp-v exp-sum)))))))
-    
     (else (error "Invalid normalization strategy" strategy))))
 
 (define (decay-activations! activation-map decay-rate)
-  "Apply DECAY-RATE to all activations in ACTIVATION-MAP."
+  "Apply DECAY-RATE to all activations."
   (hash-table-walk activation-map
     (lambda (k v)
       (hash-table-set! activation-map k (* v decay-rate)))))
@@ -249,7 +205,7 @@
     result))
 
 (define (activation-to-list activation-map)
-  "Convert ACTIVATION-MAP to list of (uuid . activation) pairs, sorted by activation."
+  "Convert activation map to sorted list."
   (let ((pairs '()))
     (hash-table-walk activation-map
       (lambda (k v)
@@ -257,21 +213,72 @@
     (sort pairs (lambda (a b) (> (cdr a) (cdr b))))))
 
 ;;;
-;;; Spreading Activation Algorithm
+;;; Helper: Propagate to neighbors
+;;;
+
+(define (propagate-to-neighbors atomspace current-atom current-activation activation-map 
+                                hop-count visited new-queue current-hops params)
+  "Propagate activation from CURRENT-ATOM to its neighbors."
+  (let ((queue new-queue))
+    ;; Get outgoing links (stored in incoming set of atom)
+    (let ((outgoing-link-atoms (get-incoming-set current-atom)))
+      (for-each
+        (lambda (link-atom)
+          (when (is-link-type? link-atom)
+            ;; Retrieve the link record from atomspace
+            (let* ((link-uuid (atom-uuid link-atom))
+                   (link-record (atomspace-get-atom atomspace link-uuid)))
+              
+              (when (and link-record (link? link-record))
+                ;; Activate the link
+                (let* ((weight (get-weight link-atom params))
+                       (propagated (* current-activation 
+                                     (params-decay-rate params)
+                                     weight))
+                       (old-activation (hash-table-ref/default activation-map link-uuid 0.0))
+                       (new-activation (+ old-activation propagated)))
+                  
+                  ;; Update link activation
+                  (hash-table-set! activation-map link-uuid new-activation)
+                  (hash-table-set! hop-count link-uuid (+ current-hops 1))
+                  
+                  ;; Add link to queue if not visited
+                  (unless (hash-table-ref/default visited link-uuid #f)
+                    (set! queue (cons link-atom queue)))
+                  
+                  ;; Propagate from link to its target atoms
+                  ;; For directed links (InheritanceLink), only propagate to targets, not sources
+                  ;; Convention: outgoing[0] = source, outgoing[1..n] = targets
+                  (let* ((all-outgoing (link-outgoing link-record))
+                         (targets (if (> (length all-outgoing) 1)
+                                     (cdr all-outgoing)  ; Skip first element (source)
+                                     all-outgoing)))     ; For single-element, use all
+                    (for-each
+                      (lambda (target-item)
+                        (let* ((target-atom (if (link? target-item)
+                                               (link-atom target-item)
+                                               target-item))
+                               (target-uuid (atom-uuid target-atom))
+                               (old-target-activation (hash-table-ref/default activation-map target-uuid 0.0))
+                               (new-target-activation (+ old-target-activation propagated)))
+                          
+                          ;; Update target activation
+                          (hash-table-set! activation-map target-uuid new-target-activation)
+                          (hash-table-set! hop-count target-uuid (+ current-hops 1))
+                          
+                          ;; Add target to queue if not visited
+                          (unless (hash-table-ref/default visited target-uuid #f)
+                            (set! queue (cons target-atom queue)))))
+                      targets)))))))
+        outgoing-link-atoms))
+    queue))
+
+;;;
+;;; Main Propagation Algorithm
 ;;;
 
 (define (propagate-activation atomspace sources params)
-  "Spread activation from SOURCES through ATOMSPACE using PARAMS.
-  
-  SOURCES: List of (atom-or-link . initial-activation) pairs
-  PARAMS: Propagation parameters
-  
-  Returns: Activation map (hash table: UUID -> activation)
-  
-  Example:
-    (propagate-activation as 
-      (list (cons cat-atom 1.0) (cons dog-atom 0.5))
-      default-propagation-params)"
+  "Spread activation from SOURCES through ATOMSPACE using PARAMS."
   
   (let ((activation-map (make-activation-map))
         (visited (make-hash-table))
@@ -286,7 +293,7 @@
                (uuid (if (link? source)
                         (link-uuid source)
                         (atom-uuid source))))
-          (set-activation! activation-map source initial-activation)
+          (hash-table-set! activation-map uuid initial-activation)
           (hash-table-set! hop-count uuid 0)
           (set! queue (cons source queue))))
       sources)
@@ -299,10 +306,10 @@
                (current-uuid (if (link? current)
                                 (link-uuid current)
                                 (atom-uuid current)))
-               (current-activation (get-activation activation-map current))
+               (current-activation (hash-table-ref/default activation-map current-uuid 0.0))
                (current-hops (hash-table-ref/default hop-count current-uuid 0)))
           
-          ;; Skip if already visited or below threshold or max hops reached
+          ;; Skip if already visited, below threshold, or max hops reached
           (if (or (hash-table-ref/default visited current-uuid #f)
                   (< current-activation (params-threshold params))
                   (>= current-hops (params-max-hops params)))
@@ -311,95 +318,11 @@
                 ;; Mark as visited
                 (hash-table-set! visited current-uuid #t)
                 
-                ;; Propagate forward
-                (let ((new-queue rest-queue))
-                  (cond
-                   ;; If current is a link, propagate to its outgoing atoms
-                   ((link? current)
-                    (let ((outgoing (get-outgoing-set current)))
-                      (for-each
-                        (lambda (target)
-                          (let* ((propagated (* current-activation 
-                                               (params-decay-rate params)
-                                               (if (params-use-truth-values? params)
-                                                   (tv-strength (link-tv current))
-                                                   1.0)))
-                                 (target-uuid (if (link? target)
-                                                 (link-uuid target)
-                                                 (atom-uuid target)))
-                                 (old-activation (get-activation activation-map target))
-                                 (new-activation (+ old-activation propagated)))
-                            
-                            ;; Update activation
-                            (set-activation! activation-map target new-activation)
-                            
-                            ;; Update hop count
-                            (hash-table-set! hop-count target-uuid (+ current-hops 1))
-                            
-                            ;; Add to queue if not visited and above threshold
-                            (unless (hash-table-ref/default visited target-uuid #f)
-                              (set! new-queue (cons target new-queue)))))
-                        outgoing)))
-                   ;; If current is an atom, propagate through outgoing links
-                   ;; (links where this atom appears in the outgoing set)
-                   (else
-                    (let ((outgoing-links (get-incoming-set current)))
-                      (for-each
-                        (lambda (link-atom)
-                          (let* ((is-link? (member (atom-type link-atom)
-                                                  '(InheritanceLink EvaluationLink ListLink)))
-                                 (weight (if (and is-link? (params-use-truth-values? params))
-                                           (tv-strength (atom-tv link-atom))
-                                           1.0))
-                                 (propagated (* current-activation 
-                                               (params-decay-rate params)
-                                               weight))
-                                 (link-uuid (atom-uuid link-atom))
-                                 (old-activation (get-activation activation-map link-atom))
-                                 (new-activation (+ old-activation propagated)))
-                            
-                            ;; Update activation
-                            (set-activation! activation-map link-atom new-activation)
-                            
-                            ;; Update hop count
-                            (hash-table-set! hop-count link-uuid (+ current-hops 1))
-                            
-                            ;; Add to queue if not visited and above threshold
-                            (when is-link?
-                              (unless (hash-table-ref/default visited link-uuid #f)
-                                (set! new-queue (cons link-atom new-queue)))))))
-                        outgoing-links))))
-                  
-                  ;; Propagate backward through incoming links (if bidirectional)
-                  (when (params-bidirectional? params)                    (let ((incoming (get-incoming-set current)))
-                      (for-each
-                        (lambda (source-atom)
-                          ;; Incoming set contains atoms (which may be link-type atoms)
-                          (let* ((is-link-type? (member (atom-type source-atom)
-                                                       '(InheritanceLink EvaluationLink ListLink)))
-                                 (weight (if (and is-link-type? (params-use-truth-values? params))
-                                           (tv-strength (atom-tv source-atom))
-                                           1.0))
-                                 (propagated (* current-activation 
-                                               (params-decay-rate params)
-                                               weight))
-                                 (source-uuid (atom-uuid source-atom))
-                                 (old-activation (get-activation activation-map source-atom))
-                                 (new-activation (+ old-activation propagated)))
-                            
-                            ;; Update activation
-                            (set-activation! activation-map source-atom new-activation)
-                            
-                            ;; Update hop count
-                            (hash-table-set! hop-count source-uuid (+ current-hops 1))
-                            
-                            ;; Add to queue if not visited and above threshold
-                            (unless (hash-table-ref/default visited source-uuid #f)
-                              (set! new-queue (cons source-atom new-queue)))))
-                        incoming)))
-                  
-                  ;; Continue with updated queue
-                  (loop new-queue))))))))
+                ;; Propagate to neighbors
+                (let ((updated-queue 
+                       (propagate-to-neighbors atomspace current current-activation activation-map
+                                             hop-count visited rest-queue current-hops params)))
+                  (loop updated-queue)))))))
     
     ;; Normalize if requested
     (normalize-activations! activation-map (params-normalization params))
@@ -407,22 +330,12 @@
     activation-map))
 
 (define (propagate-from-atom atomspace atom initial-activation params)
-  "Spread activation from single ATOM with INITIAL-ACTIVATION.
-  
-  Convenience wrapper around propagate-activation.
-  
-  Example:
-    (propagate-from-atom as cat-atom 1.0 default-propagation-params)"
+  "Spread activation from single ATOM."
   (propagate-activation atomspace (list (cons atom initial-activation)) params))
 
 (define (propagate-from-atoms atomspace atoms initial-activation params)
-  "Spread activation from multiple ATOMS with same INITIAL-ACTIVATION.
-  
-  Convenience wrapper around propagate-activation.
-  
-  Example:
-    (propagate-from-atoms as (list cat-atom dog-atom) 1.0 default-propagation-params)"
+  "Spread activation from multiple ATOMS."
   (let ((sources (map (lambda (atom) (cons atom initial-activation)) atoms)))
     (propagate-activation atomspace sources params)))
 
-;;; spreading.scm ends here
+;;; spreading-v2.scm ends here

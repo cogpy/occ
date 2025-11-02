@@ -50,6 +50,7 @@
     ;; Link types
     make-link
     link?
+    link-atom
     link-type
     link-tv
     link-av
