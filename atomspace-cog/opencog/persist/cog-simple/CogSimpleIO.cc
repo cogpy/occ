@@ -81,13 +81,16 @@ void CogSimpleStorage::storeAtom(const Handle& h, bool synchronous)
 
 	if (_multi_space) writeFrame(h->getAtomSpace());
 
-	// If there are no values, be sure to reset the TV to the default TV.
 	std::string msg;
 	if (h->haveValues())
 		msg = "(cog-set-values! " + Sexpr::encode_atom(h, _multi_space) +
 			Sexpr::encode_atom_values(h) + ")\n";
 	else
-		msg = "(cog-set-tv! " + Sexpr::encode_atom(h, _multi_space) + " (stv 1 0))\n";
+		// There is no "just create an atom with no values on it"
+		// message type in the protocol. So instead, we clobber the
+		// truth value on it. This is fully 100% backwards compat.
+		msg = "(cog-set-value! " + Sexpr::encode_atom(h, _multi_space) +
+			"(Predicate \"*-TruthValueKey-*\") #f)\n";
 
 	std::lock_guard<std::mutex> lck(_mtx);
 	do_send(msg);
