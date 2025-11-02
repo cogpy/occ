@@ -28,8 +28,7 @@
 #include <opencog/atoms/atom_types/NameServer.h>
 #include <opencog/atoms/base/Link.h>
 #include <opencog/atoms/base/Node.h>
-#include <opencog/atoms/truthvalue/TruthValue.h>
-#include <opencog/atoms/truthvalue/SimpleTruthValue.h>
+#include <opencog/atoms/value/FloatValue.h>
 
 #include <opencog/guile/SchemeEval.h>
 
@@ -93,7 +92,7 @@ class BasicSCMUTest :  public CxxTest::TestSuite
 	void test_value_list(void);
 
 	// TVs
-	void check_truth_value(const TruthValuePtr& tv);
+	void check_truth_value(const ValuePtr& tv);
 	void test_truth_value(void);
 
 	// Relex links
@@ -158,9 +157,10 @@ void BasicSCMUTest::test_utf8(void)
 
 void BasicSCMUTest::check_tv(const Handle& h, double mean, double conf)
 {
-	TruthValuePtr tv = h->getTruthValue();
-	double m = tv->get_mean();
-	double c = tv->get_confidence();
+	ValuePtr tv = h->getValue(truth_key());
+	FloatValuePtr fvp = FloatValueCast(tv);
+	double m = fvp->value()[0];
+	double c = fvp->value()[1];
 
 	TS_ASSERT_LESS_THAN_EQUALS(fabs(m-mean), 1.0e-6);
 	TS_ASSERT_LESS_THAN_EQUALS(fabs(c-conf), 1.0e-6);
@@ -170,7 +170,7 @@ void BasicSCMUTest::check_node(const char * tipo, const char * nodename, double 
 {
 	printf("check_node(%s,%s,%f,%f)\n", tipo, nodename, truth, conf);
 	char buff[500];
-	snprintf(buff, 500, "(%s \"%s\" (stv %f %f))", tipo, nodename, truth, conf);
+	snprintf(buff, 500, "(cog-set-value! (%s \"%s\") (Predicate \"*-TruthValueKey-*\") (FloatValue %f %f))", tipo, nodename, truth, conf);
 	eval->eval(buff);
 	bool eval_err = eval->eval_error();
 	eval->clear_pending();
@@ -306,7 +306,7 @@ void BasicSCMUTest::test_extract_hypergraph(void)
 
 // ============================================================
 
-void BasicSCMUTest::check_truth_value(const TruthValuePtr& tv)
+void BasicSCMUTest::check_truth_value(const ValuePtr& tv)
 {
 	// logger().debug() << "check_node_truth_value(" << tv << ")";
 
@@ -320,18 +320,12 @@ void BasicSCMUTest::check_truth_value(const TruthValuePtr& tv)
 	TSM_ASSERT("Failed to create atom!", !eval_err);
 
 	// set its truth value
+	FloatValuePtr fvp = FloatValueCast(tv);
 	stringstream ss;
-	ss << "(cog-set-tv! " << add_node_str << "(";
-	Type tvt = tv->get_type();
-	if (tvt == SIMPLE_TRUTH_VALUE)
-		ss << "cog-new-stv " << tv->get_mean() << " " << tv->get_confidence();
-	else if (tvt == COUNT_TRUTH_VALUE)
-		ss << "cog-new-stv " << tv->get_mean() << " " << tv->get_confidence()
-		   << " " << tv->get_count();
-	else {
-		ss << "Wrong Truth Value Type (" << tvt << ")";
-		TSM_ASSERT(ss.str().c_str(), false);
-	}
+	ss << "(cog-set-value! " << add_node_str << "(Predicate \"*-TruthValueKey-*\") ";
+	ss << "(FloatValue " << fvp->value()[0] << " " << fvp->value()[1];
+	if (fvp->value().size() > 2)
+		ss << " " << fvp->value()[2];
 	ss << "))";
 
 	// eval
@@ -345,20 +339,13 @@ void BasicSCMUTest::check_truth_value(const TruthValuePtr& tv)
 	TSM_ASSERT("Failed to get the handle", h != Handle::UNDEFINED);
 	TSM_ASSERT("Failed to get the correct handle", h == hadd);
 	// hack to avoid floating error
-	bool tv_eq = tv->to_string() == h->getTruthValue()->to_string();
+	bool tv_eq = tv->to_string() == h->getValue(truth_key())->to_string();
 	TSM_ASSERT("TVs are different", tv_eq);
 
-	// Check the fast-path API, too
-	string strmfast = "(cog-mean " + add_node_str + ")";
-	double mfast = atof(eval->eval(strmfast.c_str()).c_str());
-	string strcfast = "(cog-confidence " + add_node_str + ")";
-	double cfast = atof(eval->eval(strcfast.c_str()).c_str());
-	check_tv(h, mfast, cfast);
-
 	// Check the slow-path API, too
-	string strmslow = "(cog-tv-mean (cog-tv " + add_node_str + "))";
+	string strmslow = "(cog-value-ref (cog-value " + add_node_str + "(Predicate \"*-TruthValueKey-*\")) 0)";
 	double mslow = atof(eval->eval(strmslow.c_str()).c_str());
-	string strcslow = "(cog-tv-confidence (cog-tv " + add_node_str + "))";
+	string strcslow = "(cog-value-ref (cog-value " + add_node_str + "(Predicate \"*-TruthValueKey-*\")) 1)";
 	double cslow = atof(eval->eval(strcslow.c_str()).c_str());
 	check_tv(h, mslow, cslow);
 
@@ -369,8 +356,8 @@ void BasicSCMUTest::check_truth_value(const TruthValuePtr& tv)
 void BasicSCMUTest::test_truth_value(void)
 {
 	logger().debug("BEGIN TEST: %s", __FUNCTION__);
-	check_truth_value(createSimpleTruthValue(0.5, 0.5));
-	check_truth_value(createSimpleTruthValue(0.2, 0.7));
+	check_truth_value(createFloatValue(std::vector<double>({0.5, 0.5})));
+	check_truth_value(createFloatValue(std::vector<double>({0.2, 0.7})));
 	// @todo : add more
 }
 
@@ -390,7 +377,7 @@ void BasicSCMUTest::test_values(void)
 	TSM_ASSERT("Failed to create string", not eval->eval_error());
 	eval->eval("(define ss (StringValue \"ddd\" \"eee\" \"fff\"))");
 	TSM_ASSERT("Failed to create string", not eval->eval_error());
-	eval->eval("(define t (stv 0.5 0.8))");
+	eval->eval("(define t (FloatValue 0.5 0.8))");
 	TSM_ASSERT("Failed to create TV", not eval->eval_error());
 	eval->eval("(define l (LinkValue f h s k t))");
 	TSM_ASSERT("Failed to create string", not eval->eval_error());
@@ -474,7 +461,7 @@ void BasicSCMUTest::test_value_list(void)
 	TSM_ASSERT("Failed to create string", not eval->eval_error());
 	eval->eval("(define ss (StringValue \"ddd\" \"eee\" \"fff\"))");
 	TSM_ASSERT("Failed to create string", not eval->eval_error());
-	eval->eval("(define t (stv 0.5 0.8))");
+	eval->eval("(define t (FloatValue 0.5 0.8))");
 	TSM_ASSERT("Failed to create TV", not eval->eval_error());
 	eval->eval("(define l (LinkValue f h s k t))");
 	TSM_ASSERT("Failed to create string", not eval->eval_error());
@@ -512,8 +499,8 @@ void BasicSCMUTest::check_link(const char * tipo, Type type,
 	printf("check_link(%s,%s,%s,%f,%f)\n",
 	        tipo, nodename1, nodename2, truth, conf);
 	char buff[500];
-	snprintf(buff, 500, "(%s (stv %f %f) (%s \"%s\") (%s \"%s\") )",
-	         tipo, truth, conf, nodename1, value1, nodename2, value2);
+	snprintf(buff, 500, "(cog-set-value! (%s (%s \"%s\") (%s \"%s\")) (Predicate \"*-TruthValueKey-*\") (FloatValue %f %f))",
+	         tipo, nodename1, value1, nodename2, value2, truth, conf);
 	eval->eval(buff);
 	bool eval_err = eval->eval_error();
 	eval->clear_pending();
@@ -609,7 +596,7 @@ void BasicSCMUTest::test_link_tv_setting(void)
 	logger().debug("BEGIN TEST: %s", __FUNCTION__);
 
 	// Create initially with one set of truth values
-	Handle inh = eval->eval_h("(ListLink (stv 0.75 0.25) (ConceptNode \"Linas\") (ConceptNode \"human\"))");
+	Handle inh = eval->eval_h("(define lnk (ListLink (ConceptNode \"Linas\") (ConceptNode \"human\"))) (cog-set-value! lnk (Predicate \"*-TruthValueKey-*\") (FloatValue 0.75 0.25)) lnk");
 	bool eval_err = eval->eval_error();
 	eval->clear_pending();
 	TSM_ASSERT("Failed to create a link", !eval_err);
@@ -618,7 +605,7 @@ void BasicSCMUTest::test_link_tv_setting(void)
 
 	// Add it again, but with stronger confidence.
 	// Make sure the new values grab hold
-	inh = eval->eval_h("(ListLink (stv 0.6 0.42) (ConceptNode \"Linas\") (ConceptNode \"human\"))");
+	inh = eval->eval_h("(begin (cog-set-value! lnk (Predicate \"*-TruthValueKey-*\") (FloatValue 0.6 0.42)) lnk)");
 	eval_err = eval->eval_error();
 	eval->clear_pending();
 	TSM_ASSERT("Failed to update a link", !eval_err);
@@ -638,18 +625,13 @@ void BasicSCMUTest::check_parse_link(const char * tipo, Type type,
 	printf("check_parse_link(%s,%s,%s,%f,%f)\n",
 	       tipo, nodename1, nodename2, truth, conf);
 	char buff[500];
-	snprintf(buff, 500, "(%s  (%s \"%s\"(stv %f %f)) (%s \"%s\"))",
-	         tipo, nodename1, value1, truth, conf, nodename2, value2);
+	// First create the node with TV, then create the link
+	snprintf(buff, 500, "(cog-set-value! (%s \"%s\") (Predicate \"*-TruthValueKey-*\") (FloatValue %f %f)) (%s (%s \"%s\") (%s \"%s\"))",
+	         nodename1, value1, truth, conf, tipo, nodename1, value1, nodename2, value2);
 	eval->eval(buff);
 	bool eval_err = eval->eval_error();
 	eval->clear_pending();
 	TSM_ASSERT("Failed to create parse link", !eval_err);
-
-	HandleSeq links;
-	as->get_handles_by_type(links, type, true);
-	//printf("Number of links found: %d\n",links.size());
-	for (const Handle& h: links)
-		check_tv(h, 1.0, 0.0); // DEFAULT_TV is true with no confidence
 
 	Type t1 = nameserver().getType(nodename1);
 	Handle h1 = as->xget_handle(t1, value1);
