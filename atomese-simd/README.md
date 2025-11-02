@@ -1,16 +1,85 @@
 
-Atomse SIMD (OpenCL/CUDA) Interfaces
-====================================
+Atomese SIMD (OpenCL/CUDA) Interfaces
+=====================================
 Experimental effort to enable I/O between Atomese and SIMD compute
-resouces. The primary target is commodity GPUs, running either OpenCL
+resources. The primary target is commodity GPUs, running either OpenCL
 or CUDA. The current prototype accesses the hardware at a low level,
 working with individual vectors. High-level API's, such as commonly
-used in deep learning, are not supported in this interface layer.
+used in deep learning, are not yet supported in this interface layer.
 
-[Atomese](https://wiki.opencog.org/w/Atomese), the interface language for
-the OpenCog [AtomSpace](https://github.com/opencog/atomspace) hypergraph
-database, has a variety of different ways of talking to external
-subsystems. These include:
+The Experiment
+--------------
+The experiment, as it is currently evolving, is to understand graph
+rewriting between "natural" descriptions of compute systems. For
+example, the "natural" description of a deep learning transformer is as
+a kind of wiring diagram, indicating where data flows. By contrast, the
+"natural" description of GPU compute kernels are C/C++ function
+prototypes. How can one perform the rewrite from the high-level
+description to the low-level description? Normally, this is done "brute
+force": a human programmer sits down and writes a large pile of GPU
+code, creating systems such as PyTorch or TensorFlow. The experiment
+here is to automate the conversion from high-level to low-level
+descriptions.
+
+Such automation resembles what compilers do. For example, a C++ compiler
+accepts C++ code and issues machine assembly code. A Java compiler
+accepts Java and issues Java bytecode. The goal here is to accept
+high-level functional descriptions, such as that of a transformer, and
+to generate low-level invocations of GPU kernels. However, the project
+here is not meant to just be a "compiler" per se; if that is what one
+really wanted, one could just brute-force write one (or use PyTorch,
+TensorFlow, ...) Instead, this is meant to be an exploration of graph
+rewriting in general, and it uses the GPU target as a realistic and
+suitably complicated example system.
+
+A different way of thinking of this experiment is as an exploration of
+the agency of sensori-motor systems. The GPU is a "thing out there" that
+can be manipulated by an agent to "do things". How does an agent
+perceive the "thing out there", and "understand" it's properties?
+How can the agent control the "thing out there", and perform actions
+on it? To exert motor control on that "thing out there"? How does
+the agent perceive the results of those motor actions?
+
+In the present experiment, the "agent" is is a collection of graphs
+(properly, hypergraphs), represented using
+[Atomese](https://wiki.opencog.org/w/Atomese),
+and "living" in the OpenCog
+[AtomSpace](https://github.com/opencog/atomspace).
+The subjective inner form of the agent is a world-model, consisting of
+abstractions derived from sensory perceptions of the external world, and
+the knowledge of a set of motor actions that can be performed to alter
+the state of the external world.  The agent itself is represented in
+Atomese; the GPU is a part of the external world, to be manipulated.
+
+An important part of the challenge is understanding how assembly, and
+specifically, how self-assembly works.  That is, the agent is meant to
+be a collection of pieces-parts, a collection of transformation rules.
+These rules are to be assembled to "get things done". The assembly is
+meant to be self-assembly, and is presumed to live at the edge of a
+critical phase transition. The phrase "critical phase transition" is
+meant to invoke the conventional idea of a critical phase transition,
+such as that seen in Per Bak's critical sandpile. The difference here
+is that the dynamical system consists of a collection of rewrite rules,
+instead of abstract sand-grains.
+
+The above description might feel like excessive anthropomorphising of
+a mechanical system. But that's kind of the point: to force the issue,
+and explore what happens, when an agentic viewpoint is explicitly
+forced, and given the attributes of a dynamical system.
+
+External Subsystems
+-------------------
+[Atomese](https://wiki.opencog.org/w/Atomese) is the interface language
+for the OpenCog [AtomSpace](https://github.com/opencog/atomspace)
+hypergraph database. It has a variety of different ways of talking to
+external subsystems. These were developed to solve various practical
+application issues that arose in the use of Atomese. These subsystem
+interfaces are "well designed", in that they solve the particular issue
+that arose. Human programmers have used them to construct various kinds
+of systems. However, these interfaces lack what is needed for a
+dynamical, sensori-motor, agential point of view.
+
+These external subsystem interfaces include:
 
 * The [GroundedSchemaNode](https://wiki.opencog.org/w/GroundedSchemaNode)
   allows external python, scheme and shared-library functions to be
@@ -29,6 +98,26 @@ subsystems. These include:
 * The [SQL Bridge](https://github.com/opencog/sql-bridge) allows
   SQL Tables to be mapped into AtomSpace structures, so that updates
   to one are reflected as updates to the other.
+* Obsolete gateways to ROS, the Robot Operating System, to Minecraft
+  (via MineRL & Malmo), to Unity, the game engine, and more.
+  These can be found in old, archived
+  [github repos](https://github.com/opencog/), scrolling down to
+  the oldest repos having no activity. There's also a collection
+  of youtube videos showing these in operation; see e.g. the
+  [Virtual AI Dog](https://www.youtube.com/watch?v=FEmpGRLwbqE) demo,
+  and, of course, the Hanson Robotics Sophia demos.
+
+The above "work", and provide Atomese interfaces to the described
+systems.  However, they all lack an Atomese interface description,
+that is, the needed IDL that would allow for reflection and
+introspection (in the conventional software sense of "reflection" and
+"introspection"). Thus, they cannot be targets of Atomese graph
+rewrites, because the target description is not available in
+machine-readable form.
+
+Several efforts are underway to provide and understand such reflective,
+introspective interface definition systems. These include:
+
 * The [Sensory](https://github.com/opencog/sensory) system, which is
   an experimental effort to understand the generic mathematical theory
   of interfacing Atomese to arbitrary unknown sensory devices, and to
@@ -39,45 +128,22 @@ subsystems. These include:
 * The [Motor](https://github.com/opencog/motor) system, which attempts
   to define a simpler, more practical and mundane way of using Atomese
   to work with external devices.
-* Obsolete gateways to ROS, the Robot Operating System, to Minecraft
-  (via MineRL & Malmo), to Unity, the game engine, and many more.
 
-Interfacing to GPU subsystems, such as CUDA or OpenCL, or any of a large
-variety of systems built on these, such as TensorFlow, offer a
-non-trivial exercise for testing and guiding the Atomese sensori-motor
-interfaces.
-
-The interfaces here simply move vectors to and from GPUs and invoke GPU
-kernels to perform processing on them. Perhaps high-level interfaces
-will be added in the future; they're not here in this prototype.
-
-The main effort is to find a balance between abstract mathematical
-theory and a practical, usable interface. The generic Atomese
-sensorimotor research is being done in the hopes of discovering
-generic abstractions that symbolic (and neuro-symbolic) AI subsystems
-can use. If you are a human programmer, you have a zillion-and-one
-choices for programming languages and APIs that allow you to hack up
-almost anything. If you are a symbolic AI agent, or a DL/NN transformer,
-you do not have this richness of tools. You mostly don't even have much
-of a clue of what "reality" is. In part, that's because you don't have
-a sensori-motor system, beyond some hacked-up robots and in-game avatars
-created for you by *human* engineers. Perhaps with a proper theory, some
-of the hackiness can be refined.
-
-The need for a general sensori-motor theory is underscored by the
-failure of earlier OpenCog projects that attempted create "embodied
-OpenCog agents". These are the systems listed above: interfaces into
-ROS, Unity and Minecraft, to name some of the more advanced efforts.
-These were all sensori-motor "hack jobs", built without giving any
-thought of what it means "to perceive and move".
+This project uses the [Sensory](https://github.com/opencog/sensory)
+system to provide the underlying framework.
 
 Status
------
-***Version 0.0.9.*** --
+------
+***Version 0.1.0*** --
 Basic proof-of-concept, showing how to use Atomese to open a connection
-to an OpenCL compute device (i.e. a GPU), load and invoke compute
+to an OpenCL compute device (i.e. a GPU), load and invoke GPU compute
 kernels, and have those kernels work with floating-point vector data
-residing in the AtomSpace.
+that is moved between the AtomSpace and the GPU.
+
+New in this version: Atomese interface descriptions are now generated
+for OpenCL kernel interfaces. This should allow introspection of the
+interfaces, and their manipulation in Atomese. We'll see how that goes.
+Some problems are already visible. But some groundwork is there.
 
 The demo is minimal, but it works.  Tested on both AMD Radeon R9 and
 Nvidia RTX cards.
@@ -122,7 +188,7 @@ Steps:
 * Build and install cogutils, the AtomSpace, sensory and then the code
   here.  This uses the same build style as all other OpenCog projects:
   `mkdir build; cd build; cmake ..; make; sudo make install`
-* Run unit tests: `make check`.  If the unit tests fail, that's proably
+* Run unit tests: `make check`.  If the unit tests fail, that's probably
   because they could not find and GPU hardware. See below.
 * Look over the examples. Run them
   `cd examples; guile -s atomese-kernel.scm`
@@ -151,3 +217,5 @@ similar to above; it performs a simple vector multiply.
 
 The `run-flow-vec` executable is a rework of above, to more clearly
 define and prototype the distinct steps needed to flow data.
+
+----
