@@ -25,8 +25,6 @@
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/atoms/value/FloatValue.h>
 #include <opencog/atoms/value/StringValue.h>
-#include <opencog/atoms/truthvalue/SimpleTruthValue.h>
-#include <opencog/atoms/truthvalue/CountTruthValue.h>
 #include <opencog/atoms/base/Node.h>
 #include <opencog/atoms/base/Link.h>
 
@@ -93,11 +91,9 @@ public:
 
 	// Test atom creation functions
 	void test_makeAtom();
-	void test_loadAtoms();
 
 	// Test atom property functions
 	void test_getIncoming();
-	void test_getTVsetTV();
 	void test_getValuesSetValue();
 
 	// Test other functions
@@ -172,7 +168,7 @@ void MCPCommandsUTest::test_getAtoms()
 	result = JSCommands::interpret_command(as.get(), cmd);
 	logger().info("Result for getAtoms Node (no subclass): %s", result.c_str());
 	TS_ASSERT(result.find("\"content\"") != std::string::npos);
-	TS_ASSERT(extractMCPContent(result).find("[") == 0);
+	TS_ASSERT(extractMCPContent(result).find("(list") == 0);
 	// Should be empty - no direct Node instances
 	TS_ASSERT(result.find("\"test1\"") == std::string::npos);
 
@@ -330,7 +326,7 @@ void MCPCommandsUTest::test_makeAtom()
 	result = JSCommands::interpret_command(as.get(), cmd);
 	logger().info("Result for getAtoms: %s", result.c_str());
 	TS_ASSERT(result.find("\"content\"") != std::string::npos);
-	TS_ASSERT(extractMCPContent(result).find("\"name\": \"foo\"") != std::string::npos);
+	TS_ASSERT(extractMCPContent(result).find("(ConceptNode \"foo\")") != std::string::npos);
 
 	// Also verify with haveNode
 	cmd = R"({ "tool": "haveNode", "params": {"type": "Concept", "name": "foo"}})";
@@ -364,7 +360,7 @@ void MCPCommandsUTest::test_makeAtom()
 	result = JSCommands::interpret_command(as.get(), cmd);
 	logger().info("Result for getAtoms PredicateNode: %s", result.c_str());
 	TS_ASSERT(result.find("\"content\"") != std::string::npos);
-	TS_ASSERT(extractMCPContent(result).find("\"name\": \"test_predicate\"") != std::string::npos);
+	TS_ASSERT(extractMCPContent(result).find("(PredicateNode \"test_predicate\")") != std::string::npos);
 
 	// Test parameter order independence for nodes (name before type)
 	logger().info("Testing parameter order independence...");
@@ -400,89 +396,6 @@ void MCPCommandsUTest::test_makeAtom()
 	result = JSCommands::interpret_command(as.get(), cmd);
 	logger().info("Result for ListLink with outgoing before type: %s", result.c_str());
 	TS_ASSERT(result.find("\"content\"") != std::string::npos);
-	TS_ASSERT(extractMCPContent(result) == "true");
-
-	logger().info("END TEST: %s", __FUNCTION__);
-}
-
-// Test loadAtoms in MCP format
-void MCPCommandsUTest::test_loadAtoms()
-{
-	logger().info("BEGIN TEST: %s", __FUNCTION__);
-
-	// Test with full type names
-	std::string cmd = R"({ "tool": "loadAtoms", "params": {"atoms": [{"type": "ConceptNode", "name": "atom1"}, {"type": "ConceptNode", "name": "atom2"}, {"type": "PredicateNode", "name": "pred1"}]}})";
-	std::string result = JSCommands::interpret_command(as.get(), cmd);
-	logger().info("Result for '%s': %s", cmd.c_str(), result.c_str());
-	TS_ASSERT(result.find("\"content\"") != std::string::npos);
-	TS_ASSERT(extractMCPContent(result) == "true");
-
-	// Verify all atoms were created using haveNode
-	cmd = R"({ "tool": "haveNode", "params": {"type": "ConceptNode", "name": "atom1"}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
-	logger().info("Result for haveNode atom1: %s", result.c_str());
-	TS_ASSERT(extractMCPContent(result) == "true");
-
-	cmd = R"({ "tool": "haveNode", "params": {"type": "ConceptNode", "name": "atom2"}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
-	TS_ASSERT(extractMCPContent(result) == "true");
-
-	cmd = R"({ "tool": "haveNode", "params": {"type": "PredicateNode", "name": "pred1"}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
-	logger().info("Result for haveNode pred1: %s", result.c_str());
-	TS_ASSERT(extractMCPContent(result) == "true");
-
-	// Clear atomspace for next test
-	as->clear();
-
-	// Test the specific case requested: shortened type names and reversed property order
-	// { "tool": "loadAtoms", "params": {"atoms":[{"name":"bar","type":"Concept"},{"name":"foo","type":"Concept"}]}}
-	cmd = R"({ "tool": "loadAtoms", "params": {"atoms": [{"name": "bar", "type": "Concept"}, {"name": "foo", "type": "Concept"}]}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
-	logger().info("Result for loadAtoms with short type names: %s", result.c_str());
-	TS_ASSERT(result.find("\"content\"") != std::string::npos);
-	TS_ASSERT(extractMCPContent(result) == "true");
-
-	// Verify atoms were created with short type names
-	cmd = R"({ "tool": "haveNode", "params": {"type": "Concept", "name": "bar"}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
-	logger().info("Result for haveNode bar: %s", result.c_str());
-	TS_ASSERT(extractMCPContent(result) == "true");
-
-	cmd = R"({ "tool": "haveNode", "params": {"type": "Concept", "name": "foo"}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
-	logger().info("Result for haveNode foo: %s", result.c_str());
-	TS_ASSERT(extractMCPContent(result) == "true");
-
-	// Also verify using getAtoms
-	cmd = R"({ "tool": "getAtoms", "params": {"type": "Concept"}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
-	logger().info("Result for getAtoms: %s", result.c_str());
-	std::string content = extractMCPContent(result);
-	TS_ASSERT(content.find("\"bar\"") != std::string::npos);
-	TS_ASSERT(content.find("\"foo\"") != std::string::npos);
-
-	// Clear atomspace for next test
-	as->clear();
-
-	// Test with mixed shortened and full type names, and various property orders
-	cmd = R"({ "tool": "loadAtoms", "params": {"atoms": [{"type": "Predicate", "name": "pred1"}, {"name": "node1", "type": "ConceptNode"}, {"type": "Concept", "name": "concept1"}]}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
-	logger().info("Result for mixed types: %s", result.c_str());
-	TS_ASSERT(result.find("\"content\"") != std::string::npos);
-	TS_ASSERT(extractMCPContent(result) == "true");
-
-	// Verify all were created
-	cmd = R"({ "tool": "haveNode", "params": {"type": "PredicateNode", "name": "pred1"}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
-	TS_ASSERT(extractMCPContent(result) == "true");
-
-	cmd = R"({ "tool": "haveNode", "params": {"type": "ConceptNode", "name": "node1"}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
-	TS_ASSERT(extractMCPContent(result) == "true");
-
-	cmd = R"({ "tool": "haveNode", "params": {"type": "ConceptNode", "name": "concept1"}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
 	TS_ASSERT(extractMCPContent(result) == "true");
 
 	logger().info("END TEST: %s", __FUNCTION__);
@@ -524,43 +437,6 @@ void MCPCommandsUTest::test_getIncoming()
 	TS_ASSERT(result.find("\"type\":\"text\"") != std::string::npos);
 	TS_ASSERT(result.find("ListLink") != std::string::npos);
 	TS_ASSERT(result.find("EvaluationLink") != std::string::npos);
-
-	logger().info("END TEST: %s", __FUNCTION__);
-}
-
-// Test getTV and setTV in MCP format
-void MCPCommandsUTest::test_getTVsetTV()
-{
-	logger().info("BEGIN TEST: %s", __FUNCTION__);
-
-	// Create a node using makeAtom
-	std::string cmd = R"({ "tool": "makeAtom", "params": {"type": "ConceptNode", "name": "tvtest"}})";
-	std::string result = JSCommands::interpret_command(as.get(), cmd);
-	TS_ASSERT(result.find("\"content\"") != std::string::npos);
-
-	// Get default TV
-	cmd = R"({ "tool": "getTV", "params": {"type": "ConceptNode", "name": "tvtest"}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
-	logger().info("Result for '%s': %s", cmd.c_str(), result.c_str());
-
-	// Should return success with TV
-	TS_ASSERT(result.find("\"content\"") != std::string::npos);
-	TS_ASSERT(result.find("\"type\":\"text\"") != std::string::npos);
-	TS_ASSERT(result.find("SimpleTruthValue") != std::string::npos);
-
-	// Set a new TV
-	cmd = R"({ "tool": "setTV", "params": {"type": "ConceptNode", "name": "tvtest", "value": {"type": "SimpleTruthValue", "value": [0.8, 0.9]}}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
-	logger().info("Result for '%s': %s", cmd.c_str(), result.c_str());
-	TS_ASSERT(result.find("\"content\"") != std::string::npos);
-	TS_ASSERT(extractMCPContent(result) == "true");
-
-	// Verify TV was set by getting it again
-	cmd = R"({ "tool": "getTV", "params": {"type": "ConceptNode", "name": "tvtest"}})";
-	result = JSCommands::interpret_command(as.get(), cmd);
-	logger().info("Result for getTV after setTV: %s", result.c_str());
-	TS_ASSERT(result.find("0.8") != std::string::npos);
-	TS_ASSERT(result.find("0.9") != std::string::npos);
 
 	logger().info("END TEST: %s", __FUNCTION__);
 }
