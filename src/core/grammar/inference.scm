@@ -43,6 +43,9 @@
     forward-chain
     backward-chain
     apply-rule
+    create-link-from-pattern
+    create-implication-link
+    create-similarity-link
     
     ;; Unification
     unify
@@ -345,6 +348,57 @@
              (else #f))))))))
 
 ;;;
+;;; Link Creation from Patterns
+;;;
+
+(define (create-link-from-pattern atomspace pattern)
+  "Create a link in atomspace from a pattern like (InheritanceLink atom1 atom2).
+   Returns the created link or #f if pattern is invalid."
+  (if (and (list? pattern) (>= (length pattern) 2))
+      (let ((link-type (car pattern))
+            (outgoing (cdr pattern)))
+        ;; Verify all outgoing elements are atoms
+        (if (every atom? outgoing)
+            (case link-type
+              ((InheritanceLink)
+               (if (= (length outgoing) 2)
+                   (create-inheritance-link atomspace (car outgoing) (cadr outgoing))
+                   #f))
+              ((EvaluationLink)
+               (if (>= (length outgoing) 1)
+                   (create-evaluation-link atomspace (car outgoing) (cdr outgoing))
+                   #f))
+              ((ImplicationLink)
+               (if (= (length outgoing) 2)
+                   (create-implication-link atomspace (car outgoing) (cadr outgoing))
+                   #f))
+              ((SimilarityLink)
+               (if (= (length outgoing) 2)
+                   (create-similarity-link atomspace (car outgoing) (cadr outgoing))
+                   #f))
+              ((ListLink)
+               (create-list-link atomspace outgoing))
+              (else
+               ;; Generic link creation for unknown types
+               (let ((link (make-link link-type outgoing)))
+                 (atomspace-add-atom! atomspace (link-atom link))
+                 link)))
+            #f))
+      #f))
+
+(define (create-implication-link atomspace premise conclusion)
+  "Create an ImplicationLink."
+  (let ((link (make-link 'ImplicationLink (list premise conclusion))))
+    (atomspace-add-atom! atomspace (link-atom link))
+    link))
+
+(define (create-similarity-link atomspace atom1 atom2)
+  "Create a SimilarityLink."
+  (let ((link (make-link 'SimilarityLink (list atom1 atom2))))
+    (atomspace-add-atom! atomspace (link-atom link))
+    link))
+
+;;;
 ;;; Forward Chaining (Data-Driven Reasoning)
 ;;;
 
@@ -368,12 +422,27 @@
                       (let ((conclusion (instantiate-pattern 
                                         (rule-conclusion rule) 
                                         bindings)))
-                        ;; Add conclusion to atomspace if new
-                        (when (and (atom? conclusion)
-                                  (not (atomspace-get-atom atomspace (atom-uuid conclusion))))
-                          (atomspace-add-atom! atomspace conclusion)
-                          (set! new-atoms (cons conclusion new-atoms))
-                          (set! derived-this-round (cons conclusion derived-this-round)))))
+                        ;; Handle both atom and link conclusions
+                        (cond
+                          ;; Atom conclusion: add if new
+                          ((atom? conclusion)
+                           (when (not (atomspace-get-atom atomspace (atom-uuid conclusion)))
+                             (atomspace-add-atom! atomspace conclusion)
+                             (set! new-atoms (cons conclusion new-atoms))
+                             (set! derived-this-round (cons conclusion derived-this-round))))
+                          
+                          ;; Link pattern conclusion: create link
+                          ((and (list? conclusion) (>= (length conclusion) 2))
+                           (let ((new-link (create-link-from-pattern atomspace conclusion)))
+                             (when new-link
+                               ;; Check if link is new
+                               (let ((link-atom (link-atom new-link)))
+                                 (when (not (member link-atom new-atoms))
+                                   (set! new-atoms (cons link-atom new-atoms))
+                                   (set! derived-this-round (cons link-atom derived-this-round)))))))
+                          
+                          ;; Otherwise: skip
+                          (else #f))))
                     matches)))
               rules)
             ;; Continue if we derived new atoms
