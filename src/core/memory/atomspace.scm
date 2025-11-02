@@ -51,6 +51,9 @@
     make-link
     link?
     link-type
+    link-tv
+    link-av
+    link-uuid
     link-outgoing
     
     ;; AtomSpace operations
