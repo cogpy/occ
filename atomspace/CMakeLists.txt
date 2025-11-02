@@ -224,8 +224,10 @@ SET(SEMANTIC_VERSION ${CMAKE_MATCH_1})
 # Include configuration.
 
 # Set default include paths.
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR}
-	${COGUTIL_INCLUDE_DIR})
+# PROJECT_BINARY_DIR is needed for generated files like atom_types.h
+# (when built standalone, PROJECT_BINARY_DIR == CMAKE_BINARY_DIR)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${PROJECT_BINARY_DIR}
+	${COGUTIL_INCLUDE_DIRS})
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	message(STATUS "Configuring for macOS...")
