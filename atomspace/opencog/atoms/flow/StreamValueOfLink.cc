@@ -26,7 +26,6 @@
 #include <opencog/atoms/value/ContainerValue.h>
 #include <opencog/atoms/value/FloatValue.h>
 #include <opencog/atoms/value/LinkValue.h>
-#include <opencog/atoms/truthvalue/SimpleTruthValue.h>
 
 using namespace opencog;
 
@@ -43,8 +42,8 @@ StreamValueOfLink::StreamValueOfLink(const HandleSeq&& oset, Type t)
 
 // ---------------------------------------------------------------
 
-/// When executed, this will return a sample from the stream at the
-/// indicated key.
+/// When executed, this will return a single sample from the stream
+/// at the indicated key.
 ValuePtr StreamValueOfLink::execute(AtomSpace* as, bool silent)
 {
 	size_t ary = _outgoing.size();
@@ -71,13 +70,6 @@ ValuePtr StreamValueOfLink::execute(AtomSpace* as, bool silent)
 		throw InvalidParamException(TRACE_INFO,
 		   "No value at key %s on atom %s",
 		   ak->to_string().c_str(), ah->to_string().c_str());
-	}
-
-	// Test for Truth before Float, since Truth isa Float
-	if (stream->is_type(TRUTH_VALUE))
-	{
-		// Sample a value out of the stream.
-		return ValueCast(createSimpleTruthValue(stream));
 	}
 
 	if (stream->is_type(FLOAT_VALUE))

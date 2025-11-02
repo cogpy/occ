@@ -1,5 +1,3 @@
-# No CMakeLists.txt in dir:
-#ADD_SUBDIRECTORY (wires)
 
 # About the COMPILE flag in the macros below:
 # It causes the guild compiler to run and build a compiled version of
@@ -11,14 +9,10 @@
 
 ADD_GUILE_MODULE (FILES
 	opencog.scm
-	opencog/base/apply.scm
 	opencog/base/atom-cache.scm
 	opencog/base/atom-docs.scm
 	opencog/base/core-docs.scm
-	opencog/base/debug-trace.scm
-	opencog/base/file-utils.scm
 	opencog/base/repl-shell.scm
-	opencog/base/tv.scm
 	opencog/base/types.scm
 	opencog/base/utilities.scm
 	DEPENDS opencog_atom_types smob
