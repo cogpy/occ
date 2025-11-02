@@ -26,8 +26,8 @@
 #include <opencog/util/exceptions.h>
 #include <opencog/util/oc_assert.h>
 #include <opencog/atoms/base/Node.h>
+#include <opencog/atoms/value/BoolValue.h>
 #include <opencog/atoms/value/StringValue.h>
-#include <opencog/atoms/value/VoidValue.h>
 #include <opencog/atoms/value/ValueFactory.h>
 
 #include <opencog/sensory/types/atom_types.h>
@@ -37,7 +37,9 @@ using namespace opencog;
 
 TextFileNode::TextFileNode(Type t, const std::string&& url) :
 	TextStreamNode(t, std::move(url)),
-	_fh(nullptr)
+	_fh(nullptr),
+	_tail_mode(false),
+	_watcher()
 {
 	OC_ASSERT(nameserver().isA(_type, TEXT_FILE_NODE),
 		"Bad TextFileNode constructor!");
@@ -45,14 +47,17 @@ TextFileNode::TextFileNode(Type t, const std::string&& url) :
 
 TextFileNode::TextFileNode(const std::string&& url) :
 	TextStreamNode(TEXT_FILE_NODE, std::move(url)),
-	_fh(nullptr)
+	_fh(nullptr),
+	_tail_mode(false),
+	_watcher()
 {
 }
 
 TextFileNode::~TextFileNode()
 {
+	_watcher.remove_watch();
 	if (_fh)
-		fclose (_fh);
+		fclose(_fh);
 }
 
 /// Attempt to open the URL for writing.
@@ -73,7 +78,7 @@ TextFileNode::~TextFileNode()
 /// Other possible extensions: this could also take configurable
 /// parameters, via the (Predicate "*-some-parameter-*) message.
 /// Such parameters could control flushing, appending vs clobbering,
-/// and so on. XXX TODO.
+/// tail mode, and so on. XXX TODO.
 
 void TextFileNode::open(const ValuePtr& vty)
 {
@@ -103,13 +108,31 @@ void TextFileNode::open(const ValuePtr& vty)
 			"Unable to open URL \"%s\"\nError was \"%s\"\n",
 			url.c_str(), ers);
 	}
+
+	// Setup inotify for tail mode
+	if (_tail_mode)
+	{
+		try
+		{
+			_watcher.add_watch(fpath);
+		}
+		catch (...)
+		{
+			fclose(_fh);
+			_fh = nullptr;
+			throw;
+		}
+	}
 }
 
 void TextFileNode::close(const ValuePtr&)
 {
+	std::lock_guard<std::mutex> lock(_mtx);
+	_watcher.remove_watch();
 	if (_fh)
 		fclose(_fh);
 	_fh = nullptr;
+	_tail_mode = false;
 }
 
 void TextFileNode::barrier(AtomSpace* ignore)
@@ -123,29 +146,131 @@ bool TextFileNode::connected(void) const
 	return (nullptr != _fh);
 }
 
+void TextFileNode::follow(const ValuePtr& value)
+{
+	// Enable or disable tail mode based on BoolValue
+	if (value->get_type() == BOOL_VALUE)
+	{
+		const std::vector<bool>& bv = BoolValueCast(value)->value();
+		if (0 < bv.size())
+		{
+			bool new_mode = bv[0];
+
+			// If enabling tail mode and file is open, set up watcher
+			if (new_mode && !_tail_mode && _fh)
+			{
+				// Get the file path from the URL
+				std::string url = get_name();
+				std::string pathstr = url.substr(7); // Skip "file://"
+				_watcher.add_watch(pathstr.c_str());
+			}
+			// If disabling tail mode, remove the watcher
+			else if (!new_mode && _tail_mode)
+			{
+				_watcher.remove_watch();
+			}
+
+			_tail_mode = new_mode;
+		}
+	}
+}
+
 // This will read one line from the text file, and return that line.
 // This is a line-oriented, buffered interface.
+// In tail mode, waits for new data using inotify when EOF is reached.
 std::string TextFileNode::do_read(void) const
 {
 	static const std::string empty_string;
 
-	// Not open. Can't do anything.
-	if (nullptr == _fh) return empty_string;
+	// Check if file is open (with lock)
+	{
+		std::lock_guard<std::mutex> lock(_mtx);
+		if (nullptr == _fh) return empty_string;
+	}
 
 #define BUFSZ 4096
 	std::string str(BUFSZ, 0);
 	char* buff = str.data();
-	char* rd = fgets(buff, BUFSZ, _fh);
 
-	// Hit file EOF. Close automatically.
-	if (nullptr == rd)
+	while (true)
 	{
-		fclose(_fh);
-		_fh = nullptr;
-		return empty_string;
-	}
+		FILE* fh_copy;
+		bool tail_mode_copy;
 
-	return str;
+		// Lock to access _fh and read
+		{
+			std::lock_guard<std::mutex> lock(_mtx);
+
+			// Check if closed while we were waiting
+			if (nullptr == _fh) return empty_string;
+
+			fh_copy = _fh;
+			tail_mode_copy = _tail_mode;
+		}
+
+		// No lock; fgets is thread-safe for different files.
+		// XXX FIXME Someday we should do something about lines
+		// that are longer than BUFSZ, but not today.
+		char* rd = fgets(buff, BUFSZ, fh_copy);
+
+		if (nullptr != rd)
+		{
+			// We used str.data() as buff to avoid copying ...
+			// but now the length is wrong. So resize.
+			// String includes the terminating newline.
+			// If we manually trimmed the newline, and the file
+			// had an empty line in it, we'd return and empty
+			// string, which fails, because we use empty string
+			// as EOF. So this needs fixing. I guess!?
+			// Also what about CRLF? I dunno. Ignore, I guess.
+			str.resize(strlen(buff));
+			return str;
+		}
+
+		// Hit EOF
+		if (!tail_mode_copy)
+		{
+			// Normal mode: close and end stream
+			std::lock_guard<std::mutex> lock(_mtx);
+			if (_fh)  // Check again in case another thread closed it
+			{
+				fclose(_fh);
+				_fh = nullptr;
+			}
+			return empty_string;
+		}
+
+		// Tail mode: wait for file modification
+		clearerr(fh_copy);  // Clear EOF indicator
+
+		// Wait for inotify event (WITHOUT holding lock - this blocks!)
+		std::pair<uint32_t, std::string> event;
+		try
+		{
+			event = _watcher.wait_event();
+		}
+		catch (...)
+		{
+			// Error - try to close and return
+			std::lock_guard<std::mutex> lock(_mtx);
+			if (_fh)
+			{
+				fclose(_fh);
+				_fh = nullptr;
+			}
+			_watcher.remove_watch();
+			throw;
+		}
+
+		// Check if watch was removed (shutdown signal from another thread)
+		if (event.first == 0 && event.second.empty())
+		{
+			// Watch was closed - return empty to unblock
+			return empty_string;
+		}
+
+		// File was modified - loop back and try reading again
+	}
 }
 
 // ==============================================================
