@@ -89,14 +89,19 @@ cdef class Value:
 
     def __richcmp__(self, other, op):
         if not isinstance(other, Value):
-            raise TypeError('Value cannot be compared with {}'
-                            .format(type(other)))
+            # raise TypeError('Value cannot be compared with {}'
+            #                 .format(type(other)))
+            if op == Py_EQ:
+                return False
+            if op == Py_NE:
+                return True
+
         cdef cValue* self_ptr = (<Value>self).get_c_value_ptr().get()
         cdef cValue* other_ptr = (<Value>other).get_c_value_ptr().get()
         if op == Py_EQ:
             return deref(self_ptr) == deref(other_ptr)
-        elif op == Py_NE:
+        if op == Py_NE:
             return deref(self_ptr) != deref(other_ptr)
-        else:
-            raise TypeError('Value can be compared using '
-                            + 'Py_EQ and Py_NE only')
+
+        raise TypeError('Value can be compared using '
+                        + 'Py_EQ and Py_NE only')
