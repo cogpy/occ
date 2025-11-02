@@ -95,10 +95,9 @@ ValuePtr ExecutionOutputLink::execute(AtomSpace* as, bool silent)
 {
 	ValuePtr vp(execute_once(as, silent));
 
-	// Should never happen. But it can happen if someone casts a Handle
-	// to a TruthValuePtr which can happen if a GroundedPredicate is used,
-	// and the API implementation is screwed up. Since nothing should ever
-	// be screwed up, this can't happen.
+	// Should never happen. But it can happen if the API implementation
+	// is screwed up. Since nothing should ever be screwed up, this can't
+	// happen.
 	if (not vp)
 		throw SyntaxException(TRACE_INFO,
 			"ExecutionOutputLink: Execution gave null result: %s",
@@ -109,7 +108,7 @@ ValuePtr ExecutionOutputLink::execute(AtomSpace* as, bool silent)
 	Handle res(HandleCast(vp));
 	if (not (SET_LINK == res->get_type()))
 	{
-		while (res->is_executable())
+		if (res->is_executable())
 		{
 			vp = res->execute(as, silent);
 			if (not vp->is_atom()) return vp;
@@ -125,7 +124,7 @@ ValuePtr ExecutionOutputLink::execute(AtomSpace* as, bool silent)
 	HandleSeq elts;
 	for (Handle elt: res->getOutgoingSet())
 	{
-		while (elt->is_executable())
+		if (elt->is_executable())
 		{
 			elt = as->add_atom(elt);
 			vp = elt->execute(as, silent);

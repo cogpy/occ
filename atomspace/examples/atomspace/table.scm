@@ -2,7 +2,7 @@
 ; table.scm -- Formulas applied to Values from a CSV/TSV table.
 ;
 ; This is similar to the `flows.scm` demo, except that the values
-; are feteched from a convetional DSV (delimiter-separated-value)
+; are feteched from a conventional DSV (delimiter-separated-value)
 ; table. The demo is in two parts. The first part reads the table,
 ; (a one-liner) and explores how it is represented in the AtomSpace.
 ; The second part applies some formulas to the table columns.
@@ -11,7 +11,7 @@
 ; functions, written in Atomese, can be applied to tables, and how
 ; a "utility function" or a "scoring function" can be written.
 ; Utility functions are commonly used in machine learning, they
-; provide a grand-total score that can be maximized or minized during
+; provide a grand-total score that can be maximized or minimized during
 ; training. The interesting point here is that the scoring function
 ; is represented in Atomese: it is some tree, some DAG of inputs.
 ; These trees can be randomly generated and mutated, thus allowing
@@ -67,7 +67,7 @@
 ; The column names are hard-coded in the function.
 
 (DefineLink
-	(DefinedSchema "col diffs")
+	(DefinedProcedure "col diffs")
    (Lambda
       (Variable "$tbl-name")
 		(SetValue
@@ -77,7 +77,7 @@
 				(FloatValueOf (Variable "$tbl-name") (PredicateNode "flt1"))))))
 
 ; Apply the function to the table.
-(cog-execute! (Put (DefinedSchema "col diffs") tab))
+(cog-execute! (Put (DefinedProcedure "col diffs") tab))
 
 ; Verify that the new column showed up.
 (cog-keys tab)
@@ -95,7 +95,7 @@
 ; it is a single number that can be used as a utility function in
 ; conventional machine-learning algos.
 (DefineLink
-	(DefinedSchema "compute score")
+	(DefinedProcedure "compute score")
    (Lambda
       (Variable "$tbl-name")
 		(Accumulate
@@ -104,7 +104,7 @@
 				(FloatValueOf (Variable "$tbl-name") (PredicateNode "flt1"))))))
 
 ; Apply the function to the table.
-(cog-execute! (Put (DefinedSchema "compute score") tab))
+(cog-execute! (Put (DefinedProcedure "compute score") tab))
 
 ; That's all, folks.
 ; -------------------------------------------------------------------

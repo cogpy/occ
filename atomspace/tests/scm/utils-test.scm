@@ -1,25 +1,16 @@
 ;
 ; Test utilities
 
-; test count truth value incrementation
+; test value incrementation
 (define counter (ConceptNode "asdf"))
-(define (test-incr-cnt) (cog-inc-count! counter 1))
-
 (define key (PredicateNode "key"))
-(define (test-incr-value) (cog-inc-value! counter key 0.5 3))
 
-; test cog-get-partner
-(define partner (ConceptNode "partner"))
-(define pare (ListLink partner counter))
-(define recount (cog-get-partner pare partner))
+; Format: cog-inc-value! ATOM KEY CNT REF
+(define (test-incr-value) (cog-inc-value! counter key 0.5 2))
 
-; test cog-pred-get-partner
-(define evl (EvaluationLink (WordNode "asdf") pare))
-(define rrcnt (cog-pred-get-partner evl partner))
-
-; test cog-get-link
-(define ref (ReferenceLink (ConceptNode "asdf") (WordNode "pqrs")))
-(define wref (car (cog-get-link 'ReferenceLink 'ConceptNode (WordNode "pqrs"))))
+(define pare (ListLink (ConceptNode "partner") counter))
+(EvaluationLink (WordNode "asdf") pare)
+(ReferenceLink (ConceptNode "asdf") (WordNode "pqrs"))
 
 ; test cog-get-atoms. Warning: it uses previously defined nodes, so
 ; should be updated if any new nodes are introduced above.
