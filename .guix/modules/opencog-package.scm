@@ -59,22 +59,25 @@
                                    (getenv "PKG_CONFIG_PATH")))
               #t))
           (add-after 'install 'install-additional-components
-            (lambda* (#:key outputs #:allow-other-keys)
+            (lambda* (#:key inputs outputs #:allow-other-keys)
               (let* ((out (assoc-ref outputs "out"))
                      (bin (string-append out "/bin"))
-                     (share (string-append out "/share/opencog-collection")))
+                     (share (string-append out "/share/opencog-collection"))
+                     (python (search-input-file inputs "/bin/python3")))
                 ;; Install Python demo and documentation
                 (mkdir-p share)
-                (install-file "app.py" share)
-                (install-file "README.md" share)
+                (when (file-exists? "app.py")
+                  (install-file "app.py" share))
+                (when (file-exists? "README.md")
+                  (install-file "README.md" share))
                 
                 ;; Create wrapper for Python demo
-                (call-with-output-file (string-append bin "/opencog-demo")
-                  (lambda (port)
-                    (format port "#!/bin/sh
-exec ~a ~a/app.py \"$@\"~%"
-                            (which "python3") share)))
-                (chmod (string-append bin "/opencog-demo") #o755)
+                (when (file-exists? "app.py")
+                  (call-with-output-file (string-append bin "/opencog-demo")
+                    (lambda (port)
+                      (format port "#!/bin/sh~%exec ~a ~a/app.py \"$@\"~%"
+                              python share)))
+                  (chmod (string-append bin "/opencog-demo") #o755))
                 
                 ;; Build and install Rust components if present
                 (when (file-exists? "Cargo.toml")
