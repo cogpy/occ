@@ -26,11 +26,11 @@
 
 ; Print a message, return a TV value
 (define (tv-print-msg)
-	(display "Hello, I've been triggered!\n") (stv 1 1))
+	(display "Hello, I've been triggered!\n") #t)
 
 ; Print an atom, return a TV value
 (define (tv-print-atom atom)
-	(format #t "Hello, I got this atom: ~a\n" atom) (stv 1 1))
+	(format #t "Hello, I got this atom: ~a\n" atom) #t)
 
 ; Print an Atom, return an Atom.
 (define (atom-print-atom atom)
@@ -70,7 +70,7 @@
 				(List (Variable "$x")))
 		)))
 
-(cog-evaluate! empty-sequence)
+(cog-execute! empty-sequence)
 
 ; ------------------------------------------------------
 ;; This variant uses a GetLink to fetch the room-state from the
@@ -106,14 +106,14 @@
 				(List))  ; zero arguments passed to function
 		)))
 
-(cog-evaluate! get-empty-seq)
+(cog-execute! get-empty-seq)
 
 ; ------------------------------------------------------
-;; This variant uses the traditional BindLink format to trigger
+;; This variant uses the traditional QueryLink format to trigger
 ;; the execution of a schema.  It is similar to the first example,
 ;; except for these notable differences:
 ;;
-;; -- The BindLink does not use SequentialAnd, and thus any embedded
+;; -- The QueryLink does not use SequentialAnd, and thus any embedded
 ;;    GPN may or may not run after the EqualLink; there is no guarantee
 ;;    of ordered execution.
 ;; -- The action to be performed must be in the form of a GSN, and thus
@@ -122,7 +122,7 @@
 ;;    suitable for creating a behavior tree.
 
 (define bind-empty
-	(Bind
+	(Query
 		;; Perform operations in sequential order.
 		(And
 			;; Assign the room-state to variable $x
@@ -140,7 +140,7 @@
 
 ; ------------------------------------------------------
 ;; This variant uses a PutLink-GetLink combination. It is functionally
-;; identical to the BindLink; merely, the order in which the action
+;; identical to the QueryLink; merely, the order in which the action
 ;; is done is reversed w.r.t. the test.
 ;;
 (define put-empty-atom

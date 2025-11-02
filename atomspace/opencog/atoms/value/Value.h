@@ -75,6 +75,9 @@ public:
 
 	/**
 	 * Returns a string representation of the value.
+	 * The short string is used as a globally unique identifier, used
+	 * by StorageNodes as the UUID for Atoms, and plain UID for Values.
+	 * It should not contain any newlines or useless whitespace.
 	 */
 	virtual std::string to_string(const std::string& indent) const = 0;
 	virtual std::string to_short_string(const std::string& indent) const
@@ -100,6 +103,16 @@ public:
 	 */
 	bool operator!=(const Value& other) const
 		{ return not operator==(other); }
+
+	/**
+	 * Returns whether this value is less than another.
+	 * Used for ordering values in sets and maps, and specifically
+	 * for deduplication in UnisetValue.
+	 *
+	 * @return true if this value is less than other, false otherwise.
+	 */
+	virtual bool operator<(const Value& other) const
+		{ return to_string() < other.to_string(); }
 };
 
 // update() might throw an exception, e.g. an IOException if a
@@ -120,6 +133,24 @@ try { \
 typedef std::vector<ValuePtr> ValueSeq;
 typedef std::set<ValuePtr> ValueSet;
 typedef std::map<Handle, ValuePtr> ValueMap;
+
+} // namespace opencog
+
+// Specialize std::less for ValuePtr to compare by content, not pointer address
+namespace std {
+	template<>
+	struct less<opencog::ValuePtr>
+	{
+		bool operator()(const opencog::ValuePtr& lhs, const opencog::ValuePtr& rhs) const
+		{
+			if (!lhs) return bool(rhs);  // null < non-null
+			if (!rhs) return false;       // non-null >= null
+			return *lhs < *rhs;           // compare content
+		}
+	};
+}
+
+namespace opencog {
 
 // Debugging helpers see
 // http://wiki.opencog.org/w/Development_standards#Print_OpenCog_Objects
