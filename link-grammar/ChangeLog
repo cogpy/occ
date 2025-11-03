@@ -1,5 +1,18 @@
-Version 5.12.7 (XXX 2025)
- * (Nothing yet.)
+Version 5.13.1 (Maybe in 2026?)
+ * (Nothing yet)
+
+Version 5.13.0 (28 October 2025)
+ * Minor English dictionary fixes.
+ * Bump minor version number due to changed lg-atomese API.
+
+Version 5.12.9 (13 October 2025)
+ * Fix build break due to changing AtomSpace API.
+
+Version 5.12.8 (26 September 2025)
+ * Fix build break ... again! Not all compilers are happy with the fix.
+
+Version 5.12.7 (25 September 2025)
+ * Fix build break due to obsolete AtomSpace API usage.
 
 Version 5.12.6 (29 August 2025)
  * Fix build break due to missing header file.
