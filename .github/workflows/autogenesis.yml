@@ -1180,8 +1180,8 @@ jobs:
                 # Clean up temp file in all cases
                 try:
                     Path(body_file_path).unlink()
-                except Exception:
-                    pass
+                except (FileNotFoundError, OSError) as e:
+                    print(f"Warning: Failed to clean up temp file {body_file_path}: {e}")
         
         print("\n" + "=" * 80)
         print(f"Summary: Created {len(created_issues)} feature issues")
