@@ -216,6 +216,7 @@ ServerSocket::ServerSocket(void) :
     _do_frame_io(false),
     _is_http_socket(false),
     _got_websock_header(false),
+    _host_header(""),
     _keep_alive(false),
     _content_length(0),
     _is_mcp_socket(false)
@@ -333,26 +334,6 @@ void ServerSocket::Send(const std::string& cmd)
         return;
     }
 
-#if 0
-    // ??? Why is this here? Who uses this? Is this for MCP?
-    if (_is_http_socket)
-    {
-        // Build HTTP response with Content-Length
-        // XXX FIXME Content-Type is wrong for everyone but JSON,
-        // but who cares because only JSON uses HTTP.
-        std::string response =
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: application/json\r\n"
-            "Content-Length: " + std::to_string(cmdsize) + "\r\n"
-            "Cache-Control: no-cache\r\n"
-            "Connection: keep-alive\r\n"
-            "\r\n";
-
-        // Send headers
-        send_websocket(response);
-    }
-#endif
-
     // If we are here, we have to perform websockets framing.
     send_websocket(cmd);
 }
@@ -367,7 +348,7 @@ void ServerSocket::Send(const asio::const_buffer& buf)
 
     // The most likely cause of an error is that the remote side has
     // closed the socket, even though we still had stuff to send.
-    // I beleive this is a ENOTCON errno, maybe others as well.
+    // I believe this is a ENOTCON errno, maybe others as well.
     // (for example, ECONNRESET `Connection reset by peer`)
     // Don't log these harmless errors.
     // Do log true failures.
@@ -459,7 +440,7 @@ typedef asio::buffers_iterator<
 // Goal: if the user types in a ctrl-C or a ctrl-D, we want to
 // react immediately to this. A ctrl-D is just the ascii char 0x4
 // while the ctrl-C is wrapped in a telnet "interpret as command"
-// IAC byte secquence.  Basically, we want to forward all IAC
+// IAC byte sequence.  Basically, we want to forward all IAC
 // sequences immediately, as well as the ctrl-D.
 //
 std::pair<bitter, bool>
@@ -514,8 +495,8 @@ std::string ServerSocket::get_http_body(asio::streambuf& b)
 
 // ==================================================================
 
-// Ths method is called in a new thread, when a new network connection is
-// made. It handles all socket reads for that socket.
+// This method is called in a new thread, when a new network connection
+// is made. It handles all socket reads for that socket.
 void ServerSocket::handle_connection(void)
 {
     prctl(PR_SET_NAME, "cogserv:connect", 0, 0, 0);
