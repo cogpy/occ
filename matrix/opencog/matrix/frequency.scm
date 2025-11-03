@@ -403,7 +403,7 @@
   'cache-all             -- Do all three of the above.
 "
 	; We need 'left-basis, provided by add-pair-stars
-	; We need 'wild-wild-count, provided by add-support-api
+	; We need 'total-sum-left and right, provided by add-support-api
 	; We need 'set-left-wild-freq, provided by add-pair-freq-api
 	(define supobj (add-support-api LLOBJ))
 	(define frqobj (add-pair-freq-api LLOBJ))
@@ -411,7 +411,7 @@
 	(define tot-cnt #f)
 
 	(define (init)
-		(set! tot-cnt (supobj `wild-wild-count)))
+		(set! tot-cnt (supobj `total-sum-left)))
 
 	; Compute the pair frequency P(x,y) = N(x,y) / N(*,*)  This is
 	; the frequency with which the pair (x,y) is observed. Return
