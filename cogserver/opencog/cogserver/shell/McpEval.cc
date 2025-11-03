@@ -24,6 +24,7 @@
 #include <chrono>
 #include <ctime>
 #include <algorithm>
+#include <fstream>
 
 #if HAVE_MCP
 #include <json/json.h>
@@ -46,6 +47,36 @@ McpEval::McpEval(const AtomSpacePtr& asp)
 	_done = false;
 }
 
+// Helper function to read a prompt file and format it as MCP prompt response
+static bool read_prompt_file(const std::string& prompt_base,
+                             const std::string& filename,
+                             const std::string& description,
+                             Json::Value& response)
+{
+	std::string prompt_path = prompt_base + filename;
+	std::ifstream file(prompt_path);
+	if (!file.is_open()) {
+		response["error"]["code"] = -32602;
+		response["error"]["message"] = "Failed to read prompt file: " + prompt_path;
+		return false;
+	}
+
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	file.close();
+
+	response["result"]["description"] = description;
+	response["result"]["messages"] = Json::arrayValue;
+	Json::Value message;
+	message["role"] = "user";
+	Json::Value content;
+	content["type"] = "text";
+	content["text"] = buffer.str();
+	message["content"] = content;
+	response["result"]["messages"].append(message);
+	return true;
+}
+
 McpEval::~McpEval()
 {
 }
@@ -60,7 +91,7 @@ void McpEval::eval_expr(const std::string &expr)
 	if (0 == expr.compare("\n")) return;
 
 #if HAVE_MCP
-	logger().info("[McpEval] received %s", expr.c_str());
+	logger().debug("[McpEval] received %s", expr.c_str());
 	try
 	{
 		Json::Value request;
@@ -99,18 +130,45 @@ void McpEval::eval_expr(const std::string &expr)
 		response["id"] = id;
 
 		if (method == "initialize") {
-			response["result"]["protocolVersion"] = "2024-11-05";
-			response["result"]["capabilities"]["tools"] = Json::objectValue;
-			response["result"]["capabilities"]["resources"] = Json::objectValue;
+			// Use the latest MCP protocol version
+			response["result"]["protocolVersion"] = "2025-06-18";
+
+			// Indicate that we support tools by including the capability
+			// The MCP spec states that presence of the key indicates support
+			// An empty object {} means basic support without advanced features
+			Json::Value toolsCapability;
+			toolsCapability["listChanged"] = false;  // We don't support dynamic tool changes
+			response["result"]["capabilities"]["tools"] = toolsCapability;
+
+			// Indicate that we support resources for documentation
+			Json::Value resourcesCapability;
+			resourcesCapability["subscribe"] = false;  // No live updates for docs
+			resourcesCapability["listChanged"] = false;  // Static resource list
+			response["result"]["capabilities"]["resources"] = resourcesCapability;
+
+			// Indicate that we support prompts for guided tool usage
+			Json::Value promptsCapability;
+			promptsCapability["listChanged"] = false;  // Static prompt list
+			response["result"]["capabilities"]["prompts"] = promptsCapability;
+
 			response["result"]["serverInfo"]["name"] = "CogServer MCP";
-			response["result"]["serverInfo"]["version"] = "0.1.0";
+			response["result"]["serverInfo"]["version"] = "0.2.0";
+			response["result"]["serverInfo"]["instructions"] =
+				"The CogServer MCP provides access to a live, running instance of the "
+				"AtomSpace. It allows the MCP client to view and manipulate the contents "
+				"of the AtomSpace. This includes creating and deleting Atoms, changing "
+				"the Values attached to them, running the executable Atoms, and sending "
+            "messages to those Atoms that implement an Object interface.";
 		} else if (method == "notifications/initialized" or
 		           method == "initialized") {
 #define WTF_INIT
 #ifdef WTF_INIT
-			// Supposedly there should be no response here, but its
-			// broken if we're silent. So ... !???
+			// Notifications (requests without id) should not send a
+			// response per JSON-RPC spec.
+			// But HTTP clients need some response to be sent back.
+			// Return an empty result object to keep HTTP happy.
 			response["result"] = Json::objectValue;
+			response.removeMember("id");
 #else
 			// Notification - no response
 			_result = "";
@@ -149,7 +207,175 @@ void McpEval::eval_expr(const std::string &expr)
 
 			response["result"]["tools"] = all_tools;
 		} else if (method == "resources/list") {
-			response["result"]["resources"] = Json::arrayValue;
+			Json::Value resources(Json::arrayValue);
+
+			// Add the AtomSpace introduction document (shorter overview)
+			Json::Value intro_resource;
+			intro_resource["uri"] = "atomspace://docs/introduction";
+			intro_resource["name"] = "AtomSpace Introduction";
+			intro_resource["description"] = "Overview of the AtomSpace, Atoms, and basic concepts";
+			intro_resource["mimeType"] = "text/markdown";
+			resources.append(intro_resource);
+
+			// Add the detailed AtomSpace guide (longer detailed guide)
+			Json::Value guide_resource;
+			guide_resource["uri"] = "atomspace://docs/atomspace-guide";
+			guide_resource["name"] = "AtomSpace Detailed Guide";
+			guide_resource["description"] = "Comprehensive guide to Atomese, the AtomSpace, and the CogServer";
+			guide_resource["mimeType"] = "text/markdown";
+			resources.append(guide_resource);
+
+			// Add the CogServer MCP access guide
+			Json::Value cogserver_resource;
+			cogserver_resource["uri"] = "atomspace://docs/cogserver-mcp";
+			cogserver_resource["name"] = "CogServer and MCP Access";
+			cogserver_resource["description"] = "How to access the CogServer, MCP tools, port numbers, and documentation locations";
+			cogserver_resource["mimeType"] = "text/markdown";
+			resources.append(cogserver_resource);
+
+			response["result"]["resources"] = resources;
+		} else if (method == "prompts/list") {
+			Json::Value prompts(Json::arrayValue);
+
+			// Prompt for Atom types reference
+			Json::Value atomtypes_prompt;
+			atomtypes_prompt["name"] = "atom-types-reference";
+			atomtypes_prompt["description"] = "Comprehensive reference for 170+ Atom types organized by functional category";
+			prompts.append(atomtypes_prompt);
+
+			// Prompt for creating Atoms
+			Json::Value create_prompt;
+			create_prompt["name"] = "create-atoms";
+			create_prompt["description"] = "Guide for creating Nodes and Links in the AtomSpace";
+			prompts.append(create_prompt);
+
+			// Prompt for designing structures in Atomese
+			Json::Value design_prompt;
+			design_prompt["name"] = "designing-structures";
+			design_prompt["description"] = "Guide for designing data structures in Atomese: global uniqueness, avoiding IDs, Atomese vs programming languages";
+			prompts.append(design_prompt);
+
+			// Prompt for querying AtomSpace
+			Json::Value query_prompt;
+			query_prompt["name"] = "query-atomspace";
+			query_prompt["description"] = "Guide for querying and exploring the AtomSpace effectively";
+			prompts.append(query_prompt);
+
+			// Prompt for working with Values
+			Json::Value values_prompt;
+			values_prompt["name"] = "work-with-values";
+			values_prompt["description"] = "Guide for working with Values and key-value pairs";
+			prompts.append(values_prompt);
+
+			// Prompt for pattern matching queries
+			Json::Value pattern_prompt;
+			pattern_prompt["name"] = "pattern-matching";
+			pattern_prompt["description"] = "Guide for using MeetLink and QueryLink to search the AtomSpace with patterns";
+			prompts.append(pattern_prompt);
+
+			// Prompt for advanced pattern matching
+			Json::Value advanced_pattern_prompt;
+			advanced_pattern_prompt["name"] = "advanced-pattern-matching";
+			advanced_pattern_prompt["description"] = "Guide for using AbsentLink, ChoiceLink, AlwaysLink, and GroupLink in sophisticated queries";
+			prompts.append(advanced_pattern_prompt);
+
+			response["result"]["prompts"] = prompts;
+		} else if (method == "resources/read") {
+			std::string uri = params.isMember("uri") ? params["uri"].asString() : "";
+
+			// Use the CMAKE install prefix for the documentation path
+			std::string doc_base = std::string(PROJECT_INSTALL_PREFIX) + "/share/cogserver/mcp/";
+
+			if (uri == "atomspace://docs/introduction") {
+				// Read the AtomSpace-Overview.md file (shorter introduction)
+				std::string doc_path = doc_base + "AtomSpace-Overview.md";
+				std::ifstream file(doc_path);
+				if (file.is_open()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					file.close();
+
+					Json::Value content;
+					content["uri"] = uri;
+					content["mimeType"] = "text/markdown";
+					content["text"] = buffer.str();
+					response["result"]["contents"] = Json::arrayValue;
+					response["result"]["contents"].append(content);
+				} else {
+					response["error"]["code"] = -32602;
+					response["error"]["message"] = "Failed to read documentation file: " + doc_path;
+				}
+			} else if (uri == "atomspace://docs/atomspace-guide") {
+				// Read the AtomSpace-Details.md file (longer detailed guide)
+				std::string doc_path = doc_base + "AtomSpace-Details.md";
+				std::ifstream file(doc_path);
+				if (file.is_open()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					file.close();
+
+					Json::Value content;
+					content["uri"] = uri;
+					content["mimeType"] = "text/markdown";
+					content["text"] = buffer.str();
+					response["result"]["contents"] = Json::arrayValue;
+					response["result"]["contents"].append(content);
+				} else {
+					response["error"]["code"] = -32602;
+					response["error"]["message"] = "Failed to read documentation file: " + doc_path;
+				}
+			} else if (uri == "atomspace://docs/cogserver-mcp") {
+				// Read the CogServer-Prompt.md file (MCP access guide)
+				std::string doc_path = doc_base + "CogServer-Prompt.md";
+				std::ifstream file(doc_path);
+				if (file.is_open()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					file.close();
+
+					Json::Value content;
+					content["uri"] = uri;
+					content["mimeType"] = "text/markdown";
+					content["text"] = buffer.str();
+					response["result"]["contents"] = Json::arrayValue;
+					response["result"]["contents"].append(content);
+				} else {
+					response["error"]["code"] = -32602;
+					response["error"]["message"] = "Failed to read documentation file: " + doc_path;
+				}
+			} else {
+				response["error"]["code"] = -32602;
+				response["error"]["message"] = "Resource not found: " + uri;
+			}
+		} else if (method == "prompts/get") {
+			std::string prompt_name = params.isMember("name") ? params["name"].asString() : "";
+			std::string prompt_base = std::string(PROJECT_INSTALL_PREFIX) + "/share/cogserver/mcp/";
+
+			if (prompt_name == "atom-types-reference") {
+				read_prompt_file(prompt_base, "AtomTypes-Prompt.md",
+					"Comprehensive reference for 170+ Atom types organized by functional category", response);
+			} else if (prompt_name == "create-atoms") {
+				read_prompt_file(prompt_base, "CreateAtom-Prompt.md",
+					"Guide for creating Nodes and Links in the AtomSpace", response);
+			} else if (prompt_name == "designing-structures") {
+				read_prompt_file(prompt_base, "DesigningStructures-Prompt.md",
+					"Guide for designing data structures in Atomese: global uniqueness, avoiding IDs, Atomese vs programming languages", response);
+			} else if (prompt_name == "query-atomspace") {
+				read_prompt_file(prompt_base, "QueryAtom-Prompt.md",
+					"Guide for querying and exploring the AtomSpace effectively", response);
+			} else if (prompt_name == "work-with-values") {
+				read_prompt_file(prompt_base, "WorkingWithValues-Prompt.md",
+					"Guide for working with Values and key-value pairs", response);
+			} else if (prompt_name == "pattern-matching") {
+				read_prompt_file(prompt_base, "PatternMatching-Prompt.md",
+					"Guide for using MeetLink and QueryLink to search the AtomSpace with patterns", response);
+			} else if (prompt_name == "advanced-pattern-matching") {
+				read_prompt_file(prompt_base, "AdvancedPatternMatching-Prompt.md",
+					"Guide for using AbsentLink, ChoiceLink, AlwaysLink, and GroupLink in sophisticated queries", response);
+			} else {
+				response["error"]["code"] = -32602;
+				response["error"]["message"] = "Prompt not found: " + prompt_name;
+			}
 		} else if (method == "tools/call") {
 			std::string tool_name = params.isMember("name") ? params["name"].asString() : "";
 			Json::Value arguments = params.isMember("arguments") ? params["arguments"] : Json::objectValue;
@@ -159,7 +385,27 @@ void McpEval::eval_expr(const std::string &expr)
 			if (it != _tool_to_plugin.end()) {
 				// Invoke the tool through the plugin
 				std::string arguments_json = json_to_string(arguments);
-				std::string tool_result_json = it->second->invoke_tool(tool_name, arguments_json);
+				std::string tool_result_json;
+
+				// Catch exceptions from tool execution and convert to MCP error format
+				try {
+					tool_result_json = it->second->invoke_tool(tool_name, arguments_json);
+				} catch (const std::exception& e) {
+					// Convert exception to MCP content format error
+					// Per MCP spec: tool execution errors use {"content": [...], "isError": true}
+					Json::Value error_content;
+					Json::Value content_item;
+					content_item["type"] = "text";
+					content_item["text"] = e.what();
+					error_content["content"].append(content_item);
+					error_content["isError"] = true;
+					response["result"] = error_content;
+
+					logger().debug("[McpEval] replying: %s", json_to_string(response).c_str());
+					_result = json_to_string(response) + "\n";
+					_done = true;
+					return;
+				}
 
 				Json::Value tool_result;
 				Json::CharReaderBuilder builder;
@@ -169,12 +415,10 @@ void McpEval::eval_expr(const std::string &expr)
 				if (reader->parse(tool_result_json.c_str(),
 				                  tool_result_json.c_str() + tool_result_json.length(),
 				                  &tool_result, &errors)) {
-					// Check if the plugin returned an error
-					if (tool_result.isMember("error")) {
-						response["error"] = tool_result["error"];
-					} else {
-						response["result"] = tool_result;
-					}
+					// Per MCP spec: tool execution results (including errors) go in "result"
+					// Tool errors use {"content": [...], "isError": true} format
+					// Only JSON-RPC protocol errors use "error" field
+					response["result"] = tool_result;
 				} else {
 					response["error"]["code"] = -32700;
 					response["error"]["message"] = "Failed to parse tool result";
@@ -188,7 +432,7 @@ void McpEval::eval_expr(const std::string &expr)
 			response["error"]["message"] = "Method not found: " + method;
 		}
 
-		logger().info("[McpEval] replying: %s", json_to_string(response).c_str());
+		logger().debug("[McpEval] replying: %s", json_to_string(response).c_str());
 
 		// Trailing newline is mandatory; jsonrpc uses line discipline.
 		_result = json_to_string(response) + "\n";
@@ -201,7 +445,7 @@ void McpEval::eval_expr(const std::string &expr)
 		error_response["id"] = Json::Value::null;
 		error_response["error"]["code"] = -32700;
 		error_response["error"]["message"] = "Parse error: " + std::string(e.what());
-		logger().info("[McpEval] error reply: %s", json_to_string(error_response).c_str());
+		logger().debug("[McpEval] error reply: %s", json_to_string(error_response).c_str());
 		_result = json_to_string(error_response) + "\n";
 		_done = true;
 	}
@@ -295,7 +539,7 @@ void McpEval::unregister_plugin(std::shared_ptr<McpPlugin> plugin)
 /* ============================================================== */
 
 // One evaluator per thread.  This allows multiple users to each
-// have thier own evaluator.
+// have their own evaluator.
 McpEval* McpEval::get_evaluator(const AtomSpacePtr& asp)
 {
 	static thread_local McpEval* evaluator = new McpEval(asp);
