@@ -6,8 +6,8 @@
 
 (define (truf x)
 	(cond
-		((equal? x (ConceptNode "good")) (cog-new-stv 1 1))
-		((equal? x (ConceptNode "bad")) (cog-new-stv 0 1))
+		((equal? x (ConceptNode "good")) #t)
+		((equal? x (ConceptNode "bad")) #f)
 		(else (throw 'whats-up-jack "you done it wrong"))
 	)
 )
@@ -44,7 +44,8 @@
 
 ; This pattern will accept one of the two above, reject the other.
 (define (do-cond condi)
-	(BindLink
+	(CollectionOf
+	(QueryLink
 		(VariableList
 			(VariableNode "$cxt")
 			(VariableNode "$condition")
@@ -62,6 +63,7 @@
 		)
 		; ...  then perform the action.
 		(VariableNode "$action")
+	)
 	)
 )
 

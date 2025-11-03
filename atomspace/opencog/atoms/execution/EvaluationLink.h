@@ -10,6 +10,7 @@
 
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/atoms/core/FreeLink.h>
+#include <opencog/atoms/value/BoolValue.h>
 
 namespace opencog
 {
@@ -38,30 +39,31 @@ public:
 	EvaluationLink(const EvaluationLink&) = delete;
 	EvaluationLink& operator=(const EvaluationLink&) = delete;
 
+	virtual bool is_executale() const { return true; }
+	virtual ValuePtr execute(AtomSpace* as, bool silent=false) {
+		return evaluate(as, silent);
+	}
+
 	virtual bool is_evaluatable() const { return true; }
-	TruthValuePtr evaluate(AtomSpace* as, bool silent) {
-		return do_evaluate(as, get_handle(), silent);
+	ValuePtr evaluate(AtomSpace* scratch, bool silent) {
+		return ValueCast(createBoolValue(bevaluate(scratch, silent)));
 	}
 
-	static TruthValuePtr do_evaluate(AtomSpace*, const Handle&,
-	                                 bool silent=false);
-	static TruthValuePtr do_eval_scratch(AtomSpace* main,
-	                                     const Handle&,
-	                                     AtomSpace* scratch,
-	                                     bool silent=false);
-
-	static TruthValuePtr do_evaluate(const AtomSpacePtr& asp, const Handle& h,
-	                                 bool silent=false)
-	{
-		return do_evaluate(asp.get(), h, silent);
+	virtual bool bevaluate(AtomSpace* scratch, bool silent=false) {
+		return crisp_eval_scratch(_atom_space, get_handle(), scratch, silent);
 	}
 
-	static bool crisp_evaluate(AtomSpace*, const Handle&,
-	                           bool silent=false);
 	static bool crisp_eval_scratch(AtomSpace* main,
 	                               const Handle&,
 	                               AtomSpace* scratch,
 	                               bool silent=false);
+
+	static ValuePtr do_evaluate(AtomSpace* as,
+	                            const Handle& evelnk,
+	                            bool silent=false)
+	{
+		return ValueCast(createBoolValue(crisp_eval_scratch(as, evelnk, as, silent)));
+	}
 
 	static Handle factory(const Handle&);
 };

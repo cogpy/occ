@@ -46,10 +46,11 @@ protected:
 	mutable std::vector<double> _value;
 
 	virtual void update() const {}
+	std::string to_string(const std::string&, Type) const;
 
 	FloatValue(Type t) : Value(t) {}
-public:
 	FloatValue(Type t, const std::vector<double>& v) : Value(t), _value(v) {}
+public:
 	FloatValue(double v) : Value(FLOAT_VALUE) { _value.push_back(v); }
 	FloatValue(const std::vector<double>& v)
 		: Value(FLOAT_VALUE), _value(v) {}
@@ -66,10 +67,13 @@ public:
 	/** Returns a string representation of the value. */
 	virtual std::string to_string(const std::string& indent = "") const
 	{ return to_string(indent, _type); }
-	std::string to_string(const std::string& indent, Type) const;
 
 	/** Returns true if two values are equal. */
 	virtual bool operator==(const Value&) const;
+
+	/** Optimized less-than comparison for FloatValue.
+	 * Compares by type name first, then vector length, then individual floats. */
+	virtual bool operator<(const Value& other) const;
 };
 
 VALUE_PTR_DECL(FloatValue);
