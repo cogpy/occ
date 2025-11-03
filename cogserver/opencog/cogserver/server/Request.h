@@ -182,7 +182,7 @@ class ConsoleSocket;
  * which should add a description attribute and some help text about
  * the request's usage.
  *
- * The 'execute' method must be overriden by derived requests and
+ * The 'execute' method must be overridden by derived requests and
  * implement the actual request behavior. It should retrieve the set of
  * parameters from the '_parameters' member and use the 'send()' method
  * to send its output (or an error message) back to the client.
@@ -245,12 +245,12 @@ public:
     /** Request's desconstructor */
     virtual ~Request();
 
-    /** Abstract execute method. Should be overriden by a derived request with
-     *  the actual request's behavior. Retuns 'true' if the command completed
+    /** Abstract execute method. Should be overridden by a derived request with
+     *  the actual request's behavior. Returns 'true' if the command completed
      *  successfully and 'false' otherwise. */
     virtual bool execute(void) = 0;
 
-    /** Abstract method for telling if the Request if for entering a shell*/
+    /** Return true, if running the Request will create and enter a shell. */
     virtual bool isShell(void) = 0;
 
     /** Send the command output back to the client. */
