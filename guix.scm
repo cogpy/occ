@@ -99,17 +99,19 @@
               (let* ((out (assoc-ref outputs "out"))
                      (bin (string-append out "/bin"))
                      (lib (string-append out "/lib"))
-                     (share (string-append out "/share/opencog-collection")))
+                     (share (string-append out "/share/opencog-collection"))
+                     (in-build-dir? (file-exists? "Makefile")))
                 (mkdir-p share)
                 (mkdir-p bin)
                 (mkdir-p lib)
                 
                 ;; Install CMake build if it exists
-                (when (file-exists? "Makefile")
-                  (invoke "make" "install"))
+                (when in-build-dir?
+                  (invoke "make" "install")
+                  ;; Go back to source directory after make install
+                  (chdir ".."))
                 
                 ;; Install Python components
-                (chdir "..")  ; Go back to source directory
                 (when (file-exists? "app.py")
                   (install-file "app.py" share)
                   (call-with-output-file (string-append bin "/opencog-demo")
