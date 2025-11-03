@@ -1,5 +1,5 @@
 ;
-; deduction-engine.scm -- Very simple goal solving using Get/PutLinks.
+; deduction-engine.scm -- Very simple goal solving using Meet/PutLinks.
 ;
 ; The point of this example is to show how ProLog-like deductions can
 ; be made, and, more precisely, how to write a ProLog-like chainer
@@ -7,7 +7,7 @@
 ; goal of this example is to show how to do that.
 ;
 ;; XXX under construction, incomplete. The correct fix is to remove
-;; BindLink everywhere below, and use UnifierLink instead, according
+;; QueryLink everywhere below, and use UnifierLink instead, according
 ;; to the examples demoing the unifier.
 ;
 ; Critiques:
@@ -52,7 +52,7 @@
 			(VariableNode "$X"))))
 
 ;;; The equivalent imperative form of the above.
-(BindLink
+(QueryLink
 	(VariableNode "$X")
 	(EvaluationLink
 		(PredicateNode "likes")
@@ -65,12 +65,12 @@
 			(ConceptNode "Bill")
 			(VariableNode "$X"))))
 
-;;; Same as above, but in imperative form. It uses the GetLink
+;;; Same as above, but in imperative form. It uses the MeetLink
 ;;; to search the AtomSpace to find everything Tom likes, and then
 ;;; uses the PutLink to perform a beta-reduction, to plug in those
 ;;; answers into a template for the things that Bill likes.
-;;; Note the use of two distinct variables; $X is bound to GetLink;
-;;; basically, $X is the return value from GetLink. The $Y variable
+;;; Note the use of two distinct variables; $X is bound to MeetLink;
+;;; basically, $X is the return value from MeetLink. The $Y variable
 ;;; is bound to PutLink, and functions as a classical lambda-calculus
 ;;; lambda, defining the arguments that PutLink accepts.
 (define implication
@@ -80,7 +80,7 @@
 			(ListLink
 				(ConceptNode "Bill")
 				(VariableNode "$Y")))
-		(GetLink
+		(MeetLink
 			(EvaluationLink
 				(PredicateNode "likes")
 				(ListLink
@@ -137,15 +137,15 @@
 ;; pattern match first half of implication, if found
 ;; try to check member again.
 
-(cog-evaluate! (DefinedPredicateNode "Does Bill like X?"))
+(cog-execute! (DefinedPredicateNode "Does Bill like X?"))
 
 ;; A quasi-generic rule implicator.
 ;; Searches for all implication links (of a very specific form)
-;; and converts them into GetPut imperatives.
+;; and converts them into MeetPut imperatives.
 
 (define get-impl
 	;; Search for RuleLinks, and dissect them.
-	(GetLink
+	(MeetLink
 		(VariableList
 			(TypedVariableLink (VariableNode "$fpred") (TypeNode "PredicateNode"))
 			(TypedVariableLink (VariableNode "$tpred") (TypeNode "PredicateNode"))
@@ -185,7 +185,7 @@
 						(ListLink
 							(VariableNode "$bbb")
 							(VariableNode "$vvv"))))
-				(GetLink
+				(MeetLink
 					(UnquoteLink
 						(EvaluationLink
 							(VariableNode "$fp")
@@ -194,9 +194,9 @@
 								(VariableNode "$vvv")))))))
 		get-impl))
 
-;; Same as above, but using BindLink, so order is reversed.
+;; Same as above, but using QueryLink, so order is reversed.
 (define b-impl
-(BindLink
+(QueryLink
 	;; Search for ImplicationLinks, and dissect them.
 	(VariableList
 		(TypedVariableLink (VariableNode "$fpred") (TypeNode "PredicateNode"))
@@ -220,8 +220,8 @@
 						(VariableNode "$B")
 						(VariableNode "$V"))))))
 
-	; If an ImplicationLink was found, create a matching BindLink
-	(BindLink
+	; If an ImplicationLink was found, create a matching QueryLink
+	(QueryLink
 		(VariableNode "$V")
 		(EvaluationLink
 			(VariableNode "$fpred")
