@@ -1025,7 +1025,7 @@ jobs:
   create-feature-issues:
     runs-on: ubuntu-latest
     needs: autogenesis-novel-features
-    if: always()
+    if: success() || failure()
     name: Convert Autogenesis Features to GitHub Issues
     permissions:
       contents: read
@@ -1046,7 +1046,8 @@ jobs:
         cat > create_issues.py << 'EOF'
         import json
         import subprocess
-        import os
+        import sys
+        import tempfile
         from pathlib import Path
         
         # Load the autogenesis roadmap
@@ -1054,7 +1055,7 @@ jobs:
         
         if not roadmap_file.exists():
             print("No autogenesis roadmap found. Skipping issue creation.")
-            exit(0)
+            sys.exit(0)
         
         with open(roadmap_file, 'r') as f:
             roadmap = json.load(f)
@@ -1063,7 +1064,7 @@ jobs:
         
         if not features:
             print("No features in roadmap. Nothing to create.")
-            exit(0)
+            sys.exit(0)
         
         print(f"Found {len(features)} features in autogenesis roadmap")
         print("=" * 80)
@@ -1144,19 +1145,20 @@ jobs:
             # Create the issue using gh CLI
             print(f"\nCreating issue: {issue_title}")
             
-            # Save issue body to temp file to handle special characters
-            body_file = Path(f'/tmp/issue_body_{rank}.md')
-            body_file.write_text(issue_body)
-            
-            # Build the gh issue create command
-            cmd = [
-                'gh', 'issue', 'create',
-                '--title', issue_title,
-                '--body-file', str(body_file),
-                '--label', ','.join(labels)
-            ]
+            # Use tempfile for cross-platform compatibility
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as tmp:
+                tmp.write(issue_body)
+                body_file_path = tmp.name
             
             try:
+                # Build the gh issue create command
+                cmd = [
+                    'gh', 'issue', 'create',
+                    '--title', issue_title,
+                    '--body-file', body_file_path,
+                    '--label', ','.join(labels)
+                ]
+                
                 result = subprocess.run(
                     cmd,
                     capture_output=True,
@@ -1171,16 +1173,15 @@ jobs:
                 })
                 print(f"Created: {issue_url}")
                 
-                # Clean up temp file
-                body_file.unlink()
-                
             except subprocess.CalledProcessError as e:
                 print(f"Failed to create issue: {e}")
                 print(f"Error output: {e.stderr}")
-                # Clean up temp file even on error
-                if body_file.exists():
-                    body_file.unlink()
-                continue
+            finally:
+                # Clean up temp file in all cases
+                try:
+                    Path(body_file_path).unlink()
+                except Exception:
+                    pass
         
         print("\n" + "=" * 80)
         print(f"Summary: Created {len(created_issues)} feature issues")
