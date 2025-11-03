@@ -29,7 +29,9 @@
     atom-type
     atom-name
     atom-tv
+    atom-set-tv!
     atom-av
+    atom-set-av!
     atom-incoming
     atom-uuid
     
