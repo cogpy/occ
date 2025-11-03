@@ -554,7 +554,7 @@ jobs:
                 }
                 
                 # Scan for existing components
-                repo_root = Path('/home/runner/work/occ/occ')
+                repo_root = Path(os.getenv('GITHUB_WORKSPACE', '/home/runner/work/occ/occ'))
                 
                 # Identify major cognitive components
                 components = [
@@ -598,7 +598,7 @@ jobs:
                     'learning': 'moses' in state['components'],
                     'attention': 'attention' in state['components'],
                     'language': 'relex' in state['components'] or 'link-grammar' in state['components'],
-                    'perception': 'vision' in state['components'] or 'perception' in state['components'],
+                    'perception': 'vision' in state['components'] or 'sensory' in state['components'],
                     'action': 'motor' in state['components']
                 }
                 
@@ -842,10 +842,12 @@ jobs:
                     complexity_score = {'LOW': 3, 'MEDIUM': 2, 'HIGH': 1}[feature['complexity']]
                     
                     # Check prerequisite availability
-                    prereq_score = sum(
-                        1 for prereq in feature['prerequisites'] 
-                        if prereq in self.current_state['components']
-                    ) / len(feature['prerequisites'])
+                    prereq_score = 0
+                    if feature['prerequisites']:
+                        prereq_score = sum(
+                            1 for prereq in feature['prerequisites'] 
+                            if prereq in self.current_state['components']
+                        ) / len(feature['prerequisites'])
                     
                     total_score = (impact_score * 0.4 + complexity_score * 0.3 + prereq_score * 0.3)
                     
@@ -1000,9 +1002,13 @@ jobs:
             print(f"  {i}. {feature['name']}")
         
         # Set GitHub outputs
-        with open(os.environ.get('GITHUB_OUTPUT', '/dev/null'), 'a') as f:
-            f.write(f"features_count={len(novel_features)}\n")
-            f.write(f"top_feature={novel_features[0]['name'] if novel_features else 'None'}\n")
+        github_output = os.environ.get('GITHUB_OUTPUT')
+        if github_output:
+            with open(github_output, 'a') as f:
+                f.write(f"features_count={len(novel_features)}\n")
+                f.write(f"top_feature={novel_features[0]['name'] if novel_features else 'None'}\n")
+        else:
+            print("\nNote: GITHUB_OUTPUT not set, skipping output variable setting")
         
         AUTOGENESIS_SCRIPT
         
