@@ -2,34 +2,31 @@
 ; value-of.scm --  Searching for patterns with attached values.
 ;
 ; A common task is to search for patterns that have a sufficiently
-; large truth value or attention value (or some other value). The
-; various `ValueOfLink`s can be used to apply such limits to searches.
+; large truth value or attention value (or some other value). This
+; can be acheived by using a combination of ElementOf and ValueOf
+; to select the desired value, and then using GreaterThan to compare.
 ;
-; Useful `ValueOfLink`s include:
-;    `TruthValueOf`
-;    `StrengthOfLink`
-;    `ConfidenceOfLink`
-;    `AttentionValueOfLink`
-;    `STIOfLink`
-;    `LTIOfLink`
-;    `ValueOfLink`
 
 (use-modules (opencog) (opencog exec))
 
+(define tvkey (Predicate "*-TruthValueKey-*"))
+(define (strength-of ATOM) (ElementOf (Number 0) (ValueOf ATOM tvkey)))
+(define (confidence-of ATOM) (ElementOf (Number 1) (ValueOf ATOM tvkey)))
+
 ; Some data.
-(Concept "is mostly true" (stv 0.9 0.9))
-(Concept "is mostly false" (stv 0.234 0.9))
+(cog-set-value! (Concept "is mostly true") tvkey (FloatValue 0.9 0.9))
+(cog-set-value! (Concept "is mostly false") tvkey (FloatValue 0.234 0.9))
 
 ; Define a pattern that will only find ConceptNodes that have
 ; a low truth value.
 (define find-false
-	(Bind
+	(Query
 		; Search only for ConceptNodes.
 		(TypedVariable (Variable "$X") (Type 'ConceptNode))
 		(And
 			(Present (Variable "$X"))
 			; Want the strength of the TV to be less than half.
-			(GreaterThan (Number 0.5) (StrengthOf (Variable "$X"))))
+			(GreaterThan (Number 0.5) (strength-of (Variable "$X"))))
 		(Variable "$X")))
 
 ; Run it. Lo and Behold!
@@ -43,7 +40,7 @@
 (cog-set-value! (Concept "thing-b") key (FloatValue 35))
 
 (define find-answer
-	(Bind
+	(Query
 		; Search only for ConceptNodes.
 		(TypedVariable (Variable "$X") (Type 'ConceptNode))
 		(And

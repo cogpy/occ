@@ -78,10 +78,9 @@ void FormulaStream::init(void)
 
 	if (1 == _formula.size())
 	{
-		if (not _formula[0]->is_evaluatable() and
-		    not _formula[0]->is_executable())
+		if (not _formula[0]->is_executable())
 			throw SyntaxException(TRACE_INFO,
-				"Expecting an executable or evaluatable atom, got %s",
+				"Expecting an executable atom, got %s",
 				_formula[0]->to_string().c_str());
 		return;
 	}
@@ -113,14 +112,11 @@ void FormulaStream::update() const
 
 			_value = FloatValueCast(vp)->value();
 		}
-		else if (_formula[0]->is_evaluatable())
-			_value = _formula[0]->evaluate(_as)->value();
 		return;
 	}
 
-	// If there are multiple arguments, assume that each one returns a
-	// single Float. Just concatenate all of them. Just execute to get it;
-	// I cannot imagine why evaluating would be useful, here.
+	// If there are multiple arguments, assume that each one
+	// returns a single Float. Just concatenate all of them.
 	std::vector<double> newval;
 	for (const Handle& h :_formula)
 	{
@@ -128,7 +124,9 @@ void FormulaStream::update() const
 
 		if (not vp->is_type(FLOAT_VALUE))
 			throw SyntaxException(TRACE_INFO,
-				"Expecting formula to return a FloatValue, got %s",
+				"Expecting formula to return a FloatValue; instead %s\n"
+				"returned %s",
+				h->to_string().c_str(),
 				vp->to_string().c_str());
 
 		newval.push_back(FloatValueCast(vp)->value()[0]);
