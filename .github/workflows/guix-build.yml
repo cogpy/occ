@@ -17,25 +17,28 @@ jobs:
       - name: Install GNU Guix non-interactively (SSR safe)
         run: |
           # Download the Guix install script with retry logic and timeouts
-          max_retries=5
+          # Uses both curl's internal retry mechanism and an outer retry loop
+          # for maximum reliability against transient network issues
+          max_attempts=5
+          curl_retries=2
           retry_delay=10
           connect_timeout=20
           max_time=120
-          count=0
+          attempt=0
           
           until curl \
-            --retry "$max_retries" \
+            --retry "$curl_retries" \
             --retry-delay "$retry_delay" \
             --connect-timeout "$connect_timeout" \
             --max-time "$max_time" \
             -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh \
             -o /tmp/guix-install.sh; do
-            ((count++))
-            if [ $count -ge $max_retries ]; then
-              echo "Failed to fetch guix-install.sh from git.savannah.gnu.org after $max_retries attempts."
+            ((attempt++))
+            if [ $attempt -ge $max_attempts ]; then
+              echo "Failed to fetch guix-install.sh from git.savannah.gnu.org after $max_attempts attempts."
               exit 1
             fi
-            echo "Retrying download ($count/$max_retries)..."
+            echo "Retrying download (attempt $attempt/$max_attempts)..."
             sleep "$retry_delay"
           done
           
