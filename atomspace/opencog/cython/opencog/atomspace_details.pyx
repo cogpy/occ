@@ -1,10 +1,14 @@
 from libcpp cimport bool
 from libcpp.set cimport set as cpp_set
 from libcpp.vector cimport vector
+from libcpp.memory cimport static_pointer_cast
 from cython.operator cimport dereference as deref, preincrement as inc
 
 # from atomspace cimport *
 
+# tvkey holds a pointer to (PredicateNode "*-TruthValueKey-*") which
+# is the key under which all TruthValues are stored.
+tvkey = create_python_value_from_c_value(<cValuePtr>(truth_key()))
 
 # @todo use the guide here to separate out into a hierarchy
 # http://wiki.cython.org/PackageHierarchy
@@ -65,6 +69,10 @@ cdef class AtomSpace(Value):
         self.parent_atomspace = parent
         self.ptr_holder = PtrHolder.create(<shared_ptr[cValue]&>self.asp);
 
+    cdef cAtomSpacePtr get_atomspace_ptr(self):
+        # Cast the ValuePtr to AtomSpacePtr
+        return static_pointer_cast[cAtomSpace, cValue](self.asp)
+
     def __richcmp__(as_1, as_2, int op):
         if not isinstance(as_1, AtomSpace) or not isinstance(as_2, AtomSpace):
             return NotImplemented
@@ -82,14 +90,14 @@ cdef class AtomSpace(Value):
         elif op == 3: # !=
             return not is_equal
 
-    def add(self, Type t, name=None, out=None, TruthValue tv=None):
+    def add(self, Type t, name=None, out=None):
         """ add method that determines exact method to call from type """
         if is_a(t, types.Node):
             assert out is None, "Nodes can't have outgoing sets"
-            atom = self.add_node(t, name, tv)
+            atom = self.add_node(t, name)
         else:
             assert name is None, "Links can't have names"
-            atom = self.add_link(t, out, tv)
+            atom = self.add_link(t, out)
         return atom
 
     def add_atom(self, Atom atom):
@@ -98,9 +106,8 @@ cdef class AtomSpace(Value):
             return None
         return create_python_value_from_c_value(<cValuePtr&>(result, result.get()))
 
-    def add_node(self, Type t, atom_name, TruthValue tv=None):
+    def add_node(self, Type t, atom_name):
         """ Add Node to AtomSpace
-        @todo support [0.5,0.5] format for TruthValue.
         @todo support type name for type.
         @returns the newly created Atom
         """
@@ -113,14 +120,10 @@ cdef class AtomSpace(Value):
         cdef cHandle result = self.atomspace.xadd_node(t, name)
 
         if result == result.UNDEFINED: return None
-        atom = Atom.createAtom(result);
-        if tv :
-            atom.tv = tv
-        return atom
+        return Atom.createAtom(result);
 
-    def add_link(self, Type t, outgoing, TruthValue tv=None):
+    def add_link(self, Type t, outgoing):
         """ Add Link to AtomSpace
-        @todo support [0.5,0.5] format for TruthValue.
         @todo support type name for type.
         @returns handle referencing the newly created Atom
         """
@@ -131,10 +134,7 @@ cdef class AtomSpace(Value):
         cdef cHandle result
         result = self.atomspace.xadd_link(t, handle_vector)
         if result == result.UNDEFINED: return None
-        atom = Atom.createAtom(result);
-        if tv :
-            atom.tv = tv
-        return atom
+        return Atom.createAtom(result);
 
     def is_valid(self, atom):
         """ Check whether the passed handle refers to an actual atom
@@ -178,13 +178,6 @@ cdef class AtomSpace(Value):
             raise RuntimeError("Null AtomSpace!")
         self.atomspace.set_value(deref(atom.handle), deref(key.handle),
                                  value.get_c_value_ptr())
-
-    def set_truthvalue(self, Atom atom, TruthValue tv):
-        """ Set the truth value on atom
-        """
-        if self.atomspace == NULL:
-            raise RuntimeError("Null AtomSpace!")
-        self.atomspace.set_truthvalue(deref(atom.handle), deref(tv._tvptr()))
 
     # Methods to make the atomspace act more like a standard Python container
     def __contains__(self, atom):
