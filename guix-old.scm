@@ -144,4 +144,4 @@ Additionally includes:
     (license license:mit)))
 
 ;; Return the package for building
-(opencog-collection)
+opencog-collection
