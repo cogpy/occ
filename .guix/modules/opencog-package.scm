@@ -101,7 +101,7 @@
            python-matplotlib
            guile-3.0
            boost
-           blas
+           openblas
            lapack
            gsl))
     (propagated-inputs
