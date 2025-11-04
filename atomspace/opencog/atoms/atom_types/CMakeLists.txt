@@ -17,9 +17,7 @@ ADD_CUSTOM_TARGET(opencog_atom_types
 	DEPENDS atom_types.h core_types.scm core_types.pyx)
 
 # The atom_types.h file is written to the build directory
-# When built as a subdirectory, use PROJECT_BINARY_DIR to get atomspace's build dir
-# When built standalone, CMAKE_BINARY_DIR and PROJECT_BINARY_DIR are the same
-INCLUDE_DIRECTORIES(${PROJECT_BINARY_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
 
 # ADD_DEFINITIONS(-DLOAD_ME_FIRST)
 ADD_COMPILE_DEFINITIONS(LOAD_ME_FIRST)

@@ -24,6 +24,7 @@
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/atoms/core/FunctionLink.h>
 #include <opencog/atoms/core/NumberNode.h>
+#include <opencog/atoms/execution/Instantiator.h>
 #include <opencog/atoms/reduct/NumericFunctionLink.h>
 #include <opencog/atoms/value/VoidValue.h>
 #include "ValueOfLink.h"
@@ -53,11 +54,7 @@ void ValueOfLink::init(void)
 #if 0
 	// Nothing to do, here.
 	if (1 == ary and
-		 (nameserver().isA(_type, TRUTH_VALUE_OF_LINK) or
-		  nameserver().isA(_type, STRENGTH_OF_LINK) or
-		  nameserver().isA(_type, CONFIDENCE_OF_LINK) or
-		  nameserver().isA(_type, COUNT_OF_LINK) or
-		  nameserver().isA(_type, FLOAT_VALUE_OF_LINK)))
+		 (nameserver().isA(_type, FLOAT_VALUE_OF_LINK)))
 	{
 		return;
 	}
@@ -81,16 +78,6 @@ ValuePtr ValueOfLink::do_execute(AtomSpace* as, bool silent)
 	// space; we can add the Atom there, and things will
 	// trickle out properly in the end.
 	//
-	// XXX TODO FIXME ... if either of these are executable, then
-	// they need to be executed, first, right? Yes, they do! We
-	// can currently get away with not doing this for two reasons:
-	// In all existing code, the first Atom is always an anchor,
-	// and is thus never executable. The second Atom always ends
-	// inside some FunctionLink, where it does eventually get
-	// executed, as needed. So in the current apps, this all works
-	// fine. In the future... well, I'm not fiddling with this today.
-	// Worst case scenario, app can use a DontExecLink.
-
 	// Avoid null-pointer deref due to user error.
 	// This can happen with improperly built FilterLinks.
 	if (nullptr == as)
@@ -101,8 +88,40 @@ ValuePtr ValueOfLink::do_execute(AtomSpace* as, bool silent)
 	Handle ah(as->add_atom(_outgoing[0]));
 	Handle ak(as->add_atom(_outgoing[1]));
 
+	if (ah->is_executable())
+	{
+		ValuePtr pap(ah->execute(as, silent));
+		if (pap and pap->is_atom())
+			ah = as->add_atom(HandleCast(pap));
+	}
+
+	// It seems extremely unlikely (to me, at this time) that
+	// the key will arrive as the result of some kind of execution.
+	// But predicting the future is hard, so ...
+	if (ak->is_executable())
+	{
+		ValuePtr pap(ak->execute(as, silent));
+		if (pap and pap->is_atom())
+			ak = as->add_atom(HandleCast(pap));
+	}
+
 	ValuePtr pap = ah->getValue(ak);
-	if (pap) return pap;
+	if (pap)
+	{
+		if (not pap->is_atom())
+			return pap;
+
+		Handle aval(HandleCast(pap));
+		if (not aval->is_executable())
+			return pap;
+
+		// Do it again!
+		aval = as->add_atom(aval);
+		ValuePtr pval(aval->execute(as, silent));
+		if (pval)
+			return pval;
+		return pap;
+	}
 
 	// If we are here, then no Value was found. If there is a
 	// third Atom, then it specifies a default to use instead.
