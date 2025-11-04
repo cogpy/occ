@@ -53,15 +53,20 @@ void CognitiveShard::execute() {
     pImpl->awarenessState = "executing";
     
     // Process pending messages first
+    // Copy messages to temporary container to avoid holding lock during processing
+    std::queue<ShardMessage> messagesToProcess;
     {
         std::lock_guard<std::mutex> lock(pImpl->queueMutex);
-        while (!pImpl->messageQueue.empty()) {
-            const auto& msg = pImpl->messageQueue.front();
-            if (pImpl->messageCallback) {
-                pImpl->messageCallback(msg);
-            }
-            pImpl->messageQueue.pop();
+        messagesToProcess.swap(pImpl->messageQueue);
+    }
+    
+    // Process messages outside the lock to avoid deadlocks
+    while (!messagesToProcess.empty()) {
+        const auto& msg = messagesToProcess.front();
+        if (pImpl->messageCallback) {
+            pImpl->messageCallback(msg);
         }
+        messagesToProcess.pop();
     }
     
     if (pImpl->callback) {

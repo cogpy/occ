@@ -48,14 +48,15 @@ void ShardCoordinator::unregisterShard(const std::string& shardId) {
     
     auto it = std::remove_if(pImpl->shards.begin(), pImpl->shards.end(),
         [&shardId](const std::shared_ptr<CognitiveShard>& shard) {
-            return shard->getId() == shardId;
+            if (shard->getId() == shardId) {
+                // Clear coordinator reference for this shard
+                shard->setCoordinator(nullptr);
+                return true;
+            }
+            return false;
         });
     
     if (it != pImpl->shards.end()) {
-        // Clear coordinator reference
-        for (auto sit = it; sit != pImpl->shards.end(); ++sit) {
-            (*sit)->setCoordinator(nullptr);
-        }
         pImpl->shards.erase(it, pImpl->shards.end());
         std::cout << "[ShardCoordinator] Unregistered shard: " << shardId << std::endl;
     }

@@ -9,7 +9,6 @@
 #include <string>
 #include <chrono>
 #include <memory>
-#include <any>
 
 namespace coggml {
 
