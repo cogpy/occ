@@ -13,11 +13,30 @@ error: blas: unbound variable
 
 ## Root Cause
 
-Line 153 of `guix.scm` referenced `blas` as an input package, but GNU Guix does not have a package named `blas`. The correct package name is `openblas`.
+Multiple Guix package definition files referenced `blas` as an input package, but GNU Guix does not have a package named `blas`. The correct package name is `openblas`.
+
+**Affected files:**
+- `guix.scm` (line 153) - Previously fixed
+- `.guix/modules/opencog-package.scm` (line 104) - Fixed in this commit
+- `guix-old.scm` (line 110) - Fixed in this commit
 
 ## Solution
 
-Changed line 153 in guix.scm:
+Changed all occurrences of `blas` to `openblas`:
+
+**`.guix/modules/opencog-package.scm`:**
+```scheme
+- blas
++ openblas
+```
+
+**`guix-old.scm`:**
+```scheme
+- blas
++ openblas
+```
+
+**`guix.scm`:** (Already fixed previously)
 ```scheme
 - blas
 + openblas
@@ -26,8 +45,10 @@ Changed line 153 in guix.scm:
 ## Validation
 
 ✅ All Guix files pass syntax validation  
-✅ SSR-safe syntax verified  
-✅ Package dependencies correctly resolved  
+✅ SSR-safe syntax verified (all files use `(list ...)` for configure-flags)  
+✅ Parentheses are balanced in all files  
+✅ Package dependencies correctly resolved (all `blas` references replaced with `openblas`)  
+✅ Module imports are correct - `(gnu packages maths)` provides `openblas`  
 ✅ All OpenCog components buildable
 
 ## Impact
