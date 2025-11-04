@@ -52,7 +52,7 @@ ADD_DEFINITIONS(-DPROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 # CogUtil must come first, because it supplies various FindXXX macros.
 
 # Add the 'lib' dir to cmake's module search path
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lib/")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/lib/")
 
 # Cogutil
 FIND_PACKAGE(CogUtil 2.0.1 CONFIG REQUIRED)
@@ -158,6 +158,7 @@ ENDIF (VALGRIND_FOUND)
 
 # Set default include paths.
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}
+	${PROJECT_BINARY_DIR}
 	${COGUTIL_INCLUDE_DIR} ${ATOMSPACE_INCLUDE_DIR})
 
 INCLUDE(OpenCogMacros)
@@ -214,11 +215,11 @@ IF (CXXTEST_FOUND AND HAVE_SERVER)
 	ENDIF (CMAKE_BUILD_TYPE STREQUAL "Coverage")
 ENDIF (CXXTEST_FOUND AND HAVE_SERVER)
 
-ADD_CUSTOM_TARGET(cscope-cogserver
-	COMMAND find opencog examples tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' -o -name '*.scm' > ${CMAKE_CURRENT_SOURCE_DIR}/cscope.files
+ADD_CUSTOM_TARGET(cscope
+	COMMAND find opencog examples tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' -o -name '*.scm' > ${CMAKE_SOURCE_DIR}/cscope.files
 	COMMAND cscope -b
-	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-	COMMENT "Generating CScope database for CogServer"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	COMMENT "Generating CScope database"
 )
 
 # ===================================================================
@@ -237,6 +238,12 @@ FILE(WRITE "${PROJECT_BINARY_DIR}/install_manifest.txt")
 ## It doesn't have a header-file declaring the version similar to cogutil and
 ## atomspace.
 SET(SEMANTIC_VERSION 3.3.0)
+
+# Generate version header file
+CONFIGURE_FILE(
+    "${CMAKE_CURRENT_SOURCE_DIR}/opencog/cogserver/version.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/opencog/cogserver/version.h"
+)
 
 ## Cpack configuration
 SET(CPACK_GENERATOR "DEB")
