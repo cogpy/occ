@@ -29,6 +29,7 @@
              (gnu packages databases)
              (gnu packages version-control)
              (gnu packages maths)
+             (gnu packages algebra)
              (gnu packages cpp)
              (gnu packages check)
              (gnu packages build-tools))
