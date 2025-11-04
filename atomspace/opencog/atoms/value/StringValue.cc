@@ -41,20 +41,39 @@ bool StringValue::operator==(const Value& other) const
 	return true;
 }
 
+bool StringValue::operator<(const Value& other) const
+{
+	// Compare by type name.
+	if (_type != other.get_type())
+		return nameserver().getTypeName(_type) < nameserver().getTypeName(other.get_type());
+
+	// Compare by vector length.
+	const StringValue* sov = (const StringValue*) &other;
+	if (_value.size() != sov->_value.size())
+		return _value.size() < sov->_value.size();
+
+	// Compare individual strings lexicographically.
+	return _value < sov->_value;
+}
+
 // ==============================================================
 
 /// Print the StringValue. Escape any quotes in the strings when
 /// printing. This is needed for readability, since this is an
 /// array of strings, and without the escapes, we can't tell where
 /// strings start and end.
-std::string StringValue::to_string(const std::string& indent) const
+std::string StringValue::to_string(const std::string& indent, Type t) const
 {
-	std::stringstream ss;
-	ss << indent << "(" << nameserver().getTypeName(_type);
-	for (const std::string& v :_value)
-		ss << " " << std::quoted(v);
-	ss << ")";
-	return ss.str();
+	std::string rv = indent + "(" + nameserver().getTypeName(t);
+	SAFE_UPDATE(rv,
+	{
+		std::stringstream ss;
+		for (const std::string& v :_value)
+			ss << " " << std::quoted(v);
+		ss << ")";
+		rv += ss.str();
+	})
+	return rv;
 }
 
 // Adds factory when library is loaded.
