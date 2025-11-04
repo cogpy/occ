@@ -73,46 +73,6 @@ cdef class Value:
     cdef Value create(cValuePtr& ptr)
 
 
-# TruthValue
-ctypedef double count_t
-ctypedef double confidence_t
-ctypedef double strength_t
-
-cdef extern from "opencog/atoms/truthvalue/TruthValue.h" namespace "opencog":
-    ctypedef shared_ptr[cTruthValue] tv_ptr "opencog::TruthValuePtr"
-
-    cdef cppclass cTruthValue "const opencog::TruthValue"(cValue):
-        strength_t get_mean()
-        confidence_t get_confidence()
-        count_t get_count()
-        @staticmethod
-        tv_ptr DEFAULT_TV()
-        bint operator==(cTruthValue h)
-        bint operator!=(cTruthValue h)
-
-    cdef tv_ptr tv_cast "TruthValueCast" (cValuePtr) except +
-    cdef cValuePtr tv_uncast "ValueCast" (tv_ptr) except +
-
-cdef extern from "opencog/atoms/truthvalue/SimpleTruthValue.h" namespace "opencog":
-    cdef cppclass cSimpleTruthValue "opencog::SimpleTruthValue"(cTruthValue):
-        cSimpleTruthValue(double, double)
-        strength_t get_mean()
-        confidence_t get_confidence()
-        count_t get_count()
-        count_t confidenceToCount(double)
-        confidence_t countToConfidence(double)
-        tv_ptr DEFAULT_TV()
-        string to_string()
-        bint operator==(cTruthValue h)
-        bint operator!=(cTruthValue h)
-
-cdef class TruthValue(Value):
-    cdef strength_t _mean(self)
-    cdef confidence_t _confidence(self)
-    cdef count_t _count(self)
-    cdef cTruthValue* _ptr(self)
-    cdef tv_ptr* _tvptr(self)
-
 # ContentHash
 
 ctypedef size_t ContentHash;
@@ -125,8 +85,6 @@ cdef extern from "opencog/atoms/base/Atom.h" namespace "opencog":
     cdef cppclass cAtom "opencog::Atom" (cValue):
         cAtom()
 
-        tv_ptr getTruthValue()
-        void setTruthValue(tv_ptr tvp)
         void setValue(const cHandle& key, const cValuePtr& value)
         cValuePtr getValue(const cHandle& key) const
         cpp_set[cHandle] getKeys()
@@ -153,6 +111,7 @@ cdef extern from "opencog/atoms/base/Atom.h" namespace "opencog":
 
 
     cdef cHandle handle_cast "HandleCast" (cValuePtr) except +
+    cdef cHandle truth_key()
 
 # Handle
 cdef extern from "opencog/atoms/base/Handle.h" namespace "opencog":
@@ -195,16 +154,12 @@ cdef extern from "opencog/atomspace/AtomSpace.h" namespace "opencog":
         cHandle add_atom(cHandle handle) except +
 
         cHandle xadd_node(Type t, string s) except +
-        cHandle add_node(Type t, string s, tv_ptr tvn) except +
-
         cHandle xadd_link(Type t, vector[cHandle]) except +
-        cHandle add_link(Type t, vector[cHandle], tv_ptr tvn) except +
 
         cHandle xget_handle(Type t, string s)
         cHandle xget_handle(Type t, vector[cHandle])
 
         cHandle set_value(cHandle h, cHandle key, cValuePtr value)
-        cHandle set_truthvalue(cHandle h, tv_ptr tvn)
         cHandle get_atom(cHandle & h)
         bint is_valid_handle(cHandle h)
         int get_size()
@@ -217,6 +172,8 @@ cdef extern from "opencog/atomspace/AtomSpace.h" namespace "opencog":
         void clear()
         bint extract_atom(cHandle h, bint recursive)
 
+    ctypedef shared_ptr[cAtomSpace] cAtomSpacePtr "opencog::AtomSpacePtr"
+
     cdef cValuePtr createAtomSpace(cAtomSpace *parent)
     cdef cValuePtr as_cast "AtomSpaceCast"(cAtomSpace *) except +
 
@@ -227,6 +184,9 @@ cdef class AtomSpace(Value):
     cdef cValuePtr asp
     cdef cAtomSpace *atomspace
     cdef object parent_atomspace
+
+    # Method to get the AtomSpacePtr
+    cdef cAtomSpacePtr get_atomspace_ptr(self)
 
 
 cdef create_python_value_from_c_value(const cValuePtr& value)
