@@ -30,6 +30,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <errno.h>
 #include <unistd.h>
@@ -128,7 +130,7 @@ void CogSimpleStorage::open(void)
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC; // IPv4 or IPv6
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;
+	hints.ai_flags = 0;
 
 	struct addrinfo *servinfo;
 	int rc = getaddrinfo(host.c_str(), port.c_str(), &hints, &servinfo);
@@ -136,25 +138,30 @@ void CogSimpleStorage::open(void)
 		throw IOException(TRACE_INFO, "Unknown host %s: %s",
 			host.c_str(), strerror(rc));
 
-	_sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
-
-	if (0 > _sockfd)
+	// Try IPv4 and IPv6 until we successfully connect.
+	// Newer OS'es offer up IPv6 first, and cogserver is usually on IPv4
+	struct addrinfo *p;
+	int norr = 0;
+	for (p = servinfo; p != NULL; p = p->ai_next)
 	{
-		int norr = errno;
-		free(servinfo);
-		throw IOException(TRACE_INFO, "Unable to create socket to host %s: %s",
-			host.c_str(), strerror(norr));
+		_sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+		if (_sockfd < 0) continue;
+
+		if (connect(_sockfd, p->ai_addr, p->ai_addrlen) == 0)
+			break;
+
+		norr = errno;
+		unistd_close(_sockfd);
+		_sockfd = -1;
 	}
 
-	rc = connect(_sockfd, servinfo->ai_addr, servinfo->ai_addrlen);
-	if (0 > rc)
+	if (p == NULL)
 	{
-		int norr = errno;
-		free(servinfo);
+		freeaddrinfo(servinfo);
 		throw IOException(TRACE_INFO, "Unable to connect to host %s: %s",
 			host.c_str(), strerror(norr));
 	}
-	free(servinfo);
+	freeaddrinfo(servinfo);
 
 	// We are going to be sending oceans of tiny packets,
 	// and we want the fastest-possible responses.
