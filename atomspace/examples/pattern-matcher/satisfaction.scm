@@ -26,7 +26,7 @@
 		(Concept "funny")
 		(Concept "thing")))
 
-; Actually run it - this should return TrueTV i.e. `(stv 1 1)`
+; Actually run it - this should return TrueTV i.e. `#t`
 ; because the SatisfactionLink is satisfiable.
 (cog-execute! satlink)
 
@@ -85,7 +85,7 @@
 (cog-incoming-by-type anchr 'Member)
 
 (define gnd2-get
-	(Get
+	(Meet
 		(VariableList
 			(Variable "$p")
 			(Variable "$x"))
