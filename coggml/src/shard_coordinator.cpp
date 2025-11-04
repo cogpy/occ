@@ -153,7 +153,9 @@ ShardCoordinator::CommunicationStats ShardCoordinator::getCommunicationStats() c
     CommunicationStats stats;
     stats.totalMessagesSent = pImpl->totalMessagesSent;
     stats.totalMessagesDelivered = pImpl->totalMessagesDelivered;
-    stats.messagesInFlight = stats.totalMessagesSent - stats.totalMessagesDelivered;
+    // For broadcasts, delivered can exceed sent, so messagesInFlight is 0
+    stats.messagesInFlight = (stats.totalMessagesDelivered >= stats.totalMessagesSent) 
+        ? 0 : (stats.totalMessagesSent - stats.totalMessagesDelivered);
     
     // Calculate average delivery time
     if (!pImpl->deliveryTimes.empty()) {
