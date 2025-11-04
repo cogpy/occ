@@ -16,7 +16,6 @@ ADD_LIBRARY (smob
 	SchemeSmobGC.cc
 	SchemeSmobNew.cc
 	SchemeSmobPrint.cc
-	SchemeSmobTV.cc
 	SchemeSmobValue.cc
 	SchemeSmobLogger.cc
 )
@@ -39,7 +38,6 @@ TARGET_LINK_LIBRARIES(smob
 	atomcore
 	foreign
 	atombase
-	truthvalue
 	atomspace
 	${GUILE_LIBRARIES}
 	${COGUTIL_LIBRARY}
