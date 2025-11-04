@@ -36,7 +36,6 @@
 #include <opencog/atoms/value/FloatValue.h>
 #include <opencog/atoms/value/LinkValue.h>
 #include <opencog/atoms/value/StringValue.h>
-#include <opencog/atoms/truthvalue/SimpleTruthValue.h>
 #include <opencog/cogserver/server/CogServer.h>
 
 #include <opencog/persist/cog-storage/CogStorage.h>
@@ -308,32 +307,32 @@ void ValueSaveUTest::test_load_by_type()
 		                     3.2109876543210987e-250}));
 	af->setValue(key, pvf);
 
-	TruthValuePtr tf(createSimpleTruthValue(0.11, 100));
-	af->setTruthValue(tf);
+	ValuePtr tf(createFloatValue(std::vector<double>({0.11, 100})));
+	af->setValue(truth_key(), tf);
 
 	// --------------------
 	ValuePtr pvt = createStringValue(
 		std::vector<std::string>({"aaa", "bb bb bb", "ccc ccc ccc"}));
 	at->setValue(key, pvt);
 
-	TruthValuePtr tt(createSimpleTruthValue(0.22, 200));
-	at->setTruthValue(tt);
+	ValuePtr tt(createFloatValue(std::vector<double>({0.22, 200})));
+	at->setValue(truth_key(), tt);
 
 	// --------------------
 	ValuePtr pvl = createLinkValue(
 		std::vector<ValuePtr>({pvf, pvt}));
 	al->setValue(key, pvl);
 
-	TruthValuePtr tl(createSimpleTruthValue(0.33, 300));
-	al->setTruthValue(tl);
+	ValuePtr tl(createFloatValue(std::vector<double>({0.33, 300})));
+	al->setValue(truth_key(), tl);
 
 	// --------------------
 	ValuePtr pvv = createLinkValue(
 		std::vector<ValuePtr>({pvl, pvl, pvf, pvt}));
 	av->setValue(key, pvv);
 
-	TruthValuePtr tv(createSimpleTruthValue(0.44, 400));
-	av->setTruthValue(tv);
+	ValuePtr tv(createFloatValue(std::vector<double>({0.44, 400})));
+	av->setValue(truth_key(), tv);
 
 	// --------------------
 	// Save, and close things down.
@@ -376,10 +375,10 @@ void ValueSaveUTest::test_load_by_type()
 	TS_ASSERT(*gal == *al);
 	TS_ASSERT(*gav == *av);
 
-	TruthValuePtr gtf = gaf->getTruthValue();
-	TruthValuePtr gtt = gat->getTruthValue();
-	TruthValuePtr gtl = gal->getTruthValue();
-	TruthValuePtr gtv = gav->getTruthValue();
+	ValuePtr gtf = gaf->getValue(truth_key());
+	ValuePtr gtt = gat->getValue(truth_key());
+	ValuePtr gtl = gal->getValue(truth_key());
+	ValuePtr gtv = gav->getValue(truth_key());
 
 	printf("Wanted: %s\n", tf->to_string().c_str());
 	printf("Got:    %s\n", gtf->to_string().c_str());
@@ -446,10 +445,10 @@ void ValueSaveUTest::test_link_by_type()
 	bf->setValue(key, pvf);
 	cf->setValue(key, pvf);
 
-	TruthValuePtr tf(createSimpleTruthValue(0.11, 100));
-	af->setTruthValue(tf);
-	bf->setTruthValue(tf);
-	cf->setTruthValue(tf);
+	ValuePtr tf(createFloatValue(std::vector<double>({0.11, 100})));
+	af->setValue(truth_key(), tf);
+	bf->setValue(truth_key(), tf);
+	cf->setValue(truth_key(), tf);
 
 	// --------------------
 	ValuePtr pvt = createStringValue(
@@ -458,10 +457,10 @@ void ValueSaveUTest::test_link_by_type()
 	bt->setValue(key, pvt);
 	ct->setValue(key, pvt);
 
-	TruthValuePtr tt(createSimpleTruthValue(0.22, 200));
-	at->setTruthValue(tt);
-	bt->setTruthValue(tt);
-	ct->setTruthValue(tt);
+	ValuePtr tt(createFloatValue(std::vector<double>({0.22, 200})));
+	at->setValue(truth_key(), tt);
+	bt->setValue(truth_key(), tt);
+	ct->setValue(truth_key(), tt);
 
 	// --------------------
 	ValuePtr pvl = createLinkValue(
@@ -470,10 +469,10 @@ void ValueSaveUTest::test_link_by_type()
 	bl->setValue(key, pvl);
 	cl->setValue(key, pvl);
 
-	TruthValuePtr tl(createSimpleTruthValue(0.33, 300));
-	al->setTruthValue(tl);
-	bl->setTruthValue(tl);
-	cl->setTruthValue(tl);
+	ValuePtr tl(createFloatValue(std::vector<double>({0.33, 300})));
+	al->setValue(truth_key(), tl);
+	bl->setValue(truth_key(), tl);
+	cl->setValue(truth_key(), tl);
 
 	// --------------------
 	ValuePtr pvv = createLinkValue(
@@ -482,10 +481,10 @@ void ValueSaveUTest::test_link_by_type()
 	bv->setValue(key, pvv);
 	cv->setValue(key, pvv);
 
-	TruthValuePtr tv(createSimpleTruthValue(0.44, 400));
-	av->setTruthValue(tv);
-	bv->setTruthValue(tv);
-	cv->setTruthValue(tv);
+	ValuePtr tv(createFloatValue(std::vector<double>({0.44, 400})));
+	av->setValue(truth_key(), tv);
+	bv->setValue(truth_key(), tv);
+	cv->setValue(truth_key(), tv);
 
 	// --------------------
 	// Save, and close things down.
@@ -542,30 +541,30 @@ void ValueSaveUTest::test_link_by_type()
 	TS_ASSERT(*gcl == *cl);
 	TS_ASSERT(*gcv == *cv);
 
-	TruthValuePtr gtf = gaf->getTruthValue();
-	TruthValuePtr gtt = gat->getTruthValue();
-	TruthValuePtr gtl = gal->getTruthValue();
-	TruthValuePtr gtv = gav->getTruthValue();
+	ValuePtr gtf = gaf->getValue(truth_key());
+	ValuePtr gtt = gat->getValue(truth_key());
+	ValuePtr gtl = gal->getValue(truth_key());
+	ValuePtr gtv = gav->getValue(truth_key());
 
-	TS_ASSERT(gtf == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtt == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtl == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtv == TruthValue::DEFAULT_TV());
+	TS_ASSERT(gtf == nullptr);
+	TS_ASSERT(gtt == nullptr);
+	TS_ASSERT(gtl == nullptr);
+	TS_ASSERT(gtv == nullptr);
 
-	gtf = gbf->getTruthValue();
-	gtt = gbt->getTruthValue();
-	gtl = gbl->getTruthValue();
-	gtv = gbv->getTruthValue();
+	gtf = gbf->getValue(truth_key());
+	gtt = gbt->getValue(truth_key());
+	gtl = gbl->getValue(truth_key());
+	gtv = gbv->getValue(truth_key());
 
-	TS_ASSERT(gtf == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtt == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtl == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtv == TruthValue::DEFAULT_TV());
+	TS_ASSERT(gtf == nullptr);
+	TS_ASSERT(gtt == nullptr);
+	TS_ASSERT(gtl == nullptr);
+	TS_ASSERT(gtv == nullptr);
 
-	gtf = gcf->getTruthValue();
-	gtt = gct->getTruthValue();
-	gtl = gcl->getTruthValue();
-	gtv = gcv->getTruthValue();
+	gtf = gcf->getValue(truth_key());
+	gtt = gct->getValue(truth_key());
+	gtl = gcl->getValue(truth_key());
+	gtv = gcv->getValue(truth_key());
 
 	TS_ASSERT(*gtf == *tf);
 	TS_ASSERT(*gtt == *tt);
@@ -654,10 +653,10 @@ void ValueSaveUTest::test_link_by_type_quoted()
 	bf->setValue(key, pvf);
 	cf->setValue(key, pvf);
 
-	TruthValuePtr tf(createSimpleTruthValue(0.11, 100));
-	af->setTruthValue(tf);
-	bf->setTruthValue(tf);
-	cf->setTruthValue(tf);
+	ValuePtr tf(createFloatValue(std::vector<double>({0.11, 100})));
+	af->setValue(truth_key(), tf);
+	bf->setValue(truth_key(), tf);
+	cf->setValue(truth_key(), tf);
 
 	// --------------------
 	ValuePtr pvt = createStringValue(
@@ -666,10 +665,10 @@ void ValueSaveUTest::test_link_by_type_quoted()
 	bt->setValue(key, pvt);
 	ct->setValue(key, pvt);
 
-	TruthValuePtr tt(createSimpleTruthValue(0.22, 200));
-	at->setTruthValue(tt);
-	bt->setTruthValue(tt);
-	ct->setTruthValue(tt);
+	ValuePtr tt(createFloatValue(std::vector<double>({0.22, 200})));
+	at->setValue(truth_key(), tt);
+	bt->setValue(truth_key(), tt);
+	ct->setValue(truth_key(), tt);
 
 	// --------------------
 	ValuePtr pvl = createLinkValue(
@@ -678,10 +677,10 @@ void ValueSaveUTest::test_link_by_type_quoted()
 	bl->setValue(key, pvl);
 	cl->setValue(key, pvl);
 
-	TruthValuePtr tl(createSimpleTruthValue(0.33, 300));
-	al->setTruthValue(tl);
-	bl->setTruthValue(tl);
-	cl->setTruthValue(tl);
+	ValuePtr tl(createFloatValue(std::vector<double>({0.33, 300})));
+	al->setValue(truth_key(), tl);
+	bl->setValue(truth_key(), tl);
+	cl->setValue(truth_key(), tl);
 
 	// --------------------
 	ValuePtr pvv = createLinkValue(
@@ -690,10 +689,10 @@ void ValueSaveUTest::test_link_by_type_quoted()
 	bv->setValue(key, pvv);
 	cv->setValue(key, pvv);
 
-	TruthValuePtr tv(createSimpleTruthValue(0.44, 400));
-	av->setTruthValue(tv);
-	bv->setTruthValue(tv);
-	cv->setTruthValue(tv);
+	ValuePtr tv(createFloatValue(std::vector<double>({0.44, 400})));
+	av->setValue(truth_key(), tv);
+	bv->setValue(truth_key(), tv);
+	cv->setValue(truth_key(), tv);
 
 	// --------------------
 	// Save, and close things down.
@@ -751,30 +750,30 @@ void ValueSaveUTest::test_link_by_type_quoted()
 	TS_ASSERT(*gcl == *cl);
 	TS_ASSERT(*gcv == *cv);
 
-	TruthValuePtr gtf = gaf->getTruthValue();
-	TruthValuePtr gtt = gat->getTruthValue();
-	TruthValuePtr gtl = gal->getTruthValue();
-	TruthValuePtr gtv = gav->getTruthValue();
+	ValuePtr gtf = gaf->getValue(truth_key());
+	ValuePtr gtt = gat->getValue(truth_key());
+	ValuePtr gtl = gal->getValue(truth_key());
+	ValuePtr gtv = gav->getValue(truth_key());
 
-	TS_ASSERT(gtf == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtt == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtl == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtv == TruthValue::DEFAULT_TV());
+	TS_ASSERT(gtf == nullptr);
+	TS_ASSERT(gtt == nullptr);
+	TS_ASSERT(gtl == nullptr);
+	TS_ASSERT(gtv == nullptr);
 
-	gtf = gbf->getTruthValue();
-	gtt = gbt->getTruthValue();
-	gtl = gbl->getTruthValue();
-	gtv = gbv->getTruthValue();
+	gtf = gbf->getValue(truth_key());
+	gtt = gbt->getValue(truth_key());
+	gtl = gbl->getValue(truth_key());
+	gtv = gbv->getValue(truth_key());
 
-	TS_ASSERT(gtf == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtt == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtl == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtv == TruthValue::DEFAULT_TV());
+	TS_ASSERT(gtf == nullptr);
+	TS_ASSERT(gtt == nullptr);
+	TS_ASSERT(gtl == nullptr);
+	TS_ASSERT(gtv == nullptr);
 
-	gtf = gcf->getTruthValue();
-	gtt = gct->getTruthValue();
-	gtl = gcl->getTruthValue();
-	gtv = gcv->getTruthValue();
+	gtf = gcf->getValue(truth_key());
+	gtt = gct->getValue(truth_key());
+	gtl = gcl->getValue(truth_key());
+	gtv = gcv->getValue(truth_key());
 
 	printf("Expecting %s\n", tf->to_string().c_str());
 	printf("Got %s\n", gtf->to_string().c_str());
@@ -866,10 +865,10 @@ void ValueSaveUTest::test_incoming()
 	bf->setValue(key, pvf);
 	cf->setValue(key, pvf);
 
-	TruthValuePtr tf(createSimpleTruthValue(0.11, 100));
-	af->setTruthValue(tf);
-	bf->setTruthValue(tf);
-	cf->setTruthValue(tf);
+	ValuePtr tf(createFloatValue(std::vector<double>({0.11, 100})));
+	af->setValue(truth_key(), tf);
+	bf->setValue(truth_key(), tf);
+	cf->setValue(truth_key(), tf);
 
 	// --------------------
 	ValuePtr pvt = createStringValue(
@@ -878,10 +877,10 @@ void ValueSaveUTest::test_incoming()
 	bt->setValue(key, pvt);
 	ct->setValue(key, pvt);
 
-	TruthValuePtr tt(createSimpleTruthValue(0.22, 200));
-	at->setTruthValue(tt);
-	bt->setTruthValue(tt);
-	ct->setTruthValue(tt);
+	ValuePtr tt(createFloatValue(std::vector<double>({0.22, 200})));
+	at->setValue(truth_key(), tt);
+	bt->setValue(truth_key(), tt);
+	ct->setValue(truth_key(), tt);
 
 	// --------------------
 	ValuePtr pvl = createLinkValue(
@@ -890,10 +889,10 @@ void ValueSaveUTest::test_incoming()
 	bl->setValue(key, pvl);
 	cl->setValue(key, pvl);
 
-	TruthValuePtr tl(createSimpleTruthValue(0.33, 300));
-	al->setTruthValue(tl);
-	bl->setTruthValue(tl);
-	cl->setTruthValue(tl);
+	ValuePtr tl(createFloatValue(std::vector<double>({0.33, 300})));
+	al->setValue(truth_key(), tl);
+	bl->setValue(truth_key(), tl);
+	cl->setValue(truth_key(), tl);
 
 	// --------------------
 	ValuePtr pvv = createLinkValue(
@@ -902,10 +901,10 @@ void ValueSaveUTest::test_incoming()
 	bv->setValue(key, pvv);
 	cv->setValue(key, pvv);
 
-	TruthValuePtr tv(createSimpleTruthValue(0.44, 400));
-	av->setTruthValue(tv);
-	bv->setTruthValue(tv);
-	cv->setTruthValue(tv);
+	ValuePtr tv(createFloatValue(std::vector<double>({0.44, 400})));
+	av->setValue(truth_key(), tv);
+	bv->setValue(truth_key(), tv);
+	cv->setValue(truth_key(), tv);
 
 	// --------------------
 	// Save, and close things down.
@@ -963,30 +962,30 @@ void ValueSaveUTest::test_incoming()
 	TS_ASSERT(*gcl == *cl);
 	TS_ASSERT(*gcv == *cv);
 
-	TruthValuePtr gtf = gaf->getTruthValue();
-	TruthValuePtr gtt = gat->getTruthValue();
-	TruthValuePtr gtl = gal->getTruthValue();
-	TruthValuePtr gtv = gav->getTruthValue();
+	ValuePtr gtf = gaf->getValue(truth_key());
+	ValuePtr gtt = gat->getValue(truth_key());
+	ValuePtr gtl = gal->getValue(truth_key());
+	ValuePtr gtv = gav->getValue(truth_key());
 
-	TS_ASSERT(gtf == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtt == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtl == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtv == TruthValue::DEFAULT_TV());
+	TS_ASSERT(gtf == nullptr);
+	TS_ASSERT(gtt == nullptr);
+	TS_ASSERT(gtl == nullptr);
+	TS_ASSERT(gtv == nullptr);
 
-	gtf = gbf->getTruthValue();
-	gtt = gbt->getTruthValue();
-	gtl = gbl->getTruthValue();
-	gtv = gbv->getTruthValue();
+	gtf = gbf->getValue(truth_key());
+	gtt = gbt->getValue(truth_key());
+	gtl = gbl->getValue(truth_key());
+	gtv = gbv->getValue(truth_key());
 
-	TS_ASSERT(gtf == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtt == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtl == TruthValue::DEFAULT_TV());
-	TS_ASSERT(gtv == TruthValue::DEFAULT_TV());
+	TS_ASSERT(gtf == nullptr);
+	TS_ASSERT(gtt == nullptr);
+	TS_ASSERT(gtl == nullptr);
+	TS_ASSERT(gtv == nullptr);
 
-	gtf = gcf->getTruthValue();
-	gtt = gct->getTruthValue();
-	gtl = gcl->getTruthValue();
-	gtv = gcv->getTruthValue();
+	gtf = gcf->getValue(truth_key());
+	gtt = gct->getValue(truth_key());
+	gtl = gcl->getValue(truth_key());
+	gtv = gcv->getValue(truth_key());
 
 	TS_ASSERT(*gtf == *tf);
 	TS_ASSERT(*gtt == *tt);
