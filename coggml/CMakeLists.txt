@@ -25,6 +25,7 @@ set(COGGML_SOURCES
     src/cognitive_shard.cpp
     src/self_awareness.cpp
     src/shard_coordinator.cpp
+    src/shard_message.cpp
 )
 
 # CogGML Microkernel library headers
@@ -33,6 +34,7 @@ set(COGGML_HEADERS
     include/coggml/cognitive_shard.h
     include/coggml/self_awareness.h
     include/coggml/shard_coordinator.h
+    include/coggml/shard_message.h
 )
 
 # Build CogGML shared library

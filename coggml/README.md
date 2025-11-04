@@ -36,6 +36,9 @@ Coordinates multiple cognitive shards:
 - Coordinated execution across shards
 - Synergy optimization algorithms
 - Active shard tracking
+- **Message routing and delivery** (Enhanced)
+- **Inter-shard communication protocols** (Enhanced)
+- **Communication performance metrics** (Enhanced)
 
 ## Usage Example
 
@@ -43,6 +46,7 @@ Coordinates multiple cognitive shards:
 #include <coggml/microkernel.h>
 #include <coggml/cognitive_shard.h>
 #include <coggml/shard_coordinator.h>
+#include <coggml/shard_message.h>
 
 // Initialize microkernel
 coggml::Microkernel kernel;
@@ -56,10 +60,26 @@ auto shard2 = std::make_shared<coggml::CognitiveShard>("learning", "Pattern reco
 coggml::ShardCoordinator coordinator;
 coordinator.registerShard(shard1);
 coordinator.registerShard(shard2);
+
+// Set message callback for inter-shard communication
+shard1->setMessageCallback([](const coggml::ShardMessage& msg) {
+    std::cout << "Shard received: " << msg.getPayload() << std::endl;
+});
+
+// Send message between shards
+shard1->sendMessage("learning", coggml::MessageType::DATA_TRANSFER, 
+                   "inference-result", coggml::MessagePriority::HIGH);
+
+// Execute coordination cycle
 coordinator.coordinate();
 
 // Optimize for cognitive synergy
 coordinator.optimizeSynergy();
+
+// Get communication statistics
+auto stats = coordinator.getCommunicationStats();
+std::cout << "Messages sent: " << stats.totalMessagesSent << std::endl;
+std::cout << "Average delivery time: " << stats.averageDeliveryTimeMs << " ms" << std::endl;
 ```
 
 ## Building
@@ -88,10 +108,12 @@ The CogGML Microkernel embodies principles of cognitive synergy through:
 
 ## Future Directions
 
-- Enhanced shard communication protocols
+- ~~Enhanced shard communication protocols~~ ✓ Implemented
 - Distributed shard deployment across nodes
 - Advanced synergy optimization algorithms
 - Integration with neural-symbolic hybrid systems
+- Asynchronous message processing with priority queues
+- Message persistence and replay capabilities
 
 ## Contributing
 

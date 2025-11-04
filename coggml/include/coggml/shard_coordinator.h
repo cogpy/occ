@@ -10,6 +10,7 @@
 #include <vector>
 #include <string>
 #include "cognitive_shard.h"
+#include "shard_message.h"
 
 namespace coggml {
 
@@ -42,6 +43,19 @@ public:
 
     // Optimize shard interactions for cognitive synergy
     void optimizeSynergy();
+    
+    // Route message between shards
+    void routeMessage(const ShardMessage& message);
+    
+    // Get communication statistics
+    struct CommunicationStats {
+        size_t totalMessagesSent;
+        size_t totalMessagesDelivered;
+        size_t messagesInFlight;
+        double averageDeliveryTimeMs;
+    };
+    
+    CommunicationStats getCommunicationStats() const;
 
 private:
     class Impl;
