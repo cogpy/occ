@@ -16,8 +16,20 @@ jobs:
 
       - name: Install GNU Guix non-interactively (SSR safe)
         run: |
-          # Download the Guix install script to a temp file
-          curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh -o /tmp/guix-install.sh
+          # Download the Guix install script with retry logic and timeouts
+          max_retries=5
+          count=0
+          until curl --retry 5 --retry-delay 10 --connect-timeout 20 --max-time 120 -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh -o /tmp/guix-install.sh; do
+            ((count++))
+            if [ $count -ge $max_retries ]; then
+              echo "Failed to fetch guix-install.sh from git.savannah.gnu.org after $max_retries attempts."
+              exit 1
+            fi
+            echo "Retrying download ($count/$max_retries)..."
+            sleep 10
+          done
+          
+          echo "Successfully downloaded guix-install.sh"
           # Execute the script as root, non-interactively
           printf '\n' | sudo bash /tmp/guix-install.sh
           
