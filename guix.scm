@@ -149,13 +149,15 @@
            python-matplotlib
            guile-3.0
            boost
+           blas
+           lapack
            gsl))
     (propagated-inputs
      (list python-numpy
            python-pandas
            python-scikit-learn
            python-matplotlib))
-    (home-page "https://github.com/cogpy/occ")
+    (home-page "https://github.com/rzonedevops/occ")
     (synopsis "OpenCog Collection - Machine Learning Integration Environment")
     (description
      "This package provides the OpenCog Collection monorepo - an integrated
