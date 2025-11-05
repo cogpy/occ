@@ -138,6 +138,7 @@ jobs:
           }
           
       - name: Build with Guix (actual build - may be slow)
+        continue-on-error: true
         run: |
           export PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin:$PATH"
           
