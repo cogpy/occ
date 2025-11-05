@@ -107,7 +107,7 @@ exec ~a ~a/app.py \"$@\"~%"
            python-matplotlib
            guile-3.0
            boost
-           blas
+           openblas
            lapack
            gsl))
     (propagated-inputs
@@ -144,4 +144,4 @@ Additionally includes:
     (license license:mit)))
 
 ;; Return the package for building
-(opencog-collection)
+opencog-collection
