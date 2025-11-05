@@ -24,12 +24,12 @@
 #include <opencog/atoms/base/Link.h>
 #include <opencog/atoms/base/Node.h>
 #include <opencog/atoms/value/FloatValue.h>
-#include <opencog/atoms/truthvalue/TruthValue.h>
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/atomspace/version.h>
 
 #include "JSCommands.h"
 #include "Json.h"
+#include <opencog/persist/sexpr/Sexpr.h>
 
 #include <time.h>
 
@@ -75,37 +75,23 @@ static bool parse_bool_param(const std::string& cmd, size_t& pos, size_t epos, b
 
 static std::string reterr(const std::string& cmd)
 {
-	return "{\"success\": false, \"error\": { \"code\": -32600, "
-		"\"message\": \"Invalid Request\", \"data\": { "
-		"\"details\": \"" + cmd + "\"}}}\n";
+	return "{\"content\": [{\"type\":\"text\", \"text\": \"Error: Invalid Request - " + cmd + "\"}], \"isError\": true}\n";
 }
 
 static std::string retmsgerr(const std::string& errmsg)
 {
-	return "{\"success\": false, \"error\": { \"code\": -32602, "
-		"\"message\": \"Invalid params\", \"data\": { "
-		"\"details\": \"" + errmsg + "\"}}}\n";
+	return "{\"content\": [{\"type\":\"text\", \"text\": \"Error: Invalid params - " + errmsg + "\"}], \"isError\": true}\n";
 }
 
-// Because MCP is not really JSON, (see below) we cannot return booleans
-// as booleans; they must be strings. So add some extra quotes to them.
+// MCP tool responses use the "content" format.
+// All responses (success or error) return text content.
+// Simple values can be returned as quoted strings.
 #define RETURN(RV) { \
-	if (js_mode) \
-		return "{ \"success\": true, \"result\": " RV "}\n"; \
 	return "{\"content\": [{\"type\":\"text\", \"text\": \"" RV "\"}]}\n"; }
 
-// Sigh. So MCP is not really JSON, it's pseudo-json. It does use
-// "valid" JSON to create, send and receive messages, but all tool-use
-// messages must always be text strings (and not JSON). But our core
-// API returns ... actual JSON. So .. fake it. Escape all quotes in
-// in the JSON, surround the whole thing with quotes, and bingo: its
-// now a text string. Hurrah. Well, for now, it seems that at least
-// Claude Code seems to grok this at some level, so we're good for now.
-// I personally think it's ugly and annoying but whatever.
+// For complex results (JSON structures), we need to escape quotes
+// and wrap the JSON as a text string within the content array.
 #define RETURNSTR(RV) { \
-	if (js_mode) \
-		return std::string("{ \"success\": true, \"result\": ") + RV + "}\n"; \
-	/* return "{\"content\": [{\"type\":\"text\", \"text\": " + RV + "}]}\n"; } */ \
 	std::string srv(RV); \
 	std::replace(srv.begin(), srv.end(), '\n', ' '); \
 	std::stringstream ss; \
@@ -134,26 +120,26 @@ static std::string retmsgerr(const std::string& errmsg)
 
 #define GET_ATOM(rv) \
 	Handle h = Json::decode_atom(cmd, pos, epos); \
-	if (nullptr == h) reterr(cmd); \
+	if (nullptr == h) return reterr(cmd); \
 	h = as->get_atom(h); \
 	if (nullptr == h) RETURN(rv);
 
 #define ADD_ATOM \
 	Handle h = Json::decode_atom(cmd, pos, epos); \
-	if (nullptr == h) reterr(cmd); \
+	if (nullptr == h) return reterr(cmd); \
 	h = as->add_atom(h); \
-	if (nullptr == h) retmsgerr("No such Atom");
+	if (nullptr == h) return retmsgerr("No such Atom");
 
 #define GET_KEY \
 	pos = cmd.find("\"key\":", epos); \
-	if (std::string::npos == pos) reterr(cmd); \
+	if (std::string::npos == pos) return reterr(cmd); \
 	pos += 6; \
 	epos = cmd.size(); \
 	Handle k = Json::decode_atom(cmd, pos, epos); \
-	if (nullptr == k) reterr(cmd); \
+	if (nullptr == k) return reterr(cmd); \
 	k = as->add_atom(k); \
 	pos = cmd.find(',', epos); \
-	if (std::string::npos == pos) retmsgerr("No such Key");
+	if (std::string::npos == pos) return retmsgerr("No such Key");
 
 #define GET_VALUE \
 	pos = cmd.find("\"value\":", pos); \
@@ -161,12 +147,12 @@ static std::string retmsgerr(const std::string& errmsg)
 		pos += 8; \
 	else { \
 		pos = cmd.find("\"values\":", pos); \
-		if (std::string::npos == pos) reterr(cmd); \
+		if (std::string::npos == pos) return reterr(cmd); \
 		pos += 9; \
 	} \
 	epos = cmd.size(); \
 	ValuePtr v = Json::decode_value(cmd, pos, epos); \
-	if (nullptr == v) reterr(cmd);
+	if (nullptr == v) return reterr(cmd);
 
 /// The cogserver provides a network API to send/receive Atoms, encoded
 /// as JSON, over the internet. This is NOT as efficient as the
@@ -186,10 +172,7 @@ std::string JSCommands::interpret_command(AtomSpace* as,
 	static const size_t havel = std::hash<std::string>{}("haveLink");
 	static const size_t havea = std::hash<std::string>{}("haveAtom");
 	static const size_t makea = std::hash<std::string>{}("makeAtom");
-	static const size_t loada = std::hash<std::string>{}("loadAtoms");
 	static const size_t gtinc = std::hash<std::string>{}("getIncoming");
-	static const size_t gettv = std::hash<std::string>{}("getTV");
-	static const size_t settv = std::hash<std::string>{}("setTV");
 	static const size_t gtkey = std::hash<std::string>{}("getKeys");
 	static const size_t gtval = std::hash<std::string>{}("getValues");
 	static const size_t gtvak = std::hash<std::string>{}("getValueAtKey");
@@ -286,7 +269,7 @@ std::string JSCommands::interpret_command(AtomSpace* as,
 	// AtomSpace.version({})
 	if (versn == act)
 	{
-		RETURN("\"" ATOMSPACE_VERSION_STRING "\"");
+		RETURN(ATOMSPACE_VERSION_STRING);
 	}
 
 	// -----------------------------------------------
@@ -337,16 +320,28 @@ std::string JSCommands::interpret_command(AtomSpace* as,
 		GET_TYPE;
 		GET_BOOL;
 
-		std::string rv = "[\n";
 		HandleSeq hset;
 		as->get_handles_by_type(hset, t, recursive);
-		bool first = true;
-		for (const Handle& h: hset)
+		std::string rv;
+		if (js_mode)
 		{
-			if (not first) { rv += ",\n"; } else { first = false; }
-			rv += Json::encode_atom(h, "  ");
+			// JSON format: array of atoms
+			rv = "[\n";
+			bool first = true;
+			for (const Handle& h: hset)
+			{
+				if (not first) { rv += ",\n"; } else { first = false; }
+				rv += Json::encode_atom(h, "  ");
+			}
+			rv += "]";
 		}
-		rv += "]";
+		else
+		{
+			rv = "(list ";
+			for (const Handle& h: hset)
+				rv += Sexpr::encode_atom(h);
+			rv += ")";
+		}
 		RETURNSTR(rv);
 	}
 
@@ -445,49 +440,6 @@ std::string JSCommands::interpret_command(AtomSpace* as,
 	}
 
 	// -----------------------------------------------
-	// A list version of above.
-	// AtomSpace.loadAtoms([{ "type": "ConceptNode", "name": "foo"},
-	//                      { "type": "ConceptNode", "name": "oofdah"}])
-	// AtomSpace.loadAtoms({"atoms":
-	//                         [{ "type": "ConceptNode", "name": "foo"},
-	//                         { "type": "ConceptNode", "name": "oofdah"}]})
-	if (loada == act)
-	{
-		CHK_FOR_JSON_ARG;
-		if (is_json_object)
-		{
-			pos = cmd.find("\"atoms\":", pos);
-			if (std::string::npos == pos) RETURN("false");
-			pos += 8; // 8 == strlen("\"atoms\":");
-		}
-
-		pos = cmd.find_first_not_of(" \n\t", pos);
-		if ('[' != cmd[pos]) RETURN("false");
-		pos++;
-		while (epos != cmd.npos)
-		{
-			ADD_ATOM;
-			pos = epos;
-
-			// We expect a comma or a close-bracket.
-			if  (cmd.npos == pos) RETURN("false");
-
-			// Skip whitespace
-			pos = cmd.find_first_not_of(" \n\t", pos);
-			if  (cmd.npos == pos) RETURN("false");
-
-			// If end of list, we are done.
-			if (']' == cmd[pos]) break;
-
-			// If not end of list, we expect a comma.
-			if (',' != cmd[pos]) RETURN("false");
-			pos++;
-			epos = cmd.size();
-		}
-		RETURN("true");
-	}
-
-	// -----------------------------------------------
 	// AtomSpace.getIncoming({"type": "Concept", "name": "foo"})
 	// AtomSpace.getIncoming({"type": "Concept", "name": "foo"}, "Evaluation")
 	if (gtinc == act)
@@ -513,15 +465,26 @@ std::string JSCommands::interpret_command(AtomSpace* as,
 		else
 			is = h->getIncomingSet();
 
-		bool first = true;
-		std::string alist = "[";
-		for (const Handle& hi : is)
+		std::string atmlist;
+		if (js_mode)
 		{
-			if (not first) { alist += ",\n"; } else { first = false; }
-			alist += Json::encode_atom(hi, "");
+			bool first = true;
+			atmlist = "[";
+			for (const Handle& hi : is)
+			{
+				if (not first) { atmlist += ",\n"; } else { first = false; }
+				atmlist += Json::encode_atom(hi, "");
+			}
+			atmlist += "]";
 		}
-		alist += "]";
-		RETURNSTR(alist);
+		else
+		{
+			atmlist = "(list ";
+			for (const Handle& hi : is)
+				atmlist += Sexpr::encode_atom(hi);
+			atmlist += ")";
+		}
+		RETURNSTR(atmlist);
 	}
 
 	// -----------------------------------------------
@@ -531,14 +494,25 @@ std::string JSCommands::interpret_command(AtomSpace* as,
 		GET_ATOM("[]");
 		HandleSet keys = h->getKeys();
 
-		bool first = true;
-		std::string klist = "[";
-		for (const Handle& key : keys)
+		std::string klist;
+		if (js_mode)
 		{
-			if (not first) { klist += ",\n"; } else { first = false; }
-			klist += Json::encode_atom(key, "");
+			bool first = true;
+			klist = "[";
+			for (const Handle& key : keys)
+			{
+				if (not first) { klist += ",\n"; } else { first = false; }
+				klist += Json::encode_atom(key, "");
+			}
+			klist += "]";
 		}
-		klist += "]";
+		else
+		{
+			klist = "(list ";
+			for (const Handle& key : keys)
+				klist += Sexpr::encode_atom(key);
+			klist += ")";
+		}
 		RETURNSTR(klist);
 	}
 
@@ -547,7 +521,8 @@ std::string JSCommands::interpret_command(AtomSpace* as,
 	if (gtval == act)
 	{
 		GET_ATOM("[]");
-		RETURNSTR(Json::encode_atom_values(h));
+		std::string result = js_mode ? Json::encode_atom_values(h) : Sexpr::encode_atom_values(h);
+		RETURNSTR(result);
 	}
 
 	// -----------------------------------------------
@@ -565,7 +540,8 @@ std::string JSCommands::interpret_command(AtomSpace* as,
 		ValuePtr v = h->getValue(k);
 		if (nullptr == v) RETURN("null");
 
-		RETURNSTR(Json::encode_value(v));
+		std::string result = js_mode ? Json::encode_value(v) : Sexpr::encode_value(v);
+		RETURNSTR(result);
 	}
 
 	// -----------------------------------------------
@@ -588,30 +564,6 @@ std::string JSCommands::interpret_command(AtomSpace* as,
 	}
 
 	// -----------------------------------------------
-	// AtomSpace.getTV({ "type": "ConceptNode", "name": "foo"})
-	if (gettv == act)
-	{
-		GET_ATOM("[]");
-
-		std::string alist = "[{ \"value\": \n";
-		alist += Json::encode_value(ValueCast(h->getTruthValue()));
-		alist += "}]";
-		RETURNSTR(alist);
-	}
-
-	// -----------------------------------------------
-	// AtomSpace.setTV({ "type": "ConceptNode", "name": "foo",
-	//     "value": { "type": "SimpleTruthValue", "value": [0.2, 0.3] } } )
-	if (settv == act)
-	{
-		ADD_ATOM;
-		GET_VALUE;
-
-		as->set_truthvalue(h, TruthValueCast(v));
-		RETURN("true");
-	}
-
-	// -----------------------------------------------
 	// AtomSpace.execute({ "type": "PlusLink", "outgoing":
 	//     [{ "type": "NumberNode", "name": "2" },
 	//      { "type": "NumberNode", "name": "2" }] })
@@ -620,7 +572,8 @@ std::string JSCommands::interpret_command(AtomSpace* as,
 		ADD_ATOM;
 
 		ValuePtr vp = h->execute();
-		RETURNSTR(Json::encode_value(vp));
+		std::string result = js_mode ? Json::encode_value(vp) : Sexpr::encode_value(vp);
+		RETURNSTR(result);
 	}
 
 	// -----------------------------------------------
