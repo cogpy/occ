@@ -32,7 +32,6 @@
 #include <opencog/atoms/value/UnisetValue.h>
 #include <opencog/atomspace/AtomSpace.h>
 
-#include "BindLink.h"
 #include "DualLink.h"
 #include "PatternLink.h"
 #include "PatternUtils.h"
@@ -402,28 +401,6 @@ PatternLink::PatternLink(const HandleSet& vars,
 
 /* ================================================================= */
 
-/// Constructor that takes a pre-determined set of variables, and
-/// a list of clauses to solve.  This is currently kind-of crippled,
-/// since no variable type restricions are possible, and no optionals,
-/// either.  This is used only for backwards-compatibility API's.
-/// XXX No one, except unit tests, use these deprecated API's. These
-/// old unit tests should be removed.
-PatternLink::PatternLink(const HandleSet& vars,
-                         const HandleSeq& clauses)
-	: RuleLink(HandleSeq(), PATTERN_LINK)
-{
-	_variables.varset = vars;
-	for (const Handle& clause : clauses)
-	{
-		PatternTermPtr root_term(make_term_tree(clause));
-		_pat.pmandatory.push_back(root_term);
-	}
-	common_init();
-	setup_components();
-}
-
-/* ================================================================= */
-
 PatternLink::PatternLink(const Handle& body)
 	: RuleLink(HandleSeq({body}), PATTERN_LINK)
 {
@@ -694,7 +671,18 @@ void PatternLink::unbundle_clauses(const Handle& hbody)
 		for (const Handle& ho : oset)
 			dedupe.insert(ho);
 
+		// Process non-evaluatable clauses before evaluatable ones.
+		// This ensures evaluatables find non-evaluatables in pmandatory
+		// when need_dummies() checks, avoiding order-dependency.
+		HandleSeq sorted_clauses;
 		for (const Handle& ho : dedupe)
+			if (not can_evaluate(ho))
+				sorted_clauses.push_back(ho);
+		for (const Handle& ho : dedupe)
+			if (can_evaluate(ho))
+				sorted_clauses.push_back(ho);
+
+		for (const Handle& ho : sorted_clauses)
 		{
 			PatternTermPtr clause(make_term_tree(ho));
 			if (not clause->contained_in(_pat.pmandatory) and
@@ -1148,7 +1136,7 @@ PatternTermPtr PatternLink::make_term_tree(const Handle& term)
 {
 	PatternTermPtr top_term(createPatternTerm());
 	PatternTermPtr root_term(top_term->addOutgoingTerm(term));
-	make_term_tree_recursive(root_term, root_term);
+	make_ttree_recursive(root_term, root_term);
 	return root_term;
 }
 
@@ -1172,8 +1160,8 @@ void PatternLink::pin_term_recursive(const PatternTermPtr& ptm,
 		pin_term_recursive(stm, root);
 }
 
-void PatternLink::make_term_tree_recursive(const PatternTermPtr& root,
-                                           PatternTermPtr& ptm)
+void PatternLink::make_ttree_recursive(const PatternTermPtr& root,
+                                       PatternTermPtr& ptm)
 {
 	// `h` is usually the same as `term`, unless there's quotation.
 	const Handle& h(ptm->getHandle());
@@ -1292,7 +1280,7 @@ void PatternLink::make_term_tree_recursive(const PatternTermPtr& root,
 		{
 			if (chk_const and is_constant(_variables.varset, ho)) continue;
 			PatternTermPtr po(ptm->addOutgoingTerm(ho));
-			make_term_tree_recursive(root, po);
+			make_ttree_recursive(root, po);
 		}
 	}
 
