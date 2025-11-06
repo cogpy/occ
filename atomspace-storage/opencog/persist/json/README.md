@@ -11,7 +11,7 @@ just enough to interact with the AtomSpace, and nothing more.
 
 Status
 ------
-**Version 1.0.0.** There is enough here to be usable for basic things.
+**Version 1.0.1.** There is enough here to be usable for basic things.
 Support for multiple AtomSpaces is missing.  A convenience call for
 setting multiple values at the same time is missing.
 
@@ -79,8 +79,6 @@ $ guile
 (start-cogserver)
 (List (Concept "foo") (Concept "bar"))
 (cog-set-value! (ConceptNode "foo") (Predicate "key") (FloatValue 1 2 3))
-(cog-set-tv! (ConceptNode "foo") (SimpleTruthValue 0.3 0.8))
-(cog-set-tv! (ConceptNode "bar") (stv 0.4 0.5))
 ```
 
 Now create a network connection to talk to the CogServer, and send it
@@ -147,28 +145,6 @@ AtomSpace.version()
 AtomSpace.makeAtom({"type": "Concept", "name": "foo"})
 ```
 
-* Load a list of Atoms. Returns `true` if successful, else `false`.
-  If using the telnet interface, the newlines must be removed from
-  the example below, else errors will be reported!
-```
-AtomSpace.loadAtoms([
-	{ "type": "ConceptNode", "name": "foo"},
-	{ "type": "ConceptNode", "name": "oofdah"},
-	{"type": "List", "outgoing":
-		[{"type": "Concept", "name": "one"},
-		 {"type": "Concept", "name": "two"}]}
-])
-```
-
-* Get the TruthValue on Atom. Returns the value.
-```
-AtomSpace.getTV({"type": "Concept", "name": "foo"})
-```
-* Set the TruthValue on Atom. Returns true if successful, else false.
-```
-AtomSpace.setTV({ "type": "ConceptNode", "name": "foo", "value": { "type": "SimpleTruthValue", "value": [0.3, 0.4] } } )
-```
-
 * Set arbitrary Value on Atom. Returns true if successful, else false.
 ```
 AtomSpace.setValue({ "type": "ConceptNode", "name": "foo", "key": { "type": "PredicateNode", "name": "keewee" }, "value": { "type": "FloatValue", "value": [1, 2, 3] } } )
@@ -178,8 +154,7 @@ AtomSpace.setValue({ "type": "ConceptNode", "name": "foo", "key": { "type": "Pre
 AtomSpace.setValue({ "type": "ConceptNode", "name": "foo", "key": { "type":
 "PredicateNode", "name": "linky" }, "value": { "type": "LinkValue", "value": [
 { "type": "FloatValue", "value": [4, 5, 6] },
-{ "type": "StringValue", "value": ["g", "h", "i, \"j\", k"] },
-{ "type": "CountTruthValue", "value": [7, 8, 9] } } } )
+{ "type": "StringValue", "value": ["g", "h", "i, \"j\", k"] } } } )
 ```
 
 * Get base and derived types.  The optional bool flag indicates whether
@@ -274,9 +249,9 @@ examples that actually work:
   the key (Predicate "fovs") and it should be a FloatValue holding the
   vector 1 2 3 0.4 0.5 -0.6 0.777 88 999
 
-Additional info can be found in the cogserver examples directory. This
-includes a CLAUDE.md file explaining Atomese.
-See https://github.com/opencog/cogserver/tree/master/examples/mcp for
-details.
+Additional info can be found in the cogserver git repo. This
+includes extensive tool documentation developed for Claude Code.
+See https://github.com/opencog/cogserver/tree/master/opencog/cogserver
+for details.
 
 
