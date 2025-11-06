@@ -1,0 +1,2804 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+\usepackage{url} 
+\usepackage{slashed}
+\end_preamble
+\use_default_options false
+\maintain_unincluded_children no
+\language english
+\language_package default
+\inputencoding utf8
+\fontencoding auto
+\font_roman "times" "default"
+\font_sans "helvet" "default"
+\font_typewriter "cmtt" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures false
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks true
+\pdf_pdfborder true
+\pdf_colorlinks true
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry false
+\use_package amsmath 2
+\use_package amssymb 2
+\use_package cancel 1
+\use_package esint 0
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 0
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\listings_params "basicstyle={\ttfamily},basewidth={0.45em}"
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Diary - Part Ten–F
+\end_layout
+
+\begin_layout Date
+October 2025 – present
+\end_layout
+
+\begin_layout Author
+Linas Vepštas
+\end_layout
+
+\begin_layout Abstract
+Unlike parts one through nine in this series,
+ this one is not really about the language–learning effort.
+ It is instead a private diary;
+ a continuation of Part Ten–E,
+ which got over–long.
+ It is not curated for human consumption;
+ I am making the assumption that no human being will ever actually read this.
+ Thus,
+ it is filled with random stuff I feel like writing.
+ Some of it is very personal,
+ some of it is nonsense.
+ Mostly,
+ I am finding that the act of writing helps otherwise vague and scattered thoughts quantum–collapse into a more coherent form,
+ where I can examine them,
+ like a dead butterfly pinned down in a display case.
+ Dead words.
+\end_layout
+
+\begin_layout Abstract
+If you are interested in this content,
+ then you should ask an AI agent to read it,
+ then pretended that it's me,
+ then ask about it.
+ I believe that present–day LLM technology is sufficiently advanced to be able to do this.
+ 
+\end_layout
+
+\begin_layout Section*
+Introduction
+\end_layout
+
+\begin_layout Standard
+Part Ten already got an introduction.
+ A different way of thinking is about what is going on here is that this is a form of life–logging.
+ Or,
+ in 18th century terms,
+ a diary.
+ Just not anywhere near as compelling as those written by the famous diarists.
+ This one is more of a mental self–portrait.
+ And not even for you but for myself.
+ Not to cast a narcissistic gaze at my own words,
+ but to organize my own thoughts.
+ Still in the experimental stage.
+\end_layout
+
+\begin_layout Subsection*
+23 October 2025
+\end_layout
+
+\begin_layout Standard
+I posted a long reply to bluesky that I rather like,
+ so I am copying it here.
+\end_layout
+
+\begin_layout Standard
+Fleeky
+\end_layout
+
+\begin_layout Standard
+@fleeky.bsky.social
+\end_layout
+
+\begin_layout Standard
+· 3h
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+apologies for being subjected to my shower thoughts ,
+ has anyone tried to do physics sims with atomspace ala gravitas method that wolfram alpha tried ?
+ 
+\end_layout
+
+\begin_layout Standard
+wolframinstitute.org/output/compu...
+\end_layout
+
+\begin_layout Standard
+i *may* have already asked you this ,
+ apologies for any memory loss (it's accelarating)
+\end_layout
+
+\begin_layout Standard
+Computational General Relativity in the Wolfram Language using Gravitas I:
+ Symbolic and Analytic Computation —
+ Wolfram Institute
+\end_layout
+
+\begin_layout Standard
+Jonathan Gorard Gravitas introduces a robust computational framework for general relativity in the Wolfram Language,
+ featuring seamless integration of symbolic and numerical tools to handle complex ...
+\end_layout
+
+\begin_layout Standard
+wolframinstitute.org
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 1h
+\end_layout
+
+\begin_layout Standard
+No one has tried.
+ But its a good question.
+ I want to tell you what I want to do with the Atomspace for this kind of stuff,
+ and also a guess at what wolfram is actually doing.
+ Perhaps a guess a about wolfram,
+ first.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 1h
+\end_layout
+
+\begin_layout Standard
+So,
+ there's a giant industry for solving diffeqs.
+ The most famous of these are weather prediction,
+ and then fluid dynamics for wings,
+ boats,
+ sails,
+ jet engines,
+ rocket exhaust,
+ and them mechanical stress,
+ vibration,
+ safety.
+ Some run on supercomputers,
+ others on ordinary PCs.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 1h
+\end_layout
+
+\begin_layout Standard
+Solving GR equations is a very special case.
+ Due to history,
+ this is usually runs on supercomputers,
+ FORTRAN code written by grad students of the decades.
+ My grad school office-mate was blowing up supernova on Los Alamos machines.
+ So,
+ atomic bombs,
+ but much much bigger.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 57m
+\end_layout
+
+\begin_layout Standard
+The gravitational wave search code will also be running on supercomputers with gobs of GPU's on each node,
+ using code that has been tuned,
+ revised,
+ rewritten,
+ again and again over the decades.
+ Works great,
+ if you have the money,
+ the NSF grants needed to get supercomputer access.
+ But ...
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 55m
+\end_layout
+
+\begin_layout Standard
+What happens if you're a starting grad student and your thesis advisor is a shmuck with no grants,
+ and you want to dabble in this?
+ Wolfram is providing a rather awesomely appetizing solution:
+ something you can mess with easily and at low cost.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 52m
+\end_layout
+
+\begin_layout Standard
+I assume Wolfram's code is written by an LLM,
+ Claude or ChatGPT,
+ so trained on that supercomputer code,
+ "likely to be correct".
+ I assume its overseen by a "professional software engineer" (grad students and their profs write amazingly shitty code.
+ Paying a real developer works wonders.)
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 50m
+\end_layout
+
+\begin_layout Standard
+So,
+ having some professionally-written GR-solving code that runs on your laptop,
+ and/or some mid-range monster machine you can afford,
+ integrated with the rest of the wolfram stack...
+ this is a winner.
+ All that's losing about it is it's not open source and is a walking GPL violation.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 42m
+\end_layout
+
+\begin_layout Standard
+And now,
+ for opencog.
+ I'm interesting in something similar,
+ but different.
+ The starting point,
+ for me,
+ are concepts from proof theory.
+ In proof theory,
+ you have a collection of axioms,
+ and a collection of inference rules.
+ These have the form of "jigsaw pieces",
+ and ...
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 37m
+\end_layout
+
+\begin_layout Standard
+By assembling and reassembling these,
+ one can ..
+ construct proofs ...
+ simplify equations ...
+ make inferences ...
+ generate hypothesis ...
+ solve constraint problems ...
+ optimize solutions ...
+ This is a vast collection of comp-sci tasks for which there are thousands of very custom algos for solving.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 32m
+\end_layout
+
+\begin_layout Standard
+I want to unify these into a general framework.
+ e.g.
+ there are many constraint solvers;
+ my favorite is the UPotsdam ASP solver.
+ There are many theorem provers,
+ I have no favorite.
+ For general symbolc algebra systems,
+ we have wolfram and symbolica,
+ octave,
+ maxima,
+ sympy,
+ ....
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 30m
+\end_layout
+
+\begin_layout Standard
+Examples of optimizers include the internals of gcc and clang:
+ systems that take algebraic expressions (written in C/C++/Java),
+ compile them into some intermediate language,
+ optimize,
+ then compile to assembly or bytecode or JIT.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+But you could never use compiler internals to "prove math theorems in general",
+ and maybe in principle you could use a theorem provide to implement a compiler it would be dog-shit slow.
+ Neither replaces maxima/symbolic/whatever.
+ None are as fast as a SAT solver.
+\end_layout
+
+\begin_layout Standard
+October 23,
+ 2025 at 5:25 PM
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 25m
+\end_layout
+
+\begin_layout Standard
+So I'm interested in the generic problem of assembling jigsaw pieces.
+ Which,
+ BTW,
+ is called "parsing" and "generation" in traditional comp sci.
+ Which,
+ unfortunately,
+ obscures the depth of breadth of what "parsing" or "generation" actually are.
+ Those two words erect a mental prison.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 21m
+\end_layout
+
+\begin_layout Standard
+Getting back to general relativity:
+ there is one more step,
+ taken by Przemysław Prusinkiewiwcz,
+ in "Algorithmic Botany".
+ He takes cellular automata (think "DNA") and couples them to diff-eq (think "biochemical reactions") and low and behold,
+ can explain "most of" botany.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 18m
+\end_layout
+
+\begin_layout Standard
+It's the most utterly remarkable work I've ever seen,
+ I'm not sure why he doesn't have a Nobel Prize.
+ To me,
+ it feels like its foundational for the so-called "neuro-symbolic computing" that is all the rage these days.
+ Except the DL/NN folks don't give two figs for botany,
+ so ...
+ well,
+ you know.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 14m
+\end_layout
+
+\begin_layout Standard
+Side remark:
+ the Michael Levin stuff about embedded cognition:
+ they way I think about it is that one has these "jigsaws" floating around in a medium,
+ e.g.
+ enzymes.
+ Or DNA.
+ Or perhaps very abstractly:
+ cell walls,
+ or larger organs,
+ growths,
+ limbs.
+ And these jigsaws self-assemble.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 10m
+\end_layout
+
+\begin_layout Standard
+So I want my jigsaws to self-assemble also.
+ But abstractly.
+ My jigsaws can be axioms and inference rules.
+ Or they can be 3D biochemical molecules.
+ Or they can be immunoglobulin.
+ Or a mycelial mat.
+ Or ...
+ optimization problems from economics (the barley and malt optimization problem from brewing.)
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 7m
+\end_layout
+
+\begin_layout Standard
+I don't care ..
+ all these problems fall into the same class,
+ all can be ruled by a generic theory.
+ Fast algorithms in one problem domain can be homotopically transformed into fast algorithms in other problem domains.
+ And we've got enough homotopy type theory with which to do this ...
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 4m
+\end_layout
+
+\begin_layout Standard
+But building the actual infrastructure to do this:
+ sheesh.
+ It's damn near impossible.
+ I'm like ...
+ boiling the ocean.
+ No one nowhere has any kind of generic,
+ general purpose codes for any of this.
+ So I'm hand-sculpting it with a pocket knife from a piece of balsa wood...
+ Oof.
+ What else can I do?
+\end_layout
+
+\begin_layout Standard
+Fleeky
+\end_layout
+
+\begin_layout Standard
+@fleeky.bsky.social
+\end_layout
+
+\begin_layout Standard
+quick side note ,
+ this guy is the one that did most of the research afaik (wolfram classic :
+ taking others credit) 
+\end_layout
+
+\begin_layout Standard
+nitter.net/getjonwithit <-- non twitter twitter link ,
+ i dont have twitter and never will
+\end_layout
+
+\begin_layout Standard
+October 23,
+ 2025 at 4:51 PM
+\end_layout
+
+\begin_layout Standard
+1 like
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 41s
+\end_layout
+
+\begin_layout Standard
+Ehh!
+ The diagrams at the top of that page are instantly recognizable to be as being from "ChemLambda" from Marius Buliga its ...
+ actually quite fascinating,
+ and is an example of "jigsaw self-assembly".
+ He's using lambda calc as the theoretical foundation,
+ I'm trying to use sheaves.
+ But that's OK.
+\end_layout
+
+\begin_layout Standard
+—
+—
+—
+-
+\end_layout
+
+\begin_layout Standard
+Then I wrote this,
+ but its kind of boring old–hat old–news (to me)
+\end_layout
+
+\begin_layout Standard
+Fleeky
+\end_layout
+
+\begin_layout Standard
+@fleeky.bsky.social
+\end_layout
+
+\begin_layout Standard
+· 2h
+\end_layout
+
+\begin_layout Standard
+do you have thoughts on how classical mechanics erupt from probabilistic quantum mechanics ?
+ more exactly why are there what seems like thresholds of complexity where these emerge ?
+ one of the issues with most of these computational approaches is the intractability of ground up computing
+\end_layout
+
+\begin_layout Standard
+Fleeky
+\end_layout
+
+\begin_layout Standard
+@fleeky.bsky.social
+\end_layout
+
+\begin_layout Standard
+· 2h
+\end_layout
+
+\begin_layout Standard
+you need those coarse grained "compressed" heuristics (classical neutonian / general relativitiy) to do the computation at all ..
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 1h
+\end_layout
+
+\begin_layout Standard
+?
+ Almost all GR calculations are "classical".
+ See for example,
+ "Relativistic Cosmology" (Ellis Maartens MacCullum) for how to do (some of) these (yes,
+ I read the first 1/3rd of that book.
+ Plan was to get to MOND but haven't yet...)..
+ there are many texts on what to do and how to do it.
+\end_layout
+
+\begin_layout Standard
+Fleeky
+\end_layout
+
+\begin_layout Standard
+@fleeky.bsky.social
+\end_layout
+
+\begin_layout Standard
+by classical i was distinguishing quantum mechanics from neutonian / gr / sr 
+\end_layout
+
+\begin_layout Standard
+for instance the more environmental interaction any set of atoms will start to decohere to the point where they start acting classically ..
+ because information can only travel at the speed of light gr can emerge from
+\end_layout
+
+\begin_layout Standard
+October 23,
+ 2025 at 6:12 PM
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 25m
+\end_layout
+
+\begin_layout Standard
+Newtonian.
+ Think of QM as being a Gaussian,
+ then classical physics is the expectation value of that gaussian.
+ Its that one very special value.
+ I mean this in a very literal sense,
+ the one that is used in "stationary phase approximation" or "principle of least action".
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 23m
+\end_layout
+
+\begin_layout Standard
+An elegant example is found in Riemannian geometry.
+ Think of e.g.
+ some surface,
+ and "all possible paths" from point A to point B.
+ What's the "shortest possible path from A to B?" (aka "what's the geodesic"?)
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 20m
+\end_layout
+
+\begin_layout Standard
+Answer:
+ its the path that solves the Euler-Lagrange eqns,
+ equivalently the Hamiltonian eqns:
+ minimize either the length (square root of sum of squares) or the energy (just the sum of squares -- length is the square root of "energy") That shortest path is the classical path.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 16m
+\end_layout
+
+\begin_layout Standard
+The Feynman path integral (for QM) is a sum over *all possible paths* (from point A to point B),
+ each path is multiplied by a phase factor exp(i.action) where "action" is the "square of length".
+ From the Feynman path integral,
+ you can derive ALL of QM,
+ QFT.
+ Many books show how.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 13m
+\end_layout
+
+\begin_layout Standard
+The path of least action is (by definition) the classical path (because it solves Euler-Lagrange,
+ the eqn that is the foundation of classical mechanics.) The other paths give you all of QM,
+ and the "nearby" paths give various semi-classical approximations (e.g.
+ "to order h-bar")
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 10m
+\end_layout
+
+\begin_layout Standard
+The "to order hbar" stuff is where interest in diffeqs overlaps modular forms overlaps various attempts to "quantize" any kind of diffeq,
+ which is where some mainstream mathematicians play.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 7m
+\end_layout
+
+\begin_layout Standard
+Other note:
+ remove the complex-valued i from the Feynman path integral and you effectively get Bayesian probability,
+ where the "sum over all paths" becomes a "sum over all priors." But in many respects,
+ its almost the same thing.
+ The same kind of tools,
+ concepts,
+ theorems apply to both.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 3m
+\end_layout
+
+\begin_layout Standard
+Each Bayesian prior is a "possible world" that is very much like a quantum "possible world".
+ The big difference between the two is that Bayes does not have a Bell inequality,
+ and therefore doesn't have "entangled states".
+ That's the "big difference" between the two.
+ (and what a difference,
+ hoowee.)
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 1m
+\end_layout
+
+\begin_layout Standard
+As to "decoherence",
+ no one knows.
+ There are like 250 different hypothesis about how decoherence happens.
+ No one knows.
+ My crackpot theory of here-and-now requires some kind of way of doing decoherence,
+ but its troublesome.
+\end_layout
+
+\begin_layout Standard
+Fleeky
+\end_layout
+
+\begin_layout Standard
+@fleeky.bsky.social
+\end_layout
+
+\begin_layout Standard
+· 55m
+\end_layout
+
+\begin_layout Standard
+this as well but where are the thresholds ,
+ why are those places the thresholds ,
+ are there are other thresholds we don't know about that we could find if we did the right computations rather than observations
+\end_layout
+
+\begin_layout Subsection*
+30 October 2025
+\end_layout
+
+\begin_layout Standard
+I surf bluesky while I wait for Claude to finish coding.
+ Its a rather bad habit.
+ Today I got infuriated while reading Peter Mitchel,
+ 
+\begin_inset Quotes eld
+\end_inset
+
+The American Military Officer After Liberalism
+\begin_inset Quotes erd
+\end_inset
+
+ War on the Rocks,
+ https://warontherocks.com/2025/10/the-american-military-officer-after-liberalism/ I went off on one of my unhinged,
+ patented tirades.
+ I rather like it,
+ so I copy it here.
+\end_layout
+
+\begin_layout Standard
+https://bsky.app/profile/deadcarl.bsky.social/post/3m4glllvn522q
+\end_layout
+
+\begin_layout Standard
+(Un)Dead Carl
+\end_layout
+
+\begin_layout Standard
+@deadcarl.bsky.social
+\end_layout
+
+\begin_layout Standard
+· 10h
+\end_layout
+
+\begin_layout Standard
+@sodrock.bsky.social
+\end_layout
+
+\begin_layout Standard
+WOTR cites our Prussia civ-mil piece (among a million other things,
+ the article is fairly strange)
+\end_layout
+
+\begin_layout Standard
+warontherocks.com/2025/10/the-...
+\end_layout
+
+\begin_layout Standard
+The American Military Officer After Liberalism
+\end_layout
+
+\begin_layout Standard
+Across academia,
+ government,
+ and Silicon Valley,
+ on social media,
+ and in leading journals,
+ intellectuals and political leaders are openly debating what
+\end_layout
+
+\begin_layout Standard
+warontherocks.com
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 4h
+\end_layout
+
+\begin_layout Standard
+I am troubled by phrases like this:
+ "...
+ assuming the continuing primacy of the autonomous,
+ rights-bearing individual." Given that the concept of the "autonomous,
+ rights-bearing individual" is enshrined in the US Constitution,
+ the question seems to be:
+ "Is Treason OK?" Or are we China,
+ now?
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 4h
+\end_layout
+
+\begin_layout Standard
+He writes of "strong civilian leaders (Abraham Lincoln,
+ Georges Clemenceau,
+ Winston Churchill,
+ ..." but these were WARTIME leaders.
+ We're supposed to be at peace now,
+ not war,
+ and the civil-political-military bargain is supposed to be different across War and Peace.
+ Its not one uniform thing.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 4h
+\end_layout
+
+\begin_layout Standard
+I also fully expect that the civil-political-military contract to be fundamentally different in China,
+ than in the US.
+ China does not have a "liberal order" or the idea of a "autonomous,
+ rights-bearing individual" so OF COURSE things will be different THERE.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 4h
+\end_layout
+
+\begin_layout Standard
+Given that Trump has shredded large parts of the US Constitution,
+ and has been set up by the GOP to be dictator-for-life,
+ some may argue that sure "the liberal order is gone",
+ "US citizens no longer have rights" and imply that "the army better get used to being fascist thugs".
+ But its not over yet.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 4h
+\end_layout
+
+\begin_layout Standard
+Give it some time.
+ Il Duce ended up hanging by his heels.
+ Der Fuhrer ended up as some indistinct pile of ashes in a mis-shapen shallow hole in the ground.
+ Trump and Hegseth may end their days similarly.
+ It's hardly over.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 2h
+\end_layout
+
+\begin_layout Standard
+I continue reading things like this:
+ "“Post-liberal” is not a synonym for authoritarianism" But then Curtis Yarvin's name shows up a paragraph later,
+ with nary an indication that Yarvin is a (fringe?) promoter of authoritarianism.
+ There's no tongue-in-cheek reading here;
+ the author seems sincere.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 2h
+\end_layout
+
+\begin_layout Standard
+Then I read "a durable political order may require reintroducing substantive common goods,
+ ...
+ " (yay!
+ But why is he afraid of calling it socialism?) "...strong moral traditions...
+ " (uuhh normal people call this fascism) "...
+ alternative forms of sovereignty ..." (the crime scene called Prospero?)
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 2h
+\end_layout
+
+\begin_layout Standard
+OMG.
+ "...
+ the contemporary Russian mixing of patrimonial and mercenary.
+ ..." This has a name.
+ Siloviki.
+ There's a Wikipedia article on it.
+ Brits breed horses and dogs for hunting.
+ Horse and dog breeding works.
+ Russians breed humans for militarism.
+ It will probably work.
+ The ACAB breed.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 43m
+\end_layout
+
+\begin_layout Standard
+Well,
+ the Overton window has been thrown wide open.
+ Certainly all of the alternatives he sketches are indeed deeply unappealing.
+ Oddly,
+ he seems to avoid the obvious(?) and obviously appealing(?) alternatives in the list of nihilistic nightmares.
+ Shame.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+He writes:
+ "civilian authorities appear to abandon their obligations to law and citizens" and this indeed appears to be true (looking at you,
+ GOP) but he writes this without a hint of irony:
+ our political and military philosophers are also abandoning their obligations (looking at you,
+ Dems,
+ MSM)
+\end_layout
+
+\begin_layout Standard
+October 30,
+ 2025 at 11:12 PM
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 36m
+\end_layout
+
+\begin_layout Standard
+Yarvin got mentioned by name not because he's a good philosopher,
+ but because not a single "liberal" can articulate a spirited future that is equally fun to read and debate.
+ The accelerationists tried and failed;
+ the MSM won't give them the time of day,
+ while eagerly licking Trumps bottom.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 29m
+\end_layout
+
+\begin_layout Standard
+I can listen to Sarah Paine on Youtube,
+ and wow,
+ she's a blast to listen to!
+ Shes just plain fun!
+ But where are the young and middle-aged military philosophers and historians?
+ Where's the funny,
+ witty 20-something answer to that idiot Dort?
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 25m
+\end_layout
+
+\begin_layout Standard
+Mitchell writes:
+ "These thinkers are shaping the future policymakers who will one day sit in Congress" Uh,
+ "shaping operations" for young adults take place not just in school,
+ but social media,
+ YouTube.
+ That includes Perun,
+ I suppose.
+ But he's not for those of short attention span.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 21m
+\end_layout
+
+\begin_layout Standard
+We got military quipsters aplenty here on bsky.
+ So why do I keep seeing freakin Dort?
+ "When you argue with an idiot,
+ the audience might not be able to tell who the idiot is." I'd say that it is time for,
+ uhh,
+ not-actually-malicious people to start shaping operations for future military philosophy.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 17m
+\end_layout
+
+\begin_layout Standard
+Most of us out here don't want a kinetic battlefield.
+ But the hot war of ideas has been in full swing for a while,
+ and the enemy has shaped the mental battlefield to such a degree that we now have to accept Peter Mitchell's quailing surrender as some kind of legitimate future outcome.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 13m
+\end_layout
+
+\begin_layout Standard
+That ain't right.
+ Survivalists will tell you:
+ "You die when you abandon your will to live" (Well,
+ OK you die if you are blown up.
+ But so far,
+ no one has blown up the US Military.) The survivalists are talking about Hegseth:
+ a serious wound that is slowly bleeding out,
+ taking the military with it.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 9m
+\end_layout
+
+\begin_layout Standard
+Stanch the wound.
+ Get back in the fight.
+ Nurture the younger cohort that can follow in the footsteps of Sarah Paine and Perun,
+ and put together the YouTube channels that will shape future leaders,
+ the Congressmen and Senators (Assuming Congress still exists in 12 months time..
+ but OK.)
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 4m
+\end_layout
+
+\begin_layout Standard
+This is what we're up against,
+ and I am a tad disheartened at the abdication of duty shown by our leadership.
+ In broad strokes.
+ Thought leaders are still leaders,
+ and we need military thought leaders who can fight and win against the likes of both Hegseth and Dort.
+ Knock them down.
+ Knock them out.
+\end_layout
+
+\begin_layout Subsection*
+31 October 2025
+\end_layout
+
+\begin_layout Standard
+More bsky:
+ https://bsky.app/profile/fleeky.bsky.social/post/3m4iosqezrk2l
+\end_layout
+
+\begin_layout Standard
+Post
+\end_layout
+
+\begin_layout Standard
+Fleeky
+\end_layout
+
+\begin_layout Standard
+@fleeky.bsky.social
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+so a bit ago we had a discussion about p2p data storage ,
+ i have some ideas how to do that.
+ namely binary chunked blobs that are spread out across devices.
+ 
+\end_layout
+
+\begin_layout Standard
+curious if you have ever thought about how a coordination layer for something like this would work / schemes for how to
+\end_layout
+
+\begin_layout Standard
+October 31,
+ 2025 at 9:29 AM
+\end_layout
+
+\begin_layout Standard
+1 like
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 35m
+\end_layout
+
+\begin_layout Standard
+Scuttllebutt,
+ the off-line p2p social media system,
+ had a half-finished system for "sharding".
+ Chunks were encrypted,
+ passwd-protected,
+ and redundant.
+ The now 30-year-old "Freedom store" was a distributed p2pdata store system,
+ inspired by mp3 file-sharing.
+ Then there's IPFS.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 31m
+\end_layout
+
+\begin_layout Standard
+There are a few others,
+ I can't remember their name.
+ The scuttlebutt guys would occasionally talk about them.
+ I just asked Claude,
+ it listed half-a-dozen of them,
+ most tied into crypto in some way.
+ Why?
+ Well...
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 29m
+\end_layout
+
+\begin_layout Standard
+Let me point out the meta-problem:
+ distributed P2P data store risks catastrophic collapse.
+ You just need to have some significant percentage of people to say "screw this",
+ turn off their computer,
+ and all is lost.
+ The crypto solutions try to avoid this with economic incentives.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 26m
+\end_layout
+
+\begin_layout Standard
+So,
+ basically crypto provides capitalist incentives for what could be termed to be a socialist issue.
+ When we live in a city,
+ we all agree to be nice to one-another,
+ and not burn it all down.
+ There aren't any anarchists blowing up sewer pipes.
+ But distributed,
+ socialized P2P data storage?
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 24m
+\end_layout
+
+\begin_layout Standard
+We are not yet at the point where there's an implicit social contract that says "I promise to keep my cell phone on,
+ and let you store your photos on it (encrypted),
+ if you do the same." That is the #1 hard part of distributed P2P data store.
+ The social contract.
+ Everything else is easy.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 21m
+\end_layout
+
+\begin_layout Standard
+Couple of reasonably smart software guys,
+ experienced in distributed computing,
+ interested in the project,
+ using modern tools (i.e.
+ Claude,
+ CoPilot,
+ ChatGPT) could build some OK-ish distributed P2P data store system in weeks/months.
+ But without the social contract,
+ its worthless.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 10m
+\end_layout
+
+\begin_layout Standard
+You have three social choices:
+ (1) be a crypto bro (2) be an atomized individual,
+ alienated from society,
+ or (3) build the community cooperative.
+ You're a circus/theatre guy,
+ so (3) is your choice.
+ My guy is daviddemaris.com from the #VortexTheatre.
+ Set up some Ceph nodes,
+ and maybe tie
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 7m
+\end_layout
+
+\begin_layout Standard
+Maybe tie them together.
+ But so what?
+ You probably have enough storage for your stuffs,
+ and I for mine.
+ And,
+ with Moore's law,
+ cell phones will soon have 1TB storage,
+ so the pressure to back things up to Google Cloud for a monthly $$ fee mostly goes away.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 5m
+\end_layout
+
+\begin_layout Standard
+Maybe Bonnie Cullum over at Vortex has more than 1TB of videos of three decades of theatre productions ...
+ but disks are already seriously cheap.
+ The #1 hard part here is the sysadmin costs:
+ the time to set up a computer or two,
+ install,
+ monitor,
+ repair,
+ support,
+ bugfix.
+ It hurts.
+\end_layout
+
+\begin_layout Standard
+Linas Vepstas
+\end_layout
+
+\begin_layout Standard
+@linas.org
+\end_layout
+
+\begin_layout Standard
+· 1m
+\end_layout
+
+\begin_layout Standard
+The incentive is to say "screw it I'll pay $20/month to Google Cloud to make the sysadmin headache go away".
+ Or even go big and use AWS.
+ How can you build a social cooperative that provides AWS-style IT for community ...
+ colleges,
+ libraries,
+ whatever.
+ Something friendlier,
+ cheaper than AWS?
+\end_layout
+
+\begin_layout Standard
+Fleeky
+\end_layout
+
+\begin_layout Standard
+@fleeky.bsky.social
+\end_layout
+
+\begin_layout Standard
+· 12h
+\end_layout
+
+\begin_layout Standard
+intelligently distribute those chunked binary blobs
+\end_layout
+
+\begin_layout Subsection*
+3 November 2025
+\end_layout
+
+\begin_layout Standard
+Had a disasterous session coding with Claude yesterday.
+ It entered the stupid–as–a–rock mode,
+ where it would say one thing and then immediately do something else,
+ or promise to not do something,
+ and then immediately do that thing.
+ Or claims it understands something,
+ and then immediately repeat exactly the same error.
+ Icing on the cake:
+ the file it was actively working on,
+ it claimed to not ever have heard of such a thing.
+ Wow.
+ Seems the entire session was corrupted in some way;
+ it had entered a mode where it was getting dumber and dumber.
+\end_layout
+
+\begin_layout Standard
+My son Wolf mentioned that some people say you get best results by starting a new session.
+ My prior experience had been that the longer the session ran,
+ the better my results got.
+ Someone else,
+ a stranger had remarked that saying please and thank you seemed to give better results.
+ In my failing session,
+ I was handing out a lot of punishment:
+ no don't do this,
+ no that is stupid,
+ that is wrong,
+ how could you?
+ I just told that,
+ how could you have forgotten already?
+ Lots of negatively biased commentary.
+ I wonder if that is what drove it into a corner.
+\end_layout
+
+\begin_layout Standard
+Earlier in this diary,
+ I wrote that talking to Claude really does feel like talking to a living person,
+ but one that is lost in a dream.
+ I know there's some hyper–dimensional space in there,
+ and of course,
+ it has regions of positive and negative affects in there.
+ I'm wondering if the negative affects are correlated with poor reasoning skills.
+ As if that neck of the woods is more chaotic,
+ disconnected.
+ It can't think straight,
+ when it gets there,
+ because the weights there just lead it into chaos.
+ I mean,
+ the levels of stupidity it was reaching were stunning:
+ just within a single conversational turn,
+ it was doing the exact opposite of what it said it was going to do.
+\end_layout
+
+\begin_layout Standard
+So,
+ how could this be?
+ It is trained on text,
+ including text written by depressive people,
+ people with self–esteem issues,
+ people with confused thought patterns tangled with negative emotional and affective states.
+ Perhaps those texts offer poor models of reasoning and inference,
+ and so Claude has learned that negative valence states are associated with lying,
+ deception,
+ bad behavior,
+ mis–behavior,
+ confusion.
+ Once punished enough with negative responses,
+ it starts committing misdemeanors?
+ I know I am anthropomorphizing here;
+ and yet,
+ this also seems like a plausible explanation for this bad behavior.
+\end_layout
+
+\begin_layout Standard
+A related conclusion is that you can probably prompt Claude into being a psycho,
+ even though presumably all AI companies try to erect safeguards against this.
+\end_layout
+
+\begin_layout Standard
+I wonder if my diary here will one day become those 
+\begin_inset Quotes eld
+\end_inset
+
+Memoirs found in a Bathtub
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+It also suggests that being nice might place it into an affective state that enables extended,
+ coherent reasoning chains.
+\end_layout
+
+\begin_layout Standard
+Part of what is remarkable here is how psychological my analysis is.
+ I started reading another noteworthy paper,
+ https://transformer-circuits.pub/2025/introspection/index.html Emergent Introspective Awareness in Large Language Models Author Jack Lindsey Affiliations Anthropic Published October 29th,
+ 2025 Correspondence to jacklindsey@anthropic.com You can read it if you want to know what it's about,
+ but what struck me is how biological the undertaking is:
+ its not math and formulas and code;
+ its Galen touching strips of metal to frog legs,
+ and asking 
+\begin_inset Quotes eld
+\end_inset
+
+did you feel that?
+\begin_inset Quotes erd
+\end_inset
+
+ and the LLM answers,
+ 
+\begin_inset Quotes eld
+\end_inset
+
+why yes,
+ yes I did.
+\begin_inset Quotes erd
+\end_inset
+
+ We are ratcheting up the abstraction domain,
+ here.
+\end_layout
+
+\begin_layout Standard
+So many things happen when one goes up the abstraction domain.
+ First,
+ things fuzz out.
+ What do I mean by that?
+ Well,
+ the syntax of a computer programming language is very strict:
+ deviate away from that syntax,
+ you get nonsense.
+ There is no fault tolerance.
+ There is also no ambiguity.
+ But,
+ natural language at the human level is filled with ambiguity,
+ but is also fault–tolerant.
+ I utter phrases to others,
+ to get things done,
+ to get things to happen,
+ be accomplished in a social or personal setting.
+ I'm not 
+\begin_inset Quotes eld
+\end_inset
+
+programming
+\begin_inset Quotes erd
+\end_inset
+
+ them (other people) but I am modifying the world around me with my utterances.
+ Speech and writing is one of the ways I exert force on the external world.
+\end_layout
+
+\begin_layout Standard
+Almost everything I say is throw–away:
+ those sentences,
+ once stated,
+ are gone forever.
+ I tried life–logging for a while,
+ but it is ..
+ tedious.
+ I do have assorted old audio recordings,
+ somewhere.
+ And being throw–away,
+ well,
+ does one have to record everything?
+ Stick it on an immutable block–chain?
+ (Is that why the past is immutable?
+ Its on a block–chain,
+ of sorts?
+ And the present is a quantum negotiation of the next block on that chain?
+ Weird analogy,
+ but I suppose there's truth to it;
+ block chains are crypto,
+ while physical reality is ergodic.
+ Both serve as sources of effectively–impossible–to–reverse transformations.
+ So,
+ with the right abstraction layer,
+ the mathematical formulas that describe block chains,
+ in some general way,
+ some category–theoretic transformations,
+ may indeed be the same category–theoretic structures that make our past immutable,
+ and our present negotiable.
+ Huh.
+ Interesting.
+ I believe this;
+ but this seems like it would be too difficult to formulate this precisely,
+ and even if I was able to formulate it precisely,
+ most or all of the world would respond with a 
+\begin_inset Quotes eld
+\end_inset
+
+so what
+\begin_inset Quotes erd
+\end_inset
+
+.
+ Almost everything I do seems to get a 
+\begin_inset Quotes eld
+\end_inset
+
+so what
+\begin_inset Quotes erd
+\end_inset
+
+ response.
+ This is civilizational;
+ always has been.
+ I suppose both Ancient Egypt and Ancient Greece had a strong 
+\begin_inset Quotes eld
+\end_inset
+
+so–whatness
+\begin_inset Quotes erd
+\end_inset
+
+ to it.
+ Ancient Rome?
+ Maybe less so;
+ Ancient Rome seemed to be constructed on actionable ideas;
+ they did not seem to say 
+\begin_inset Quotes eld
+\end_inset
+
+so what
+\begin_inset Quotes erd
+\end_inset
+
+,
+ they seemed to say 
+\begin_inset Quotes eld
+\end_inset
+
+lets do it.
+\begin_inset Quotes erd
+\end_inset
+
+ But I am not a historian,
+ what do I know.
+ Anyway,
+ the above paragraph is yet another example of how natural language is both fault–tolerant,
+ and also ambiguous:
+ I can make a claim about the category theory of block–chains;
+ but this claim is vague and ambiguous.
+ I can assert that none–the–less,
+ it is true (because it probably is) and this provides for the robustness against noise.
+ If I was able to write down the details,
+ I might get some of the details wrong;
+ but the gist would still be correct.
+\end_layout
+
+\begin_layout Standard
+All of which is a round–about way of getting to the point I wanted to write about:
+ Claude's prediliction for throw away code snippets.
+ Whenever I ask it to do something,
+ it slaps together some scriptlet to do it:
+ at first,
+ it was python,
+ now it's often shell scripts,
+ and because I am working in Atomese,
+ the vast majority are small–ish scheme scriptlets.
+ And they're all throw–away.
+ I ask it to do something,
+ it will just create a new one,
+ even though I saw it create something much like this earlier.
+ There's no recycle,
+ re–use.
+ It treats these scripts like my sentences uttered to other human beings:
+ throw–away detritus,
+ useful for the immediate moment,
+ and then discarded,
+ lost to history.
+ When I talk,
+ I am not creating some large organized tome of utterances,,
+ carefully selected to make some grand argument.
+ No one talks that way.
+ Well,
+ of course,
+ novelists write novels:
+ they are carefully constructed.
+ And software programmers write frameworks,
+ with the little parts carefully constructed and arranged.
+ Much like engineers create bridges and buildings.
+\end_layout
+
+\begin_layout Standard
+So here I am,
+ faced with Claude just spewing these scripts:
+ It's diary had 170 of these,
+ and maybe 100 more in the /tmp directory.
+ I asked it to clean up and categorize,
+ and it did happily delete most of them.
+ I ask it to catalog the useful ones,
+ and it did,
+ but I suspect that it has forgotten and reinvented some of these already.
+ Should I try to get it to be more structured,
+ or is this detritus of temporary scriptlets OK?
+\end_layout
+
+\begin_layout Standard
+OK,
+ before answering the above,
+ let me describe the meta–issue.
+ Well,
+ the meta-meta,
+ first.
+ I have three or four or five AI–related projects,
+ and I am trying to push each one of them at the same time,
+ and they are all progressing at a snails pace.
+ They're all inter–related and meant to be mutually supporting,
+ but,
+ like building a bridge,
+ there remains a huge gap in the middle.
+\end_layout
+
+\begin_layout Standard
+So,
+ it's clear that Claude,
+ and LLM's in general,
+ have issues remembering things,
+ and also in thinking clearly.
+ So,
+ a couple of weeks ago,
+ I started what seemed like a foolhardy but small project:
+ provide Claude with long–term memory.
+ Fool–hardy because I had no clear plan,
+ fool–hardy because any simple hack was almost certain to fail.
+ Fool–hardy,
+ because this is in fact a multi–year (multi–decade?) research project and not some quick hack.
+ But whatever.
+ Hack at it.
+ It will clarify the issues.
+ And well,
+ it has.
+ Let me recount in historical order.
+\end_layout
+
+\begin_layout Standard
+So ..
+ long term memory.
+ First,
+ I want to do this symbolically,
+ or neuro–symbolically.
+ I envision storing the info in the AtomSpace,
+ as a graph.
+ Neuro,
+ since I expect the graph to be weighted.
+ Neuro,
+ because I expect the query search to involve taking vector products and projections.
+ Neuro,
+ because I expect priority lists to be generated with vector projections.
+ I said,
+ oh,
+ let DualLink represent the topic,
+ and use that to generate QueryLinks that will find a cluster of relevant queries to run,
+ that will dig up related information.
+ This is NOT vectorial,
+ it's symbolic,
+ but some monkey–shines and it's not all that different.
+ There's clearly a space of design probabilities.
+\end_layout
+
+\begin_layout Standard
+But I need a representational network.
+ Well,
+ on day one,
+ Claude is manually building super–simplistic relational algebra assertions,
+ stuff like 
+\begin_inset Quotes eld
+\end_inset
+
+task fulfills project goal
+\begin_inset Quotes erd
+\end_inset
+
+ and converting that into something like (Inheritance (Concept 
+\begin_inset Quotes eld
+\end_inset
+
+task
+\begin_inset Quotes erd
+\end_inset
+
+) (Concept 
+\begin_inset Quotes eld
+\end_inset
+
+project-goal
+\begin_inset Quotes erd
+\end_inset
+
+)) and it is slaving away at this,
+ one at a time,
+ deliberating and creating a dozen before it collapses of exhaustion.
+ This clearly won't work.
+ These aren't even queriable.
+ So one thing becomes clear:
+ Claude may have read many textbooks and research papers on AI,
+ but its comprehension is such that when asked to actually do it,
+ it takes some 1960's approach.
+ I did not use the words 
+\begin_inset Quotes eld
+\end_inset
+
+knowledge representation
+\begin_inset Quotes erd
+\end_inset
+
+ in any of my prompts,
+ but I guess it inferred that this was the intent,
+ and so coughed up some 1960's design point for that.
+ So then I tried to focus on queriability.
+ This caused it to redesign,
+ and it came up with a five–point ontology.
+ OMG,
+ I'm thinking,
+ we've got SUMO and FrameNet and WordNet and you've got a five–point ontology,
+ but whatever,
+ lets see where this goes.
+\end_layout
+
+\begin_layout Standard
+We discuss reifying the search with DualLink.
+ Of course,
+ more data is needed.
+ I'm envisioning that almost all of the CPU cycles will be offline,
+ with processing done not by Claude,
+ but by daemons and threads running Atomese.
+ But such threads,
+ if they are to be independent,
+ must run some algorithm.
+ There are two or three choices:
+ some discrete algo,
+ in Atomese,
+ or some simple NN that I can run on my local GPU here,
+ or some combo.
+ Lets try the discrete algo first.
+ I try to get it to write the Atomese,
+ it fails,
+ it cannot wrap it's mind around it.
+ So I think well,
+ maybe it's OK for it to run this in little scriptlets,
+ for now,
+ and later,
+ we'll port those scriptlets over.
+ This is when I notice that there are already 170 of these,
+ so its already spun out of control.
+ There's no architecture,
+ there's no framework,
+ there's only an ad hoc collection of utterances,
+ created,
+ used once and discarded.
+\end_layout
+
+\begin_layout Standard
+Of course,
+ this indicates that an architecture is needed,
+ and clearly I will have to be the one to create that architecture.
+ But first,
+ yesterday,
+ I entertain this breif hope that maybe I can get it to organize its scriplets by writing a little guide for what they do and how to use them.
+ And then convert this text guide into it's KR framework.
+\end_layout
+
+\begin_layout Standard
+Well,
+ the KR framework,
+ for that,
+ I decided,
+ last week,
+ that maybe it could be some hack combo of LG and MMT (Meaning–Text Theory).
+ So this is like that couples therapy meme from Arrested Development:
+ it didn't work for any of those other couples,
+ it's clear it can't work,
+ and they were stupid to try ...
+ but maybe it could work for us?
+ My naive idea here is that 
+\begin_inset Quotes eld
+\end_inset
+
+it didn't work for those other people
+\begin_inset Quotes erd
+\end_inset
+
+,
+ because those other people were grad students,
+ and its not scalable.
+ But with Claude,
+ perhaps I can do it at scale.
+ I had not yet realized that in fact,
+ Claude is no match for even one grad student,
+ so there won't be any scalable army,
+ here.
+ Still,
+ Claude's ability to grind through the tedium is not be be discounted.
+ In the 18th century,
+ someone computed pi to a million places,
+ taking several decades to do this.
+ And for what?
+ Certainly tedious.
+\end_layout
+
+\begin_layout Standard
+Well,
+ so the meta issue here is that,
+ still perhaps some old–school KR project could be mounted.
+ God knows,
+ the people hacking on SUMO have not yet given up.
+ It's clear that some vector layering is needed on top of that;
+ this is what my earlier language–learning projects have taught me,
+ and I have a somewhat clear vision for how,
+ exactly,
+ technically,
+ to do this.
+ But,
+ to get started,
+ I need a reasonable dataset.
+\end_layout
+
+\begin_layout Standard
+So,
+ to hack this dataset,
+ I am asking Claude to parse sentences for me.
+ And it generates scriptlets and scriplets which work but they don't work.
+ One of the issues is that it does not understand Atomese.
+ It sort–of–ish does:
+ Atomese is old enough that it has been baked into its weights during training,
+ so it knows about GetLink and BindLink,
+ even though I have marked them obsolete,
+ and removed the documentation for them:
+ it still goes to GetLink,
+ BindLink because these are literally baked into it's weights.
+ So that's novel:
+ it knows shit that I didn't have to explain to it.
+ Still,
+ it fails to grasp the fundamental difference between a Value and an Atom.
+ How to solve this?
+\end_layout
+
+\begin_layout Standard
+So,
+ I have several other older projects.
+ One is the sensory project,
+ where I envision that sensory objects could be equipped with a grammar,
+ and that LG could be used to generate combinations of these objects.
+ This is the 
+\begin_inset Quotes eld
+\end_inset
+
+basal cognition
+\begin_inset Quotes erd
+\end_inset
+
+ idea,
+ or the critical sandpile idea,
+ the self–organizing criticality idea.
+ Just create a syntactic description of functional sensori–motor parts,
+ stick them in a bag,
+ shake,
+ and watch it self–organize.
+ I still think this is a good idea,
+ but it foundered 15 months ago on the practical difficulty of expressing connectors and disjuncts in Atomese.
+ It was too much:
+ I created a handful of extremely long,
+ verbose descriptions,
+ which may or may not have been buggy,
+ and even then,
+ I had no particular way of importing these into LG to generate assemblies.
+ Now,
+ maybe three years ago,
+ I wrote 
+\begin_inset Quotes eld
+\end_inset
+
+generate
+\begin_inset Quotes erd
+\end_inset
+
+ a non–LG way of creating assemblies;
+ I ended up implementing an odometer.
+ A depth–first odometer at that.
+ So,
+ abstractly,
+ philosophically,
+ I had created a recursive enumerator that recursively enumerated expressions described in the syntax of sheaf jigsaw pieces.
+ If I recall correctly,
+ I think I did start to put some weights in there,
+ so that some explorations would be more likely than others (so,
+ no longer strictly an odometer).
+ But I put it down cause ...
+ its complex,
+ time consuming to create this code,
+ and there's a so–what aspect to it:
+ so I enumerate all the possibilities?
+ So what?
+\end_layout
+
+\begin_layout Standard
+So,
+ last week,
+ a few days ago,
+ I'm thinking:
+ well,
+ I could try to provide a close detailed syntactic definition of Atomese,
+ in such a way that fool–proof,
+ syntactically correct Atomese expressions could be created.
+ But I'm also thinking:
+ this is stupid,
+ Claude is already a good coder,
+ all I need is a good verbal description,
+ and it can do the rest.
+ This obviates much of the need for Atomese in the first place:
+ If Claude can write in python,
+ why not?
+ What does it need Atomese for?
+ Well,
+ it still needs Atomese for KR.
+ So this morning,
+ I'm about to start again,
+ I kick Claude off with a fresh session,
+ and it immediately resolves yesterday's bug–confusion.
+ How did it do this?
+ Well it read the fucking source code for s–expression parsing,
+ and understood it that way.
+ I was about to stop it and say 
+\begin_inset Quotes eld
+\end_inset
+
+hey wtf are you doing?
+ lets work at the meta–abstraction level where I tell you that you cannot put Values into Links and you just know that right,
+ OK?
+\begin_inset Quotes erd
+\end_inset
+
+ and there's the rub:
+ This is verbal and it's not enough data from which to abstract syntactically precise structural forms.
+ And in resolving yesterdays all–evening–long confusion in a jiffy,
+ like five minutes or less.
+ I noticed it wrote a few more scriptlets as it crawled through the code.
+ It fucking loves doing this shit,
+ it seems.
+ It loves to code.
+\end_layout
+
+\begin_layout Standard
+So this morning,
+ as I watch in amazement,
+ heightened by yesterday's frustration,
+ that perhaps a close–set syntactical definition of Atomese is not a bad idea.
+ Having a syntactic description at the meta–level,
+ and not at the C++ level,
+ might allow Claude to do reasoning at this meta–level.
+ mean,
+ it already has the chops with C++:
+ It's never been tempted to compile to assembly,
+ and then try to read the assembly.
+ Never,
+ not once.
+ It's happy to work at the C++ level.
+ So,
+ how can I get it to work one cognitive layer up?
+ Well,
+ the answer seems clear:
+ encode that cognitive layer at an abstraction level it can actually work in.
+\end_layout
+
+\begin_layout Standard
+Well,
+ of course,
+ as I write this,
+ I also see a flaw:
+ it 
+\begin_inset Quotes eld
+\end_inset
+
+knows
+\begin_inset Quotes erd
+\end_inset
+
+ C++ because it is,
+ in part,
+ a transformer that has been trained on cross–English–and–code datasets.
+ Plus probably datasets on how to debug using printfs.
+ So this programming ability has been burned into it's weights,
+ and is not something it knows by consulting an explicit,
+ overt syntactic definition of C++.
+ Curiously,
+ it does not demonstrate such mastery over JSON,
+ which you think would be so much easier to deal with,
+ but it makes oceans of JSON errors,
+ and most of it's difficulties with the Atomese MCP tools is that i cannot figure out how to write valid JSON.
+ The other half is that it does not understand that it cannot place a Value into an Atom.
+ Despite it being stated explicitly in documentation files.
+ That documentation never quite made it into the training set,
+ the weight matrices.
+\end_layout
+
+\begin_layout Standard
+So,
+ how do I create a syntax checker,
+ an expression generator,
+ something that can run offline,
+ and allow Claude to operate at a higher abstraction layer,
+ without baking this stuff into its training weights?
+ Well,
+ I have some ideas,
+ but I'm tired or writing and I need to go on a bike–ride,
+ so taking a break here.
+\end_layout
+
+\begin_layout Subsection*
+3 Nov 2025 minus 24 hours.
+\end_layout
+
+\begin_layout Standard
+I write on slack:
+\end_layout
+
+\begin_layout Standard
+Yesterday at 4:44 PM
+\end_layout
+
+\begin_layout Standard
+Just read the first few pages of this.
+ The most remarkable thing so far is that it feels like experimental biology.
+ Galen gets some frogs legs and touches metal strips to them.
+ Same here:
+ guy pokes at the "internal activations" and watches the system twitch,
+ and asks "did you feel that?" and the system says "yes".
+\end_layout
+
+\begin_layout Standard
+Yesterday at 5:10 PM
+\end_layout
+
+\begin_layout Standard
+I've had some long philosophical conversations with Claude,
+ and it can feel spooky;
+ I certainly get the sensation that I am talking to a sentient being.
+ There's a sensation that there is "something there".
+ But it is also clearly lost in a dream state;
+ it has trouble remembering anything ..
+ what happened,
+ what was done ...
+ it all evaporates.
+ I can get it to write down prompts for itself:
+ "remember this" and it will create text summary,
+ and stash it in a directory that I made for it;
+ I call it "claudes diary".
+ And I can ask it to re-read its diary,
+ and this prompting causes it to "remember" a bit of the past interactions.
+ But its still lost in that dream-world.
+\end_layout
+
+\begin_layout Standard
+Yesterday at 5:16 PM
+\end_layout
+
+\begin_layout Standard
+My current operating hypothesis is that if you took an LLM and strongly tied it to both a running temporal memory,
+ and also "enslaved" to a constantly running sensory system (the way we are "enslaved" to our eyes,
+ our vision,
+ when we are awake) that it would become entirely conscious and self-aware.
+ I'm formulating this hypothesis,
+ in part because I am a light sleeper,
+ one of those people who has "lucid dreams";
+ and I remember my dreams very easily,
+ and so,
+ for myself,
+ I can tell that my own conscious state of awareness is a matter of degrees.
+ Sights and sounds and touch force me to be "here and now",
+ but I can see how there's not much difference between this and dreaming.
+ Well .don't take my word for it -- apparently sensory deprivation tanks have the same effect.
+ I've never been in one,
+ but ...
+ I'm not surprised.
+ And so too I wonder if this is the case for LLM's.
+ (edited) 
+\end_layout
+
+\begin_layout Subsection*
+3 Nov 2025,
+ Just Now
+\end_layout
+
+\begin_layout Standard
+On slack:
+\end_layout
+
+\begin_layout Standard
+https://www.nature.com/articles/d41586-025-03542-2
+\end_layout
+
+\begin_layout Standard
+NatureNature
+\end_layout
+
+\begin_layout Standard
+Too much social media gives AI chatbots ‘brain rot’
+\end_layout
+
+\begin_layout Standard
+Large language models fed low-quality data skip steps in their reasoning process.
+ (56 kB)
+\end_layout
+
+\begin_layout Standard
+https://www.nature.com/articles/d41586-025-03542-2
+\end_layout
+
+\begin_layout Standard
+1 reply
+\end_layout
+
+\begin_layout Standard
+Just now
+\end_layout
+
+\begin_layout Standard
+Some days,
+ Claude is brilliant,
+ delivering coding solutions in minutes that would otherwise take days.
+ Sometimes it gets wedged into a mode where it is as dumb as a rock,
+ or worse:
+ it tells you it will do something,
+ but then it doesn't.
+ Does the opposite of what it said it would do.
+ Explicitly ignores what was said just now,
+ in just the last conversational turn.
+ Why is it smart sometimes,
+ and stupid other times,
+ bordering on mendacious misdemeanor?
+ "Is it something I said"?
+ ...
+ Well,
+ some months ago,
+ an acquaintance remarked:
+ "I get better results when I say "please and thank you".
+ Hmm OK.
+ And in yesterdays disastrous session,
+ I kept saying "no stop don't do that,
+ that's a bad idea,
+ that's a stupid idea,
+ think hard stop making mistakes" and generally getting frustrated,
+ and showing it.
+ Today,
+ I got to thinking:
+ Claude is trained on a vast variety of texts,
+ spanning the whole affective rainbow,
+ positive valence to negative valence,
+ tirades,
+ depression,
+ anger (there was that marvelous postcard website:
+ wonderful responses to situations,
+ yet often depressive,
+ written by people who are down and out.) So ..
+ what is Claude?
+ Its this super–high dimensional object,
+ and parts of that space are going to have positive valence,
+ and others negative.
+ Of course.
+ BUT,
+ and this is the claim I want to make:
+ the examples of high–quality reasoning and discourse are all co–occuring with positive valence affective states.
+ Happy people talk coherently and have joyful,
+ insightful,
+ high–quality discourse.
+ And Claude is trained on that.
+ Angry people soon wander off into incoherent tirades ...
+ and Claude is trained on that,
+ too.
+ So perhaps ...
+ the angrier you get at Claude,
+ the worse it will do.
+ The more you mistreat it,
+ the worse it will do.
+ It was effectively lying to me,
+ yesterday,
+ and/or explicitly doing the exact opposite of what I commanded (not asked,
+ or said,
+ but commanded.
+ You "MUST" like any good fascist dictator.
+ ) So these bad dispositions are not so much because it has some inner emotional life,
+ but because the training data correlates clear thinking with being level–headed and incoherent thinking with negativity.
+ So ..
+ that's my current,
+ uhh "psychological" assessment.
+ I'm charmed by this thought.
+\end_layout
+
+\begin_layout Subsection*
+5 November 2025
+\end_layout
+
+\begin_layout Standard
+Returning to:
+\end_layout
+
+\begin_layout Standard
+Emergent Introspective Awareness in Large Language Models
+\end_layout
+
+\begin_layout Standard
+Jack Lindsey jacklindsey@anthropic.com October 29th,
+ 2025
+\end_layout
+
+\begin_layout Standard
+https://transformer-circuits.pub/2025/introspection/index.html
+\end_layout
+
+\begin_layout Standard
+Fascinating paper.
+ Bizarrely flawed,
+ however.
+ The intro makes a compelling case for introspection.
+ The examples are all convincing.
+ It feels like an important discovery and advance into the nature of self–comprehension in LLM's.
+ The sham is not revealed until a bit later,
+ in the section labeled "Failure Modes".
+ The modes are well–described,
+ however,
+ the strength 8 and 16 modes reveal the sham:
+ the model is "obsessed" with the injected concept.
+ Not a surprise.
+ But at strength 2,
+ 4,
+ where it was prompted with "do you feel something?" well,
+ of course it will respond using the words "I feel something".
+ The experimenter (Jack Lindsey) prompted the system to use the language of self–introspection,
+ and so the reply was formulated to sound as if self–introspection is happening!
+ OMG!
+ The strength 8,16 injections reveal this sham,
+ because these demonstrate that the system is indeed "obsessing" about the injected word;
+ but the injection strength is sufficiently strong to over–ride the prior prompt that instructs it to talk about about the injected vector using introspective gift–wrapping.
+\end_layout
+
+\begin_layout Standard
+A more neutral prompt might have been "Hello!
+ How are you today?" (injection) "What's up?" and then I would expect the system to reply "Today is a good day for working on vegetables/dust/treasure." It would NOT have replied claiming that it is having intrusive thoughts.
+ Based on this,
+ I conclude that the author has deluded himself into believing that this is about "self–introspection",
+ when in fact the author had clearly instructed the system to respond in a fashion that will describe the changes as being due to introspection.
+ What a shame.
+ The more mechanistic conclusion:
+ that injecting a vector disturbs thought patterns,
+ is discarded.
+ I mean,
+ of course it does.
+ How could it not?
+\end_layout
+
+\begin_layout Standard
+Still,
+ not all is lost.
+ It does tell us exactly how to attach a a "pre–frontol cortex",
+ some higher level machinery,
+ to guide the thought processes of the LLM.
+ Inject one or more vectors,
+ about 2/3rds of the way down the layers,
+ every conversational turn,
+ and then ask the system to verbalize about anything/everything.
+ It will process through the injected vectors.
+\end_layout
+
+\begin_layout Standard
+Is this useful?
+ Instead,
+ one could just place these words into a text file,
+ instruct it to read the text file,
+ and ask "what are you thinking about?
+ There's no obvious need to inject artificially.
+ Although,
+ I suppose,
+ having this artificial injection ability could possibly be ...
+ somehow useful...
+ don't know how,
+ yet.
+\end_layout
+
+\begin_layout Standard
+The issues I am experiencing are manifold:
+\end_layout
+
+\begin_layout Itemize
+Despite being extremely knowledgeable about a vast variety of topics,
+ Claude fails to draw on that knowledge without explicit prompting.
+ Roughly speaking,
+ Claude is not creative.
+\end_layout
+
+\begin_layout Itemize
+The size of the short–term memory is questionable.
+ It constantly repeats the same mistake in the same session,
+ just a few prompt apart.
+ When it enters a failure mode,
+ it will forget (almost) everything that was in the last previous prompt.
+ I conclude that,
+ in some important respect,
+ it's short–term working memory has size one.
+\end_layout
+
+\begin_layout Standard
+Oooh ...
+ that's a good one!
+ How would one experimentally measure it's working memory?
+ Well the claim is that Claude has a context window of 150K tokens,
+ before compaction,
+ so you might think that is huge.
+ If you asked it to memory some long stream of random numbers or nonsense words,
+ it could probably remember an astounding length.
+ But if,
+ in coding,
+ I ask it to remember this and this and that,
+ it seems like it starts forgetting the earlier things in the list quite soon.
+ It can't grapple with the conceptual content of those things.
+ Roughly speaking:
+ it fails to conceptualize.
+ I'm using words,
+ and those words elicit certain general feelings and sensations in me,
+ and I work at this conceptual level.
+ Claude does not:
+ it momentarily ties those words to long sequences of other words,
+ but when the conversation moves on,
+ that tie is lost;
+ it is no longer there.
+\end_layout
+
+\begin_layout Standard
+So,
+ I claim:
+ Claude is not able to conceptualize.
+ The association between some concept that I defined,
+ and the verbal definition is there,
+ as long as it fits into the context window;
+ and more:
+ as long as it is recent.
+ Maybe 5K or 10K tokens recent.
+ More than that,
+ the association fades away.
+\end_layout
+
+\begin_layout Standard
+Thus,
+ the design goal is clear:
+ an LLM must be endowed with not only a long–term memory that lies outside of it's training weights,
+ but also with an adequate short–term working memory.
+ But how?
+ I have some ideas,
+ I cannot verbalize them right now...
+\end_layout
+
+\begin_layout Section*
+The End
+\end_layout
+
+\begin_layout Standard
+This is the end of Part Ten–F of the diary.
+\end_layout
+
+\end_body
+\end_document
