@@ -169,13 +169,12 @@ jobs:
           fi
           
       - name: Upload build artifacts
-        if: steps.guix-build.outcome == 'success'
+        if: steps.guix-build.outcome == 'success' && env.BUILD_RESULT != ''
         uses: actions/upload-artifact@v3
         with:
           name: guix-build-output
           path: |
             build-output.log
-            ${{ env.BUILD_RESULT }}
           retention-days: 7
           
       - name: Build summary
