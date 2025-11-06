@@ -34,7 +34,6 @@
 #include <opencog/atoms/base/Atom.h>
 #include <opencog/atoms/base/Link.h>
 #include <opencog/atoms/base/Node.h>
-#include <opencog/atoms/truthvalue/CountTruthValue.h>
 #include <opencog/atoms/value/FloatValue.h>
 
 #include <opencog/atomspace/AtomSpace.h>
@@ -73,6 +72,7 @@ Atom::~Atom()
 }
 
 // ==============================================================
+// Singleton key for backwards compat with TruthValues
 
 const Handle& truth_key(void)
 {
@@ -80,66 +80,14 @@ const Handle& truth_key(void)
 	return tk;
 }
 
-void Atom::setTruthValue(const TruthValuePtr& newTV)
-{
-    if (nullptr == newTV) return;
-
-    // Another setter could be changing this, even as we are.
-    // So make a copy, first.
-    TruthValuePtr oldTV(getTruthValue());
-
-    // If both old and new are e.g. DEFAULT_TV, then do nothing.
-    if (oldTV.get() == newTV.get()) return;
-
-    // ... and we still need to make sure that only one thread is
-    // writing this at a time. std:shared_ptr is NOT thread-safe against
-    // multiple writers: see "Example 5" in
-    // http://www.boost.org/doc/libs/1_53_0/libs/smart_ptr/shared_ptr.htm#ThreadSafety
-    setValue (truth_key(), ValueCast(newTV));
-}
-
-TruthValuePtr Atom::getTruthValue() const
-{
-    ValuePtr pap(getValue(truth_key()));
-    if (nullptr == pap) return TruthValue::DEFAULT_TV();
-    return TruthValueCast(pap);
-}
-
-TruthValuePtr Atom::incrementCountTV(double cnt)
-{
-	double mean = 1.0;
-	double conf = 0.0;
-
-	// Lock so that count updates are atomic!
-	KVP_UNIQUE_LOCK;
-
-	auto pr = _values.find(truth_key());
-	if (_values.end() != pr)
-	{
-		const TruthValuePtr& tvp = TruthValueCast(pr->second);
-		// tvp might be nullptr, if someone set the TV to something
-		// that is not a truth value. This can happen if the truth
-		// predicate is used directly with setValue().
-		if (tvp)
-		{
-			if (COUNT_TRUTH_VALUE == tvp->get_type())
-				cnt += tvp->get_count();
-			mean = tvp->get_mean();
-			conf = tvp->get_confidence();
-		}
-	}
-
-	TruthValuePtr newTV = createCountTruthValue(mean, conf, cnt);
-
-	_values[truth_key()] = ValueCast(newTV);
-	return newTV;
-}
-
 // ==============================================================
 /// Setting values associated with this atom.
 /// If the value is a null pointer, then the key is removed.
 void Atom::setValue(const Handle& key, const ValuePtr& value)
 {
+	// We want to know if the key is .. being used as a key.
+	key->markIsKey();
+
 	// This is rather irritating, but we fake it for the
 	// PredicateNode "*-TruthValueKey-*" because if we don't
 	// then load-from-file and load-from-network breaks.
@@ -207,17 +155,6 @@ ValuePtr Atom::incrementCount(const Handle& key, const std::vector<double>& coun
 		if (not pap->is_type(FLOAT_VALUE))
 			return pap;
 
-		// Backwards compatibility: If we're incrementing the count
-		// location on a SimpleTruthValue, then automatically promote
-		// it to a CountTruthValue.
-		if (*key == *truth_key() and
-			 not pap->is_type(COUNT_TRUTH_VALUE))
-		{
-			FloatValuePtr fv(FloatValueCast(pap));
-			std::vector<double> vect = fv->value();
-			pap = ValueCast(TruthValue::factory(COUNT_TRUTH_VALUE, vect));
-		}
-
 		// Its a float. Let it increment itself.
 		FloatValuePtr fv(FloatValueCast(pap));
 		ValuePtr nv = fv->incrementCount(count);
@@ -227,16 +164,8 @@ ValuePtr Atom::incrementCount(const Handle& key, const std::vector<double>& coun
 	}
 
 	// If we are here, an existing value was not found.
-	// Backwards compatibility: If there's no prior value *and*
-	// the key is the default TruthValue key, then automatically
-	// create a CountTruthValue.
-
 	// Create a brand new float.
-	ValuePtr nv;
-	if (*truth_key() == *key)
-		nv = ValueCast(TruthValue::factory(COUNT_TRUTH_VALUE, count));
-	else
-		nv = createFloatValue(FLOAT_VALUE, count);
+	ValuePtr nv = createFloatValue(count);
 
 	_values[key] = nv;
 	return nv;
@@ -257,17 +186,6 @@ ValuePtr Atom::incrementCount(const Handle& key, size_t idx, double count)
 		if (not pap->is_type(FLOAT_VALUE))
 			return pap;
 
-		// Backwards compatibility: If we're incrementing the count
-		// location on a SimpleTruthValue, then automatically promote
-		// it to a CountTruthValue.
-		if (2 == idx and *key == *truth_key() and
-			 not pap->is_type(COUNT_TRUTH_VALUE))
-		{
-			FloatValuePtr fv(FloatValueCast(pap));
-			std::vector<double> vect = fv->value();
-			pap = ValueCast(TruthValue::factory(COUNT_TRUTH_VALUE, vect));
-		}
-
 		// Its a float. Let it increment itself.
 		FloatValuePtr fv(FloatValueCast(pap));
 		ValuePtr nv = fv->incrementCount(idx, count);
@@ -277,20 +195,13 @@ ValuePtr Atom::incrementCount(const Handle& key, size_t idx, double count)
 	}
 
 	// If we are here, an existing value was not found.
-	// Backwards compatibility: If there's no prior value *and*
-	// the key is the default TruthValue key, then automatically
-	// create a CountTruthValue.
 
 	// Create a brand new float.
 	std::vector<double> new_vect;
 	new_vect.resize(idx+1, 0.0);
 	new_vect[idx] += count;
 
-	ValuePtr nv;
-	if (2 == idx and *truth_key() == *key)
-		nv = ValueCast(TruthValue::factory(COUNT_TRUTH_VALUE, new_vect));
-	else
-		nv = createFloatValue(FLOAT_VALUE, new_vect);
+	ValuePtr nv = createFloatValue(new_vect);
 
 	_values[key] = nv;
 	return nv;
@@ -401,6 +312,16 @@ bool Atom::setPresent(void)
 {
     uint8_t old_flags = _flags.fetch_and(~ABSENT_FLAG);
     return old_flags & ABSENT_FLAG;
+}
+
+void Atom::markIsKey(void)
+{
+    _flags.fetch_or(IS_KEY_FLAG);
+}
+
+void Atom::markIsMessage(void)
+{
+    _flags.fetch_or(IS_MESSAGE_FLAG);
 }
 
 // ==============================================================
@@ -844,18 +765,6 @@ std::string Atom::id_to_string() const
     if (isMarkedForRemoval()) ss << " !!! ERROR: marked for removal!";
     return ss.str();
 }
-
-#if 0
-std::string oc_to_string(const IncomingSet& iset, const std::string& indent)
-{
-	std::stringstream ss;
-	ss << indent << "size = " << iset.size();
-	for (unsigned i = 0; i < iset.size(); i++)
-		ss << std::endl << indent << "link[" << i << "]:" << std::endl
-		   << iset[i]->to_string(indent + OC_TO_STRING_INDENT);
-	return ss.str();
-}
-#endif
 
 std::string oc_to_string(const Atom& atom, const std::string& indent)
 {

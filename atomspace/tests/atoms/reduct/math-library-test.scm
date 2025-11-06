@@ -1,5 +1,5 @@
 ;
-; math-library-test.scm -- Test assorted elementary arithmetic functions
+; math-library-test.scm -- Test assorted elementary numerical functions
 ;
 ; To run by hand, just say `guile -s math-library-test.scm`.
 ;
@@ -62,7 +62,7 @@
 				(Number 1 1 1 1 1))
 		)))
 
-	(cog-evaluate!
+	(cog-execute!
 		(Equal
 			(Number 1 1 1 1 1)
 			(Plus

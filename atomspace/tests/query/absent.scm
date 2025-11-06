@@ -32,12 +32,12 @@
 
 ; If an item is visible, delete it, kill it.
 (define destroy
-	(BindLink query (DeleteLink query))
+	(QueryLink query (DeleteLink query))
 )
 
 ; If nothing is visible, then hallucinate the golem into existence.
 (define create
-	(BindLink (AbsentLink query) golem)
+	(QueryLink (AbsentLink query) golem)
 )
 
 (define room-state (AnchorNode "Room List"))
@@ -49,7 +49,7 @@
 
 ; Set the current state if an item is visible.
 (define is-visible
-	(BindLink
+	(QueryLink
 		query
 		(PutLink (StateLink room-state (VariableNode "$x")) room-nonempty)
 	))
@@ -57,11 +57,18 @@
 ; This has an absent link in it; the link is assigned only when
 ; the atomspace does not have a visible item.
 (define is-invisible
-	(BindLink
+	(QueryLink
 		(AbsentLink query)
 		(PutLink (StateLink room-state (VariableNode "$x")) room-empty)
 	))
 
+; Chase key->StateLink->ConceptNode
+(define (get-state STATE)
+	(filter
+		(lambda (CURSTA) (eq? 'ConceptNode (cog-type CURSTA)))
+		(map
+			(lambda (STALNK) (cog-outgoing-atom STALNK 1))
+			(cog-incoming-by-type STATE 'StateLink))))
+
 ;; Display the current room state
-(define (show-room-state)
-   (car (cog-chase-link 'StateLink 'ConceptNode room-state)))
+(define (show-room-state) (car (get-state room-state)))
