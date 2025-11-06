@@ -24,6 +24,7 @@ set(ATOMSPACE_ACCELERATOR_SOURCES
     src/inference_engine.cpp
     src/accelerator.cpp
     src/query_optimizer.cpp
+    src/pattern_miner.cpp
 )
 
 # AtomSpace Accelerator library headers
@@ -31,6 +32,7 @@ set(ATOMSPACE_ACCELERATOR_HEADERS
     include/atomspace_accelerator/inference_engine.h
     include/atomspace_accelerator/accelerator.h
     include/atomspace_accelerator/query_optimizer.h
+    include/atomspace_accelerator/pattern_miner.h
 )
 
 # Build AtomSpace Accelerator shared library

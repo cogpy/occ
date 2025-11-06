@@ -59,8 +59,8 @@ IF(BUILD_ATOMSPACE AND BUILD_COGUTIL)
     add_subdirectory(atomspace)
 ENDIF()
 
-# AtomSpace Accelerator - depends on AtomSpace
-IF(BUILD_ATOMSPACE_ACCELERATOR AND BUILD_ATOMSPACE)
+# AtomSpace Accelerator - can build independently for cognitive architecture
+IF(BUILD_ATOMSPACE_ACCELERATOR)
     MESSAGE(STATUS "Building AtomSpace Accelerator Inference Engine...")
     add_subdirectory(atomspace-accelerator)
 ENDIF()
@@ -90,8 +90,8 @@ IF(BUILD_SENSORY AND BUILD_ATOMSPACE)
     add_subdirectory(sensory)
 ENDIF()
 
-# Agentic Chatbots - integrates with AtomSpace
-IF(BUILD_AGENTIC_CHATBOTS AND BUILD_ATOMSPACE)
+# Agentic Chatbots - can build independently for cognitive architecture
+IF(BUILD_AGENTIC_CHATBOTS)
     MESSAGE(STATUS "Building Agentic Chatbots...")
     add_subdirectory(agentic-chatbots)
 ENDIF()
