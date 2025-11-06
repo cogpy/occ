@@ -17,7 +17,7 @@ jobs:
       # Cache Guix installation to speed up subsequent runs
       - name: Cache Guix installation
         id: cache-guix
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             /gnu/store
@@ -170,7 +170,7 @@ jobs:
           
       - name: Upload build artifacts
         if: steps.guix-build.outcome == 'success' && env.BUILD_RESULT != ''
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: guix-build-output
           path: |
