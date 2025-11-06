@@ -62,6 +62,7 @@ class scope_exit
 #include <opencog/util/oc_assert.h>
 
 #include <opencog/atoms/base/Atom.h>
+#include <opencog/atoms/value/BoolValue.h>
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/cython/executioncontext/Context.h>
 #include "PythonEval.h"
@@ -1037,6 +1038,15 @@ ValuePtr PythonEval::apply_v(AtomSpace * as,
         PyGILState_Release(gstate);
     } SCOPE_GUARD_END;
 
+    // Check if the return value is a Python boolean (True or False)
+    // and convert to BoolValue
+    if (PyBool_Check(pyValue))
+    {
+        bool bval = (pyValue == Py_True);
+        Py_DECREF(pyValue);
+        return createBoolValue(bval);
+    }
+
     // Did we actually get a Value?
     // One way to do this would be to say
     //    PyObject *vtype = find_object("Value");
@@ -1160,6 +1170,12 @@ std::string PythonEval::build_python_error_message(
         while (pyTracebackObject != NULL)
         {
             int line_number = pyTracebackObject-> tb_lineno;
+
+// Python 3.8 and earlier do not have these line-number macros
+#if PY_VERSION_HEX < 0x03090000
+    #define PyFrame_GetCode(frame) ((frame)->f_code)
+    #define PyFrame_GetLineNumber(frame) ((frame)->f_lineno)
+#endif
             const char* filename = PyUnicode_AsUTF8(
                 PyFrame_GetCode(pyTracebackObject->tb_frame)->co_filename);
             const char* code_name = PyUnicode_AsUTF8(

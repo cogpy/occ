@@ -6,8 +6,6 @@
 #
 # This imports all the python wrappers for atom creation.
 #
-from opencog.atomspace cimport strength_t, confidence_t
-
 import warnings
 
 from opencog.atomspace import (createBoolValue,
@@ -15,7 +13,6 @@ from opencog.atomspace import (createBoolValue,
                                createLinkValue,
                                createQueueValue,
                                createStringValue,
-                               createTruthValue,
                                createUnisetValue,
                                # createVoidValue,
                                # createRandomStream
@@ -56,9 +53,6 @@ def StringValue(arg):
 
 def UnisetValue(arg=None):
     return createUnisetValue(arg)
-
-def TruthValue(strength_t strength=1.0, confidence_t confidence=1.0):
-    return createTruthValue(strength, confidence)
 
 # Argh. Need to hand-craft a pyx file for these. XXX FIXME
 # def VoidValue():
