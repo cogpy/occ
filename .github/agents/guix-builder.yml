@@ -1,16 +1,8 @@
-name: Guix Build CI
-
-on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
-
-jobs:
-  guix-build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-
+---
+name: Guix Builder
+description: Install GNU Guix non-interactively
+---
+guix-build:
     steps:
       - uses: actions/checkout@v4
 
