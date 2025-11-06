@@ -109,11 +109,23 @@ The CogGML Microkernel embodies principles of cognitive synergy through:
 ## Future Directions
 
 - ~~Enhanced shard communication protocols~~ ✓ Implemented
-- Distributed shard deployment across nodes
+- ~~Asynchronous message processing with priority queues~~ ✓ Implemented
+- ~~Distributed shard deployment across nodes~~ ✓ Implemented
 - Advanced synergy optimization algorithms
 - Integration with neural-symbolic hybrid systems
-- Asynchronous message processing with priority queues
 - Message persistence and replay capabilities
+
+## Recent Enhancements (2025)
+
+### Communication Optimization
+- **Priority-based Message Queuing**: Messages are now queued by priority (LOW, NORMAL, HIGH, CRITICAL)
+- **Asynchronous Processing**: Background thread processes messages in batches for better throughput
+- **Queue Management**: Automatic overflow handling with intelligent message dropping
+
+### Distributed Processing
+- **Network Coordination**: New DistributedCoordinator enables cognitive processing across network nodes
+- **Load Balancing**: Automatic distribution of shards based on node capacity and current load
+- **Health Monitoring**: Real-time network health metrics and synchronization
 
 ## Contributing
 
