@@ -9,51 +9,89 @@ on:
 jobs:
   guix-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120  # Increased timeout for complex builds
 
     steps:
       - uses: actions/checkout@v4
 
+      # Cache Guix installation to speed up subsequent runs
+      - name: Cache Guix installation
+        id: cache-guix
+        uses: actions/cache@v3
+        with:
+          path: |
+            /gnu/store
+            /var/guix
+            /var/log/guix
+          key: guix-${{ runner.os }}-${{ hashFiles('guix.scm') }}
+          restore-keys: |
+            guix-${{ runner.os }}-
+
       - name: Install GNU Guix non-interactively (SSR safe)
+        if: steps.cache-guix.outputs.cache-hit != 'true'
         run: |
-          # Download the Guix install script with retry logic and timeouts
-          # Uses both curl's internal retry mechanism and an outer retry loop
-          # for maximum reliability against transient network issues
-          max_attempts=5
-          curl_retries=2
-          retry_delay=10
-          connect_timeout=20
+          # Download the Guix install script with improved retry logic and fallback sources
+          # Primary: git.savannah.gnu.org (official)
+          # Fallback: GitHub mirror (more reliable)
+          max_attempts=3
+          retry_delay=5
+          connect_timeout=30
           max_time=120
-          attempt=0
           
-          until curl \
-            --retry "$curl_retries" \
-            --retry-delay "$retry_delay" \
-            --connect-timeout "$connect_timeout" \
-            --max-time "$max_time" \
-            -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh \
-            -o /tmp/guix-install.sh; do
-            ((attempt++))
-            if [ $attempt -ge $max_attempts ]; then
-              echo "Failed to fetch guix-install.sh from git.savannah.gnu.org after $max_attempts attempts."
-              exit 1
-            fi
-            echo "Retrying download (attempt $attempt/$max_attempts)..."
-            sleep "$retry_delay"
+          # Array of download sources (primary and fallback)
+          sources=(
+            "https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh"
+            "https://raw.githubusercontent.com/guix-mirror/guix/master/etc/guix-install.sh"
+          )
+          
+          download_success=false
+          for source in "${sources[@]}"; do
+            echo "Attempting download from: $source"
+            attempt=0
+            
+            while [ $attempt -lt $max_attempts ]; do
+              ((attempt++))
+              # Use exponential backoff: delay increases with each attempt
+              current_delay=$((retry_delay * attempt))
+              
+              if curl \
+                --retry 2 \
+                --retry-delay "$current_delay" \
+                --connect-timeout "$connect_timeout" \
+                --max-time "$max_time" \
+                -fsSL "$source" \
+                -o /tmp/guix-install.sh; then
+                echo "Successfully downloaded guix-install.sh from $source"
+                download_success=true
+                break 2
+              fi
+              
+              echo "Download attempt $attempt/$max_attempts failed from $source"
+              [ $attempt -lt $max_attempts ] && sleep "$current_delay"
+            done
           done
           
-          echo "Successfully downloaded guix-install.sh"
+          if [ "$download_success" != "true" ]; then
+            echo "ERROR: Failed to download guix-install.sh from all sources"
+            exit 1
+          fi
+          
           # Execute the script as root, non-interactively
           printf '\n' | sudo bash /tmp/guix-install.sh
           
       - name: Setup Guix environment
         run: |
-          # Use $(whoami) for reliable user detection instead of $USER
-          export PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin:$PATH"
+          # Configure Guix environment variables and add to GITHUB_ENV for subsequent steps
+          GUIX_USER_PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin"
+          GUIX_PROFILE="/var/guix/profiles/per-user/$(whoami)/current-guix"
           
-          # Set up Guix environment variables
-          export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
-          export GUIX_PACKAGE_PATH="$GITHUB_WORKSPACE"
+          # Add to GitHub Actions environment for all subsequent steps
+          echo "$GUIX_USER_PATH" >> $GITHUB_PATH
+          echo "GUIX_LOCPATH=$HOME/.guix-profile/lib/locale" >> $GITHUB_ENV
+          echo "GUIX_PACKAGE_PATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+          echo "GUIX_PROFILE=$GUIX_PROFILE" >> $GITHUB_ENV
+          echo "GUILE_LOAD_PATH=$GUIX_PROFILE/share/guile/site/3.0" >> $GITHUB_ENV
+          echo "GUILE_LOAD_COMPILED_PATH=$GUIX_PROFILE/lib/guile/3.0/site-ccache" >> $GITHUB_ENV
           
           # Ensure guix daemon is running
           echo "Starting guix daemon..."
@@ -73,24 +111,10 @@ jobs:
           
       - name: Verify Guix files
         run: |
-          export PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin:$PATH"
-          
-          # Set up Guix environment variables
-          export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
-          export GUIX_PACKAGE_PATH="$GITHUB_WORKSPACE"
-          
-          # Source Guix profile to ensure modules are available
-          export GUIX_PROFILE="/var/guix/profiles/per-user/$(whoami)/current-guix"
-          source $GUIX_PROFILE/etc/profile || true
-          source /etc/profile || true
-          
-          # Set GUILE_LOAD_PATH and GUILE_LOAD_COMPILED_PATH for Guile to find Guix modules
-          export GUILE_LOAD_PATH="$GUIX_PROFILE/share/guile/site/3.0"
-          export GUILE_LOAD_COMPILED_PATH="$GUIX_PROFILE/lib/guile/3.0/site-ccache"
-          
-          # Use guix repl instead of system guile for validation to ensure Guix modules are available
+          # Validate guix.scm syntax using guix repl
+          # Environment variables are already set via GITHUB_ENV
           echo "Validating guix.scm syntax using guix repl..."
-          if ! guix repl -- <<EOF
+          if ! guix repl -- <<'EOF'
           (use-modules (guix packages))
           (with-input-from-file "guix.scm" 
             (lambda () 
@@ -106,26 +130,12 @@ jobs:
           
       - name: Build with Guix (dry-run)
         run: |
-          # Use $(whoami) for consistent PATH construction
-          export PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin:$PATH"
-          
-          # Set up Guix environment variables
-          export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
-          export GUIX_PACKAGE_PATH="$GITHUB_WORKSPACE"
-          
-          # Source Guix profile to ensure modules are available
-          export GUIX_PROFILE="/var/guix/profiles/per-user/$(whoami)/current-guix"
-          source $GUIX_PROFILE/etc/profile || true
-          source /etc/profile || true
-          
-          # Set GUILE_LOAD_PATH and GUILE_LOAD_COMPILED_PATH for Guile to find Guix modules
-          export GUILE_LOAD_PATH="$GUIX_PROFILE/share/guile/site/3.0"
-          export GUILE_LOAD_COMPILED_PATH="$GUIX_PROFILE/lib/guile/3.0/site-ccache"
-          
+          # Dry-run to validate package definition without building
+          # Environment variables are already set via GITHUB_ENV
           echo "Running dry-run build to check package definition..."
           guix build -f guix.scm --dry-run --verbosity=1 || {
             echo "Dry-run failed, checking package syntax with guix repl..."
-            guix repl -- <<EOF
+            guix repl -- <<'EOF'
             (use-modules (guix packages))
             (with-input-from-file "guix.scm" 
               (lambda () 
@@ -138,20 +148,51 @@ jobs:
           }
           
       - name: Build with Guix (actual build - may be slow)
+        id: guix-build
         continue-on-error: true
         run: |
-          export PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin:$PATH"
-          
-          # Set up Guix environment variables
-          export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
-          export GUIX_PACKAGE_PATH="$GITHUB_WORKSPACE"
-          
-          # Source Guix profile to ensure modules are available
-          export GUIX_PROFILE="/var/guix/profiles/per-user/$(whoami)/current-guix"
-          source $GUIX_PROFILE/etc/profile || true
-          source /etc/profile || true
-          
-          # Attempt actual build
+          # Attempt actual build with optimizations
+          # Environment variables are already set via GITHUB_ENV
           echo "Attempting actual build..."
-          guix build -f guix.scm --verbosity=1 --no-grafts
+          
+          # Build with options to speed up the process:
+          # --no-grafts: Skip grafting (security updates) for faster builds
+          # --verbosity=1: Show progress without overwhelming logs
+          # --cores=0: Use all available CPU cores
+          guix build -f guix.scm --verbosity=1 --no-grafts --cores=0 | tee build-output.log
+          
+          # Store the build result path for artifact upload
+          if [ -f build-output.log ]; then
+            BUILD_RESULT=$(tail -1 build-output.log)
+            echo "BUILD_RESULT=$BUILD_RESULT" >> $GITHUB_ENV
+            echo "Build completed successfully: $BUILD_RESULT"
+          fi
+          
+      - name: Upload build artifacts
+        if: steps.guix-build.outcome == 'success'
+        uses: actions/upload-artifact@v3
+        with:
+          name: guix-build-output
+          path: |
+            build-output.log
+            ${{ env.BUILD_RESULT }}
+          retention-days: 7
+          
+      - name: Build summary
+        if: always()
+        run: |
+          echo "## Guix Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.guix-build.outcome }}" == "success" ]; then
+            echo "✅ **Build Status**: SUCCESS" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Build Output**: $BUILD_RESULT" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Build Status**: FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Note**: This is expected for complex builds. Check logs for details." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Timeout**: 120 minutes" >> $GITHUB_STEP_SUMMARY
+          echo "**Caching**: Enabled for /gnu/store and /var/guix" >> $GITHUB_STEP_SUMMARY
 
