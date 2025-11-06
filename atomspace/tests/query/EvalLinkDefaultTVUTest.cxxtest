@@ -25,8 +25,6 @@
 #include <opencog/guile/SchemeEval.h>
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/util/Logger.h>
-#include "imply.h"
-
 using namespace opencog;
 
 
@@ -65,18 +63,13 @@ public:
 
 	void test_query_evallink(){
 		logger().debug("BEGIN TEST: %s", __FUNCTION__);
-		this->eval->eval("(load-from-path \"tests/query/eval-default-tv.scm\")");	
+		this->eval->eval("(load-from-path \"tests/query/eval-default-tv.scm\")");
 		Handle query = eval->eval_h("query");
-		Handle answers = bindlink(as, query); 
+		Handle answers = HandleCast(query->execute(as.get()));
 		Handle answer = answers->getOutgoingAtom(0);
 		int num_results = answers->getOutgoingSet().size();
 		TS_ASSERT_EQUALS(num_results, 1);
-		TruthValuePtr stv = answer->getTruthValue();
-		float strength = stv->get_mean();
-		float confidence = stv->get_confidence();
-		float expected_strength = 1;
-		float expected_confidence = 0;
-		TS_ASSERT_EQUALS(strength, expected_strength);
-		TS_ASSERT_EQUALS(confidence, expected_confidence);
+		ValuePtr stv = answer->getValue(truth_key());
+		TS_ASSERT_EQUALS(nullptr, stv);
 	}
 };
