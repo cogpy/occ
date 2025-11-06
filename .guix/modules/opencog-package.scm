@@ -58,10 +58,11 @@
                                    (or (getenv "PKG_CONFIG_PATH") "")))
               #t))
           (add-after 'install 'install-additional-components
-            (lambda* (#:key outputs #:allow-other-keys)
+            (lambda* (#:key inputs outputs #:allow-other-keys)
               (let* ((out (assoc-ref outputs "out"))
                      (bin (string-append out "/bin"))
-                     (share (string-append out "/share/opencog-collection")))
+                     (share (string-append out "/share/opencog-collection"))
+                     (python (search-input-file inputs "/bin/python3")))
                 (mkdir-p share)
                 
                 ;; Go back to source directory from build directory
@@ -72,8 +73,8 @@
                   (install-file "app.py" share)
                   (call-with-output-file (string-append bin "/opencog-demo")
                     (lambda (port)
-                      (format port "#!/bin/sh~%exec python3 ~a/app.py \"$@\"~%"
-                              share)))
+                      (format port "#!/bin/sh~%exec ~a ~a/app.py \"$@\"~%"
+                              python share)))
                   (chmod (string-append bin "/opencog-demo") #o755))
                 
                 (when (file-exists? "README.md")
