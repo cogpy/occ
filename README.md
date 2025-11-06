@@ -49,6 +49,9 @@ For more detailed instructions, please see our [Getting Started Guide](docs/gett
 - **[AGI-OS Integration Guide](docs/AGI_OS_INTEGRATION_GUIDE.md)**: Technical specifications for integrating 5 OpenCog repositories into a unified AGI Operating System.
 - **[AGI-Kern Coverage Summary](docs/AGI_KERN_COVERAGE_SUMMARY.md)**: Quick reference guide for kernel feature coverage and integration roadmap.
 
+### Build & Infrastructure
+- **[Guix SSR Implementation](docs/guix-ssr-implementation.md)**: SSR-compliant GNU Guix build system with local installer mirroring for reproducible, reliable CI/CD.
+
 ---
 
 ## Community and Support
