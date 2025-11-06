@@ -47,7 +47,7 @@
      (list python
            guile-3.0
            boost
-           blas
+           openblas
            lapack
            gsl))
     (synopsis "OpenCog AGI Framework")
