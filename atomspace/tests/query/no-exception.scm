@@ -6,7 +6,8 @@
 
 ;; Failing (before fixing) bind link
 (define bl
-(BindLink
+(CollectionOf
+(QueryLink
   (VariableList
     (TypedVariableLink
       (VariableNode "$A-648d8b51") ; [56][45]
@@ -67,21 +68,39 @@
   ) ; [66][45]
 ) ; [67][45]
 )
+)
+
+(define tvkey (Predicate "*-TruthValueKey-*"))
+
+(define (get-tv ATOM)
+	(cog-value ATOM tvkey))
+
+(define (get-tv-mean TV)
+	(if TV (cog-value-ref TV 0) #f))
+
+(define (get-tv-confidence TV)
+	(if TV (cog-value-ref TV 1) #f))
+
+(define (get-mean ATOM)
+	(define tv (get-tv ATOM))
+	(if tv (get-tv-mean tv) 1))
+
+(define (get-confidence ATOM)
+	(define tv (get-tv ATOM))
+	(if tv (get-tv-confidence tv) 0))
 
 ;; Schema returning undefined handle
 (define (crisp-modus-ponens-formula A AB B)
-    (let (  (sA (cog-mean A))
-            (cA (cog-confidence A))
-            (sAB (cog-mean AB))
-            (cAB (cog-confidence AB)))
+    (let (  (sA (get-mean A))
+            (cA (get-confidence A))
+            (sAB (get-mean AB))
+            (cAB (get-confidence AB)))
         (if (and (>= sA 0.5) (>= cA 0.5) (>= sAB 0.5) (>= cAB 0.5))
-            (cog-set-tv! B (stv 1 1)))))
+            (cog-set-value! B tvkey (FloatValue 1 1)))))
 
 ;; Grounds
-(Implication (stv 1 1)
- (Predicate "R")
- (Predicate "S"))
+(cog-set-value! (Implication (Predicate "R") (Predicate "S"))
+	tvkey (FloatValue 1 1))
 
-(Implication (stv 1 1)
- (Predicate "S")
- (Predicate "T"))
+(cog-set-value! (Implication (Predicate "S") (Predicate "T"))
+	tvkey (FloatValue 1 1))
