@@ -39,7 +39,6 @@
      `(#:tests? #f  ; Disable tests for now 
        #:configure-flags 
        ,(list "-DCMAKE_BUILD_TYPE=Release"
-              "-DCMAKE_INSTALL_PREFIX=/var/www/opencog-collection"  ; SSR server-side deployment path
               "-DBUILD_COGUTIL=ON"
               "-DBUILD_ATOMSPACE=ON"
               "-DBUILD_COGSERVER=ON"
@@ -56,28 +55,29 @@
               (setenv "BOOST_ROOT" (assoc-ref inputs "boost"))
               (setenv "PKG_CONFIG_PATH" 
                       (string-append (assoc-ref inputs "pkg-config") "/lib/pkgconfig:"
-                                   (getenv "PKG_CONFIG_PATH")))
+                                   (or (getenv "PKG_CONFIG_PATH") "")))
               #t))
           (add-after 'install 'install-additional-components
-            (lambda* (#:key inputs outputs #:allow-other-keys)
+            (lambda* (#:key outputs #:allow-other-keys)
               (let* ((out (assoc-ref outputs "out"))
                      (bin (string-append out "/bin"))
-                     (share (string-append out "/share/opencog-collection"))
-                     (python (search-input-file inputs "/bin/python3")))
-                ;; Install Python demo and documentation
+                     (share (string-append out "/share/opencog-collection")))
                 (mkdir-p share)
-                (when (file-exists? "app.py")
-                  (install-file "app.py" share))
-                (when (file-exists? "README.md")
-                  (install-file "README.md" share))
                 
-                ;; Create wrapper for Python demo
+                ;; Go back to source directory from build directory
+                (chdir "..")
+                
+                ;; Install Python demo and documentation
                 (when (file-exists? "app.py")
+                  (install-file "app.py" share)
                   (call-with-output-file (string-append bin "/opencog-demo")
                     (lambda (port)
-                      (format port "#!/bin/sh~%exec ~a ~a/app.py \"$@\"~%"
-                              python share)))
+                      (format port "#!/bin/sh~%exec python3 ~a/app.py \"$@\"~%"
+                              share)))
                   (chmod (string-append bin "/opencog-demo") #o755))
+                
+                (when (file-exists? "README.md")
+                  (install-file "README.md" share))
                 
                 ;; Build and install Rust components if present
                 (when (file-exists? "Cargo.toml")
