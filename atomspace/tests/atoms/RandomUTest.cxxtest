@@ -23,6 +23,8 @@
 #include <opencog/guile/SchemeEval.h>
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/util/Logger.h>
+#include <opencog/atoms/value/BoolValue.h>
+#include <opencog/atoms/value/LinkValue.h>
 
 using namespace opencog;
 
@@ -77,22 +79,27 @@ void RandomUTest::test_weights(void)
 
     eval->eval("(load-from-path \"tests/atoms/random-choice.scm\")");
 
-    eval->eval_tv("(cog-evaluate! (DefinedPredicate \"loop a lot of times\"))");
+    eval->eval_v("(cog-execute! (DefinedPredicate \"loop a lot of times\"))");
 
-    Handle countA = eval->eval_h(
-        "(cog-execute! (Get (State (Anchor \"sum-A\") (Variable \"$x\"))))");
+    ValuePtr vcountA = eval->eval_v(
+        "(cog-execute! (Meet (State (Anchor \"sum-A\") (Variable \"$x\"))))");
+    LinkValuePtr lvcountA = LinkValueCast(vcountA);
+    Handle countA = HandleCast(lvcountA->value()[0]);
     printf("A-count = %s\n", countA->to_string().c_str());
 
-    Handle countB = eval->eval_h(
-        "(cog-execute! (Get (State (Anchor \"sum-B\") (Variable \"$x\"))))");
+    ValuePtr vcountB = eval->eval_v(
+        "(cog-execute! (Meet (State (Anchor \"sum-B\") (Variable \"$x\"))))");
+    LinkValuePtr lvcountB = LinkValueCast(vcountB);
+    Handle countB = HandleCast(lvcountB->value()[0]);
     printf("B-count = %s\n", countB->to_string().c_str());
 
     Handle ratio = eval->eval_h(
-        "(cog-execute! (DefinedSchema \"ratio\"))");
+        "(cog-execute! (DefinedProcedure \"ratio\"))");
     printf("ratio = %s\n", ratio->to_string().c_str());
 
-    TruthValuePtr tv = eval->eval_tv("(cog-evaluate! (DefinedPredicate \"test\"))");
-    TS_ASSERT_LESS_THAN(0.5, tv->get_mean());
+    ValuePtr vp = eval->eval_v("(cog-execute! (DefinedPredicate \"test\"))");
+    BoolValuePtr bvp = BoolValueCast(vp);
+    TS_ASSERT(bvp->get_bit(0));
 
     logger().debug("END TEST: %s", __FUNCTION__);
 }
@@ -106,7 +113,7 @@ void RandomUTest::test_pairs(void)
 
     // Define a simple list of pairs
     eval->eval_h(
-        "(DefineLink (DefinedSchema \"pairs\") "
+        "(DefineLink (DefinedProcedure \"pairs\") "
         "(RandomChoice "
         "   (SetLink "
         "      (ListLink (NumberNode 1) (Concept \"AAA\"))"
@@ -122,7 +129,7 @@ void RandomUTest::test_pairs(void)
     for (int i=0; i<1000; i++)
     {
         Handle pick = eval->eval_h(
-            "(cog-execute! (DefinedSchema \"pairs\"))");
+            "(cog-execute! (DefinedProcedure \"pairs\"))");
 
         if (pick == A) cntA++;
         if (pick == B) cntB++;
