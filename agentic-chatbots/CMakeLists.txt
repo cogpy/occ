@@ -24,6 +24,7 @@ set(AGENTIC_CHATBOTS_SOURCES
     src/agent.cpp
     src/chatbot_manager.cpp
     src/knowledge_integration.cpp
+    src/collaborative_reasoner.cpp
 )
 
 # Agentic Chatbots library headers
@@ -31,6 +32,7 @@ set(AGENTIC_CHATBOTS_HEADERS
     include/agentic_chatbots/agent.h
     include/agentic_chatbots/chatbot_manager.h
     include/agentic_chatbots/knowledge_integration.h
+    include/agentic_chatbots/collaborative_reasoner.h
 )
 
 # Build Agentic Chatbots shared library
