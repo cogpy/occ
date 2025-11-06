@@ -89,11 +89,20 @@ public:
         // More diverse components create richer cognitive synergy
         if (components.size() <= 1) return 0.0;
         
+        // Normalize activation values to probabilities
+        double totalActivation = 0.0;
+        for (const auto& [comp, activation] : componentActivation) {
+            totalActivation += activation;
+        }
+        
+        if (totalActivation == 0.0) return 0.0;
+        
         // Shannon diversity index adapted for cognitive components
         double diversity = 0.0;
         for (const auto& [comp, activation] : componentActivation) {
-            if (activation > 0) {
-                diversity -= activation * std::log2(activation);
+            if (activation > 0 && totalActivation > 0) {
+                double probability = activation / totalActivation;
+                diversity -= probability * std::log2(probability);
             }
         }
         

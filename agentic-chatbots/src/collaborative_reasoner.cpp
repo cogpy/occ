@@ -20,6 +20,9 @@ public:
     size_t propositionsSubmitted{0};
     size_t consensusBuilt{0};
     
+    // Constants
+    static constexpr double DEFAULT_CONSENSUS_CONFIDENCE = 0.0;
+    
     std::string generateSessionId() {
         auto now = std::chrono::system_clock::now();
         auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -77,7 +80,7 @@ std::string CollaborativeReasoner::createSession(const std::string& topic) {
     ReasoningSession session;
     session.sessionId = sessionId;
     session.topic = topic;
-    session.consensusConfidence = 0.0;
+    session.consensusConfidence = Impl::DEFAULT_CONSENSUS_CONFIDENCE;
     
     pImpl->sessions[sessionId] = session;
     pImpl->sessionsCreated++;
@@ -128,7 +131,7 @@ std::string CollaborativeReasoner::buildConsensus(const std::string& sessionId) 
     
     if (session.propositions.empty()) {
         session.consensusResult = "No propositions to build consensus from";
-        session.consensusConfidence = 0.0;
+        session.consensusConfidence = Impl::DEFAULT_CONSENSUS_CONFIDENCE;
     } else {
         session.consensusResult = pImpl->mergePropositions(session.propositions);
         session.consensusConfidence = pImpl->calculateAgreement(session.propositions);

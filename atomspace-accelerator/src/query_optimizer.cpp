@@ -89,7 +89,7 @@ public:
             return;
         }
         
-        // Simple eviction: remove oldest entries
+        // Remove all invalid entries in one pass
         auto now = std::chrono::steady_clock::now();
         for (auto it = queryCache.begin(); it != queryCache.end();) {
             if (!isCacheValid(it->second)) {
@@ -99,9 +99,13 @@ public:
             }
         }
         
-        // If still too large, remove random entries
-        while (queryCache.size() >= MAX_CACHE_SIZE) {
-            queryCache.erase(queryCache.begin());
+        // If still too large, remove entries in batch
+        if (queryCache.size() >= MAX_CACHE_SIZE) {
+            size_t toRemove = queryCache.size() - (MAX_CACHE_SIZE * 3 / 4); // Keep 75%
+            auto it = queryCache.begin();
+            for (size_t i = 0; i < toRemove && it != queryCache.end(); ++i) {
+                it = queryCache.erase(it);
+            }
         }
     }
 };

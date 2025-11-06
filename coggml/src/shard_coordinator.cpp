@@ -69,8 +69,12 @@ public:
             {
                 std::unique_lock<std::mutex> lock(queueMutex);
                 queueCV.wait_for(lock, std::chrono::milliseconds(100), [this]() {
-                    return !messageQueue.empty() || !processingActive;
+                    return !processingActive || !messageQueue.empty();
                 });
+                
+                if (!processingActive) {
+                    break;
+                }
                 
                 // Extract batch of messages
                 while (!messageQueue.empty() && batch.size() < BATCH_SIZE) {
