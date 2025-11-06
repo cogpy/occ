@@ -2,7 +2,7 @@
  * tests/shell/McpShellUTest.cxxtest
  *
  * Test for MCP Shell functionality
- * Copyright (c) 2024 OpenCog Contributors
+ * Copyright (c) 2025 BrainyBlaze Dynamics Inc.
  * All Rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
@@ -31,7 +31,7 @@
 #include <opencog/util/Config.h>
 #include <opencog/cogserver/server/CogServer.h>
 #include <opencog/cogserver/shell/McpShell.h>
-#include <opencog/cogserver/shell/McpEval.h>
+#include <opencog/cogserver/mcp-eval/McpEval.h>
 #include <opencog/eval/GenericEval.h>
 
 using namespace opencog;
@@ -59,16 +59,7 @@ public:
     McpShellUTest()
     {
         logger().set_level(Logger::DEBUG);
-    }
 
-    ~McpShellUTest()
-    {
-        if (!CxxTest::TestTracker::tracker().suiteFailed())
-            std::remove(logger().get_filename().c_str());
-    }
-
-    void setUp()
-    {
         csrv = &cogserver();
         csrv->loadModules();
         csrv->enableNetworkServer(17334);
@@ -78,11 +69,22 @@ public:
         sleep(1);
     }
 
-    void tearDown()
+    ~McpShellUTest()
     {
         csrv->stop();
         main_loop->join();
         delete main_loop;
+
+        if (!CxxTest::TestTracker::tracker().suiteFailed())
+            std::remove(logger().get_filename().c_str());
+    }
+
+    void setUp()
+    {
+    }
+
+    void tearDown()
+    {
     }
 
     void testMcpShellBasic()
