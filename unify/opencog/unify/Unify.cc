@@ -25,7 +25,7 @@
 
 #include "Unify.h"
 
-#include <boost/algorithm/cxx11/any_of.hpp>
+#include <algorithm>
 
 #include <opencog/util/algorithm.h>
 #include <opencog/util/Logger.h>
@@ -380,9 +380,8 @@ bool Unify::has_cycle(const Block& blk)
 
 bool Unify::has_cycle(const HandleMultimap& vg)
 {
-	using boost::algorithm::any_of;
 	HandleMultimap cvg = closure(vg);
-	return any_of(cvg, [](const HandleMultimap::value_type& vvs) {
+	return std::any_of(cvg.begin(), cvg.end(), [](const HandleMultimap::value_type& vvs) {
 			return contains(vvs.second, vvs.first); });
 }
 
@@ -403,7 +402,7 @@ HandleMultimap Unify::closure_step(const HandleMultimap& vg)
 	return nvg;
 }
 
-Handle Unify::substitute(BindLinkPtr bl, const TypedSubstitution& ts,
+Handle Unify::substitute(QueryLinkPtr bl, const TypedSubstitution& ts,
                          const AtomSpace* queried_as)
 {
 	// TODO: make sure that ts.second contains the declaration of all
@@ -417,7 +416,7 @@ static Handle make_vardecl(const Handle& h)
 	return Handle(createVariableSet(HandleSeq(vars.begin(), vars.end())));
 }
 
-Handle Unify::substitute(BindLinkPtr bl, const HandleMap& var2val,
+Handle Unify::substitute(QueryLinkPtr bl, const HandleMap& var2val,
                          Handle vardecl, const AtomSpace* queried_as)
 {
 	// Perform substitution over the existing variable declaration, if
@@ -437,7 +436,7 @@ Handle Unify::substitute(BindLinkPtr bl, const HandleMap& var2val,
 	// Turn the map into a vector of new variable names/values
 	HandleSeq values = variables.make_sequence(var2val);
 
-	// Substituted BindLink outgoings
+	// Substituted QueryLink outgoings
 	HandleSeq hs;
 
 	// Perform substitution over the pattern term, then remove
@@ -469,7 +468,7 @@ Handle Unify::substitute(BindLinkPtr bl, const HandleMap& var2val,
 	if (vardecl)
 		hs.insert(hs.begin(), vardecl);
 
-	// Create the substituted BindLink
+	// Create the substituted QueryLink
 	return createLink(std::move(hs), bl->get_type());
 }
 

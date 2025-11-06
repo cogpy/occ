@@ -26,15 +26,13 @@
 #ifndef _OPENCOG_UNIFY_UTILS_H
 #define _OPENCOG_UNIFY_UTILS_H
 
-#include <boost/operators.hpp>
-
 #include <opencog/util/empty_string.h>
 #include <opencog/atoms/atom_types/atom_types.h>
 #include <opencog/atoms/base/Handle.h>
 #include <opencog/atoms/core/Context.h>
 #include <opencog/atoms/core/VariableList.h>
 #include <opencog/atoms/core/Variables.h>
-#include <opencog/atoms/pattern/BindLink.h>
+#include <opencog/atoms/pattern/QueryLink.h>
 
 namespace opencog {
 
@@ -49,7 +47,7 @@ public:
 	// the Context isn't necessarily equal but where the 2 handles
 	// (besides being equal) have the same quotation and same
 	// (free inter shadow) variables.
-	struct CHandle : public boost::totally_ordered<CHandle>
+	struct CHandle
 	{
 		CHandle(const Handle& handle, const Context& context=Context());
 
@@ -119,6 +117,10 @@ public:
 		 */
 		bool operator==(const CHandle& other) const;
 		bool operator<(const CHandle& other) const;
+		bool operator!=(const CHandle& other) const { return not operator==(other); }
+		bool operator<=(const CHandle& other) const { return operator<(other) or operator==(other); }
+		bool operator>(const CHandle& other) const { return not operator<=(other); }
+		bool operator>=(const CHandle& other) const { return not operator<(other); }
 
 		/**
 		 * Cast operators
@@ -245,7 +247,7 @@ public:
 	 * variables, consume them. See RewriteLink::consume_quotations
 	 * comment for more details.
 	 */
-	static BindLinkPtr consume_quotations(BindLinkPtr bl);
+	static QueryLinkPtr consume_quotations(QueryLinkPtr bl);
 
 	/**
 	 * Return true iff the handle or type correspond to a pattern
@@ -324,12 +326,12 @@ public:
 
 	/**
 	 * Given a typed substitution, perform the substitution over a scope
-	 * link (for now only BindLinks are supported).
+	 * link (for now only QueryLinks are supported).
 	 *
 	 * If an atomspace is provided then remove constant clauses
 	 * present in the atomspace.
 	 */
-	static Handle substitute(BindLinkPtr bl,
+	static Handle substitute(QueryLinkPtr bl,
 	                         const TypedSubstitution& ts,
 	                         const AtomSpace* queried_as=nullptr);
 
@@ -340,7 +342,7 @@ public:
 	 * adjusted so only the new variables remain. Optionally, if the
 	 * types have changed, a new variable declaration is provided to
 	 * replace the existing one. Constant clauses are automatically
-	 * removed from the BindLink. If no clause remains then the
+	 * removed from the QueryLink. If no clause remains then the
 	 * pattern body is left with an empty AndLink.
 	 *
 	 * If an atomspace is provided then remove constant clauses
@@ -350,7 +352,7 @@ public:
 	 *
 	 * Assume the instance is:
 	 *
-	 * (BindLink
+	 * (QueryLink
 	 *   (VariableList (Variable "$X") (Variable "$Y"))
 	 *   (Inheritance (Variable "$X") (Variable "$Y"))
 	 *   (ExecutionOutputLink
@@ -359,7 +361,7 @@ public:
 	 *
 	 * 1. substitute([(Variable "$W"), (Variable "$Z")]) returns:
 	 *
-	 * (BindLink
+	 * (QueryLink
 	 *   (VariableList (Variable "$W") (Variable "$Z"))
 	 *   (Inheritance (Variable "$W") (Variable "$Z"))
 	 *   (ExecutionOutputLink
@@ -370,7 +372,7 @@ public:
 	 *    such that variables associates a ConceptNode type to $W and $Z
 	 *    returns:
 	 *
-	 * (BindLink
+	 * (QueryLink
 	 *   (VariableList
 	 *     (TypedVariable (Variable "$W") (Type "ConceptNode"))
 	 *     (TypedVariable (Variable "$Z") (Type "ConceptNode")))
@@ -381,7 +383,7 @@ public:
 	 *
 	 * 3. substitute([(Variable "$W"), (Concept "B")]) returns:
 	 *
-	 * (BindLink
+	 * (QueryLink
 	 *   (Variable "$W")
 	 *   (Inheritance (Variable "$W") (Concept "B"))
 	 *   (ExecutionOutputLink
@@ -390,7 +392,7 @@ public:
 	 *
 	 * 4. substitute([(Concept "A"), (Concept "B")]) returns:
 	 *
-	 * (BindLink
+	 * (QueryLink
 	 *   (AndLink)
 	 *   (ExecutionOutputLink
 	 *     (GroundedSchemaNode "gsn")
@@ -398,12 +400,12 @@ public:
 	 *
 	 * TODO: replace by RewriteLink methods!
 	 */
-	static Handle substitute(BindLinkPtr bl, const HandleMap& var2val,
+	static Handle substitute(QueryLinkPtr bl, const HandleMap& var2val,
 	                         Handle vardecl=Handle::UNDEFINED,
 	                         const AtomSpace* queried_as=nullptr);
 
 	/**
-	 * Substitute the variable declaration of a BindLink. Remove
+	 * Substitute the variable declaration of a QueryLink. Remove
 	 * variables that are substituted by values. If all variables are
 	 * removed it returns Handle::UNDEFINED.
 	 *
