@@ -80,7 +80,7 @@ jobs:
           export GUIX_PACKAGE_PATH="$GITHUB_WORKSPACE"
           
           # Source Guix profile to ensure modules are available
-          export GUIX_PROFILE="/var/guix/profiles/per-user/root/guix-profile"
+          export GUIX_PROFILE="/var/guix/profiles/per-user/$(whoami)/current-guix"
           source $GUIX_PROFILE/etc/profile || true
           source /etc/profile || true
           
@@ -114,7 +114,7 @@ jobs:
           export GUIX_PACKAGE_PATH="$GITHUB_WORKSPACE"
           
           # Source Guix profile to ensure modules are available
-          export GUIX_PROFILE="/var/guix/profiles/per-user/root/guix-profile"
+          export GUIX_PROFILE="/var/guix/profiles/per-user/$(whoami)/current-guix"
           source $GUIX_PROFILE/etc/profile || true
           source /etc/profile || true
           
@@ -138,6 +138,7 @@ jobs:
           }
           
       - name: Build with Guix (actual build - may be slow)
+        continue-on-error: true
         run: |
           export PATH="/var/guix/profiles/per-user/$(whoami)/current-guix/bin:$PATH"
           
@@ -146,15 +147,11 @@ jobs:
           export GUIX_PACKAGE_PATH="$GITHUB_WORKSPACE"
           
           # Source Guix profile to ensure modules are available
-          export GUIX_PROFILE="/var/guix/profiles/per-user/root/guix-profile"
+          export GUIX_PROFILE="/var/guix/profiles/per-user/$(whoami)/current-guix"
           source $GUIX_PROFILE/etc/profile || true
           source /etc/profile || true
           
-          # Attempt actual build (may fail due to dependencies, but validates syntax)
+          # Attempt actual build
           echo "Attempting actual build..."
-          guix build -f guix.scm --verbosity=1 --no-grafts || {
-            echo "Build failed - this may be due to missing dependencies or build issues"
-            echo "But syntax validation passed, so the Guix package definition is correct"
-            exit 0
-          }
+          guix build -f guix.scm --verbosity=1 --no-grafts
 
