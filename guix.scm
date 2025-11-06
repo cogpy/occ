@@ -64,18 +64,6 @@
                "-DBUILD_APHRODITE=OFF")
         #:phases
         (modify-phases %standard-phases
-          (add-after 'unpack 'set-source-permissions
-            (lambda _
-              ;; Ensure all source files are readable and directories accessible
-              (for-each (lambda (file)
-                          (when (file-exists? file)
-                            (chmod file #o644)))
-                        (find-files "." ".*" #:directories? #f))
-              (for-each (lambda (dir)
-                          (when (file-exists? dir)
-                            (chmod dir #o755)))
-                        (find-files "." ".*" #:directories? #t))
-              #t))
           (add-before 'configure 'prepare-build-environment
             (lambda* (#:key inputs outputs #:allow-other-keys)
               ;; Set up environment variables for the build
