@@ -62,7 +62,7 @@
 (define cnt 0)
 (for-each (lambda (space)
 		(cog-set-atomspace! space)
-		(Concept "hello" (ctv 1 0 cnt))
+		(cog-set-value! (Concept "hello") (Predicate "*-TruthValueKey-*") (FloatValue 1 0 cnt))
 		(set! cnt (+ 1 cnt)))
 	space-list)
 
@@ -78,10 +78,11 @@
 			(cog-atomspace (cog-node 'Concept "hello")))
 
 		(test-equal "count-tv" cnt
-			(inexact->exact (cog-tv-count (cog-tv (cog-node 'Concept "hello")))))
+			(inexact->exact (cog-value-ref (cog-value (cog-node 'Concept "hello") (Predicate "*-TruthValueKey-*")) 2)))
 
-		; Each atomspace should contain just one atom.
-		(test-equal "atomspace-size" 1 (count-all))
+		; Each atomspace should contain just two atoms.
+		; One, plus (Predicate "*-TruthValueKey-*")
+		(test-equal "atomspace-size" 2 (count-all))
 		(set! cnt (+ 1 cnt)))
 	space-list)
 
@@ -104,7 +105,8 @@
 		(test-equal "membership" space
 			(cog-atomspace (cog-node 'Concept "hello")))
 
-		(test-equal "atomspace-size" 2 (count-all))
+		; Two atoms, plus (Predicate "*-TruthValueKey-*")
+		(test-equal "atomspace-size" 3 (count-all))
 	)
 	space-list)
 
@@ -112,8 +114,8 @@
 (set! cnt 0)
 (for-each (lambda (space)
 		(cog-set-atomspace! space)
-		(cog-set-tv! (List (Concept "hello") (Concept "foo"))
-			(CountTruthValue 1 0 (* cnt 2)))
+		(cog-set-value! (List (Concept "hello") (Concept "foo"))
+			(Predicate "*-TruthValueKey-*") (FloatValue 1 0 (* cnt 2)))
 		(set! cnt (+ 1 cnt)))
 	space-list)
 
@@ -127,12 +129,12 @@
 		(define local-hello (Concept "hello"))
 		(define local-list (List (Concept "hello") (Concept "foo")))
 		(test-equal "count-tv" cnt
-			(inexact->exact (cog-tv-count (cog-tv local-hello))))
+			(inexact->exact (cog-value-ref (cog-value local-hello (Predicate "*-TruthValueKey-*")) 2)))
 
 		(test-equal "out-equality" local-hello (gar local-list))
 
 		(test-equal "count-tv-out" cnt
-			(inexact->exact (cog-tv-count (cog-tv (gar local-list)))))
+			(inexact->exact (cog-value-ref (cog-value (gar local-list) (Predicate "*-TruthValueKey-*")) 2)))
 
 		; Verify correct membership of the Atoms.
 		(test-equal "membership-gar-oset" space
@@ -165,7 +167,7 @@
 (set! cnt 0)
 (for-each (lambda (space)
 		(cog-set-atomspace! space)
-		(Concept "hello" (ctv 1 0 cnt))
+		(cog-set-value! (Concept "hello") (Predicate "*-TruthValueKey-*") (FloatValue 1 0 cnt))
 		(set! cnt (+ 1 cnt)))
 	space-list)
 
@@ -180,7 +182,8 @@
 		(test-equal "membership" space
 			(cog-atomspace (cog-node 'Concept "hello")))
 
-		(test-equal "atomspace-size" 2 (count-all))
+		; Two atoms, plus (Concept "foo") visible from parent
+		(test-equal "atomspace-size" 3 (count-all))
 	)
 	space-list)
 
@@ -188,8 +191,8 @@
 (set! cnt 0)
 (for-each (lambda (space)
 		(cog-set-atomspace! space)
-		(cog-set-tv! (List (Concept "hello") (Concept "foo"))
-			(CountTruthValue 1 0 (* cnt 2)))
+		(cog-set-value! (List (Concept "hello") (Concept "foo"))
+			(Predicate "*-TruthValueKey-*") (FloatValue 1 0 (* cnt 2)))
 		(set! cnt (+ 1 cnt)))
 	space-list)
 
@@ -201,10 +204,11 @@
       ;   (cog-tv-count (cog-tv (Concept "hello"))))
 
 		(test-equal "count-tv" cnt
-			(inexact->exact (cog-tv-count (cog-tv (Concept "hello")))))
+			(inexact->exact (cog-value-ref (cog-value (Concept "hello") (Predicate "*-TruthValueKey-*")) 2)))
 
-		; Each atomspace should contain just three atoms.
-		(test-equal "atomspace-size" 3 (count-all))
+		; Each atomspace should contain just four atoms.
+		; Three, plus (Predicate "*-TruthValueKey-*")
+		(test-equal "atomspace-size" 4 (count-all))
 
 		(test-equal "incoming-size" 1 (cog-incoming-size (Concept "foo")))
 		(test-equal "incoming-size" 1 (cog-incoming-size (Concept "hello")))
@@ -226,8 +230,8 @@
 
 		; Values on the link should be correct
 		(test-equal "list-tv" (* 2 cnt)
-			(inexact->exact (cog-tv-count (cog-tv
-				(car (cog-incoming-set (Concept "foo")))))))
+			(inexact->exact (cog-value-ref (cog-value
+				(car (cog-incoming-set (Concept "foo"))) (Predicate "*-TruthValueKey-*")) 2)))
 
 		(set! cnt (+ 1 cnt)))
 	space-list)
