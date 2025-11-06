@@ -26,8 +26,6 @@
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/atoms/value/FloatValue.h>
 #include <opencog/atoms/value/StringValue.h>
-#include <opencog/atoms/truthvalue/SimpleTruthValue.h>
-#include <opencog/atoms/truthvalue/CountTruthValue.h>
 
 #include "opencog/persist/sexcom/Dispatcher.h"
 
@@ -51,7 +49,7 @@ class CommandsUTest : public CxxTest::TestSuite
 		void test_node();
 		void test_node_quoted();
 		void test_link();
-		void test_set_tv();
+		void test_empty_link();
 		void test_set_value();
 		void test_set_value_quoted();
 		void test_set_several_quoted();
@@ -151,37 +149,31 @@ void CommandsUTest::test_link()
 	logger().info("END TEST: %s", __FUNCTION__);
 }
 
-// Test cog-set-tv!
-void CommandsUTest::test_set_tv()
+// Test empty ListLink parsing (bug fix for whitespace handling)
+void CommandsUTest::test_empty_link()
 {
 	logger().info("BEGIN TEST: %s", __FUNCTION__);
 
-	std::string in = R"((cog-set-tv! (Concept "a") (stv 1 0)))";
+	// Test that empty ListLink without whitespace parses correctly
+	std::string in = R"((cog-execute-cache! (ListLink) (Predicate "test-key")))";
 
 	Dispatcher com;
 	com.set_base_space(as);
 	std::string out = com.interpret_command(in);
 	printf("Got %s\n", out.c_str());
 
-	// Two, because its the Concept, and the Predicate "TruthValueKey"
-	printf("AtomSpace is %s\n", as->to_string().c_str());
-	TS_ASSERT_EQUALS(2, as->get_size());
-	TS_ASSERT(0 == out.compare("()"));
+	// ListLink is not executable, so returns #f, but parsing should succeed
+	TS_ASSERT(0 == out.compare("#f"));
+	// Verify atoms were created (ListLink + Predicate)
+	TS_ASSERT(2 == as->get_size());
 
-	Handle h = as->get_node(CONCEPT_NODE, "a");
-	TS_ASSERT(nullptr != h);
-
-	// ------------
-	h = as->add_node(CONCEPT_NODE, "b");
-	as->set_truthvalue(h, createSimpleTruthValue(0.5, 0.5));
-
-	// Clobber the TV on B back to Default
-	in = R"((cog-set-tv! (Concept "b") (stv 1 0)))";
+	// Test with explicit whitespace (should also work)
+	as->clear();
+	in = R"((cog-execute-cache! (ListLink ) (Predicate "test-key2")))";
 	out = com.interpret_command(in);
-
-	TruthValuePtr tv = h->getTruthValue();
-	printf("new TV is %s\n", tv->to_string().c_str());
-	TS_ASSERT(*tv == *TruthValue::DEFAULT_TV());
+	printf("Got %s\n", out.c_str());
+	TS_ASSERT(0 == out.compare("#f"));
+	TS_ASSERT(2 == as->get_size());
 
 	logger().info("END TEST: %s", __FUNCTION__);
 }
@@ -192,7 +184,7 @@ void CommandsUTest::test_set_value()
 	logger().info("BEGIN TEST: %s", __FUNCTION__);
 
 	std::string in =
-		R"((cog-set-value! (Concept "a") (Predicate "key") (stv 0.6 0.8)))";
+		R"((cog-set-value! (Concept "a") (Predicate "key") (FloatValue 0.6 0.8)))";
 
 	Dispatcher com;
 	com.set_base_space(as);
@@ -208,7 +200,7 @@ void CommandsUTest::test_set_value()
 	Handle key = as->add_node(PREDICATE_NODE, "key");
 	ValuePtr vp = h->getValue(key);
 	TS_ASSERT(nullptr != vp);
-	TS_ASSERT_EQUALS(SIMPLE_TRUTH_VALUE, vp->get_type());
+	TS_ASSERT_EQUALS(FLOAT_VALUE, vp->get_type());
 
 	logger().info("END TEST: %s", __FUNCTION__);
 }
@@ -263,7 +255,7 @@ void CommandsUTest::test_set_several_quoted()
 	logger().info("BEGIN TEST: %s", __FUNCTION__);
 
 	std::string in =
-		R"((cog-set-values! (ListLink (ConceptNode "x \"float\" node")(ConceptNode "b float node"))(alist (cons (PredicateNode "some (\"pred\"))) key")(FloatValue 1.109876543210988 2.123456789012345e+37 3.210987654321099e-250))(cons (PredicateNode "*-TruthValueKey-*")(SimpleTruthValue 0.11 100)))))";
+		R"((cog-set-values! (ListLink (ConceptNode "x \"float\" node")(ConceptNode "b float node"))(alist (cons (PredicateNode "some (\"pred\"))) key")(FloatValue 1.109876543210988 2.123456789012345e+37 3.210987654321099e-250))(cons (PredicateNode "*-TruthValueKey-*")(FloatValue 0.11 100)))))";
 
 	printf("Input %s\n", in.c_str());
 
@@ -305,7 +297,7 @@ void CommandsUTest::test_get_value()
 
 	h->setValue(key, createFloatValue(std::vector<double>{4, 5, 6}));
 	h->setValue(fiz, createStringValue(std::vector<std::string>{"a", "b"}));
-	h->setValue(buz, ValueCast(createSimpleTruthValue(0.3, 0.4)));
+	h->setValue(buz, ValueCast(createFloatValue(std::vector<double>{0.3, 0.4})));
 
 	std::string in = "(cog-value (Concept \"a\") (Predicate \"key\"))";
 	Dispatcher com;
@@ -322,7 +314,7 @@ void CommandsUTest::test_get_value()
 	in = "(cog-value (Concept \"a\") (Predicate \"buz\"))";
 	out = com.interpret_command(in);
 	printf("Got %s\n", out.c_str());
-	TS_ASSERT(0 == out.compare(0, 18, "(SimpleTruthValue "));
+	TS_ASSERT(0 == out.compare(0, 12, "(FloatValue "));
 
 	logger().info("END TEST: %s", __FUNCTION__);
 }
@@ -340,7 +332,7 @@ void CommandsUTest::test_get_value_quoted()
 	h->setValue(key, createFloatValue(std::vector<double>{4, 5, 6}));
 	h->setValue(fiz, createStringValue(std::vector<std::string>
 		{"\"f\"\"o\"\"\"o\"!!!\"\"", "b\"\"\"a\"\"\"r"}));
-	h->setValue(buz, ValueCast(createSimpleTruthValue(0.3, 0.4)));
+	h->setValue(buz, ValueCast(createFloatValue(std::vector<double>{0.3, 0.4})));
 
 	std::string in = "(cog-value (Concept \"a\") (Predicate \"fiz\"))";
 	Dispatcher com;
@@ -365,8 +357,6 @@ void CommandsUTest::test_set_values()
 	logger().info("BEGIN TEST: %s", __FUNCTION__);
 
 	std::string in = "(cog-set-values! (Concept \"a\") (alist "
-		"(cons (Predicate \"*-TruthValueKey-*\") (stv 0.3 0.5))"
-		"(cons (Predicate \"key\") (stv 0.6 0.8))"
 		"(cons (Predicate \"fiz\") (FloatValue 1 2 3))"
 		"(cons (Predicate \"buz\") (StringValue \"gee\" \"golly\"))))";
 
@@ -376,26 +366,13 @@ void CommandsUTest::test_set_values()
 	printf("Got %s\n", out.c_str());
 
 	TS_ASSERT(0 == out.compare("()"));
-	TS_ASSERT_EQUALS(5, as->get_size());
+	TS_ASSERT_EQUALS(3, as->get_size());
 
 	Handle h = as->get_node(CONCEPT_NODE, "a");
 	TS_ASSERT(nullptr != h);
 
-	TruthValuePtr tvp = h->getTruthValue();
-	TS_ASSERT_EQUALS(SIMPLE_TRUTH_VALUE, tvp->get_type());
-	double mean = tvp->get_mean();
-	double conf = tvp->get_confidence();
-	TS_ASSERT_EQUALS(SIMPLE_TRUTH_VALUE, tvp->get_type());
-	TS_ASSERT(0.2999 < mean and mean < 0.3001);
-	TS_ASSERT(0.4999 < conf and conf < 0.5001);
-
-	Handle key = as->add_node(PREDICATE_NODE, "key");
+	Handle key = as->add_node(PREDICATE_NODE, "fiz");
 	ValuePtr vp = h->getValue(key);
-	TS_ASSERT(nullptr != vp);
-	TS_ASSERT_EQUALS(SIMPLE_TRUTH_VALUE, vp->get_type());
-
-	key = as->add_node(PREDICATE_NODE, "fiz");
-	vp = h->getValue(key);
 	TS_ASSERT(nullptr != vp);
 	TS_ASSERT_EQUALS(FLOAT_VALUE, vp->get_type());
 
@@ -419,8 +396,8 @@ void CommandsUTest::test_get_values()
 
 	h->setValue(key, createFloatValue(std::vector<double>{4, 5, 6}));
 	h->setValue(fiz, createStringValue(std::vector<std::string>{"a", "b"}));
-	h->setValue(buz, ValueCast(createCountTruthValue(0.3, 0.4, 42)));
-	h->setTruthValue(createSimpleTruthValue(0.1, 0.9));
+	h->setValue(buz, ValueCast(createFloatValue(std::vector<double>{3, 0.4, 42})));
+	h->setValue(truth_key(), createFloatValue(std::vector<double>{0.1, 0.9}));
 
 	std::string in = "(cog-keys->alist (Concept \"a\"))";
 
@@ -430,8 +407,8 @@ void CommandsUTest::test_get_values()
 	printf("Got %zu %s\n", out.size(), out.c_str());
 
 	TS_ASSERT(0 == out.compare(0, 17, "(((PredicateNode "));
-	TS_ASSERT(std::string::npos != out.find("SimpleTruthValue"));
-	TS_ASSERT(210 < out.size());
+	TS_ASSERT(std::string::npos != out.find("FloatValue"));
+	TS_ASSERT(200 <= out.size());
 
 	logger().info("END TEST: %s", __FUNCTION__);
 }
