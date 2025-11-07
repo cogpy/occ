@@ -17,6 +17,10 @@ IF (COMMAND CMAKE_POLICY)
 	CMAKE_POLICY(SET CMP0045 NEW)
 ENDIF (COMMAND CMAKE_POLICY)
 
+IF(CMAKE_VERSION VERSION_GREATER 3.31)
+   CMAKE_POLICY(SET CMP0177 NEW)
+ENDIF(CMAKE_VERSION VERSION_GREATER 3.31)
+
 PROJECT(matrix)
 
 # ----------------------------------------------------------
@@ -53,7 +57,7 @@ ADD_DEFINITIONS(-DPROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 # CogUtil must come first, because it supplies various FindXXX macros.
 
 # Add the 'lib' dir to cmake's module search path
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lib/")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/lib/")
 
 # Cogutil
 FIND_PACKAGE(CogUtil 2.0.1 CONFIG REQUIRED)
@@ -95,17 +99,6 @@ IF (NOT CXXTEST_FOUND)
 ENDIF (NOT CXXTEST_FOUND)
 
 # ----------------------------------------------------------
-# Needed for unit tests
-FIND_PACKAGE(AtomSpacePgres)
-IF (ATOMSPACE_PGRES_FOUND)
-	MESSAGE(STATUS "AtomSpace Postgres found.")
-	ADD_DEFINITIONS(-DHAVE_ATOMSPACE_PGRES)
-	SET(HAVE_ATOMSPACE_PGRES 1)
-ELSE (ATOMSPACE_PGRES_FOUND)
-	MESSAGE(STATUS "AtomSpace Postgres missing: needed for unit tests.")
-ENDIF (ATOMSPACE_PGRES_FOUND)
-
-# ----------------------------------------------------------
 # Is guile installed?
 
 include(OpenCogFindGuile)
@@ -119,6 +112,25 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}
 
 INCLUDE(OpenCogMacros)
 INCLUDE(OpenCogGuile)
+
+# ----------------------------------------------------------
+# Check if RocksStorage is available by trying to load the Guile module
+
+IF (HAVE_GUILE)
+	EXECUTE_PROCESS(
+		COMMAND guile -c "(use-modules (opencog persist-rocks))"
+		RESULT_VARIABLE ROCKS_MODULE_RESULT
+		OUTPUT_QUIET ERROR_QUIET
+	)
+
+	IF (ROCKS_MODULE_RESULT EQUAL 0)
+		SET(HAVE_ROCKS_STORAGE 1)
+		ADD_DEFINITIONS(-DHAVE_ROCKS_STORAGE)
+		MESSAGE(STATUS "RocksStorage found - enabling storage tests")
+	ELSE ()
+		MESSAGE(STATUS "RocksStorage not found - skipping storage tests")
+	ENDIF ()
+ENDIF (HAVE_GUILE)
 
 # ==========================================================
 # Decide what to build, based on the packages found.
@@ -171,11 +183,11 @@ IF (CXXTEST_FOUND)
 
 ENDIF (CXXTEST_FOUND)
 
-ADD_CUSTOM_TARGET(cscope-matrix
-	COMMAND find opencog examples tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' -o -name '*.scm' > ${CMAKE_CURRENT_SOURCE_DIR}/cscope.files
+ADD_CUSTOM_TARGET(cscope
+	COMMAND find opencog examples tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' -o -name '*.scm' > ${CMAKE_SOURCE_DIR}/cscope.files
 	COMMAND cscope -b
-	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-	COMMENT "Generating CScope database for Matrix"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	COMMENT "Generating CScope database"
 )
 
 # ===================================================================
@@ -237,14 +249,14 @@ SUMMARY_ADD("Matrix" "AtomSpace Sparse Matrix Tools" HAVE_ATOMSPACE)
 SUMMARY_ADD("Doxygen"    "Code documentation" DOXYGEN_FOUND)
 
 # Argh. Print the right message
-IF (HAVE_ATOMSPACE_PGRES)
+IF (HAVE_ATOMSPACE_ROCKS)
 	SUMMARY_ADD("Unit tests" "Unit tests" CXXTEST_FOUND)
-ELSE (HAVE_ATOMSPACE_PGRES)
+ELSE (HAVE_ATOMSPACE_ROCKS)
 	IF (CXXTEST_FOUND)
-		SUMMARY_ADD("Unit tests" "Some but not all unit tests (atomspace-pgres missing)" CXXTEST_FOUND)
+		SUMMARY_ADD("Unit tests" "Some but not all unit tests (atomspace-rocks missing)" CXXTEST_FOUND)
 	ELSE (CXXTEST_FOUND)
 		SUMMARY_ADD("Unit tests" "Unit tests" CXXTEST_FOUND)
 	ENDIF (CXXTEST_FOUND)
-ENDIF (HAVE_ATOMSPACE_PGRES)
+ENDIF (HAVE_ATOMSPACE_ROCKS)
 
 SUMMARY_SHOW()
