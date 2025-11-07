@@ -22,7 +22,7 @@
 #include <opencog/atoms/base/Atom.h>
 #include <opencog/atoms/base/Link.h>
 #include <opencog/atoms/base/Node.h>
-#include <opencog/atoms/truthvalue/CountTruthValue.h>
+#include <opencog/atoms/value/FloatValue.h>
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/persist/sql/multi-driver/SQLAtomStorage.h>
 
@@ -74,7 +74,7 @@ class LargeZipfTest :  public CxxTest::TestSuite
 		void fetch_space(AtomSpace *, StorageNodePtr);
 		void check_space(AtomSpace *, std::string dbgmsg);
 		void check_empty(AtomSpace *);
-		void atomCompare(AtomPtr, AtomPtr, std::string);
+		void atomCompare(Handle, AtomPtr, std::string);
 
 		void do_test_atomspace(void);
 		void test_odbc_atomspace(void);
@@ -134,7 +134,7 @@ void LargeZipfTest::kill_data(void)
 
 // ============================================================
 
-void LargeZipfTest::atomCompare(AtomPtr a, AtomPtr b, std::string where)
+void LargeZipfTest::atomCompare(Handle a, AtomPtr b, std::string where)
 {
 	// printf("Check %s expect %s\n", where.c_str(), a->to_string().c_str());
 	TSM_ASSERT("No atom found", b != nullptr);
@@ -159,8 +159,8 @@ void LargeZipfTest::atomCompare(AtomPtr a, AtomPtr b, std::string where)
 		}
 	}
 
-	TruthValuePtr ta = a->getTruthValue();
-	TruthValuePtr tb = b->getTruthValue();
+	FloatValuePtr ta = FloatValueCast(a->getValue(truth_key()));
+	FloatValuePtr tb = FloatValueCast(b->getValue(truth_key()));
 	if (ta or tb)
 	{
 		TSM_ASSERT("Missing truth value", ta);
@@ -173,8 +173,8 @@ void LargeZipfTest::atomCompare(AtomPtr a, AtomPtr b, std::string where)
 			{
 				fprintf(stderr, "Error, truth value miscompare, "
 				   "ma=%f mb=%f ca=%f cb=%f\n",
-				   ta->get_mean(), tb->get_mean(),
-				   ta->get_confidence(), tb->get_confidence());
+				   ta->value()[0], tb->value()[0],
+				   ta->value()[1], tb->value()[1]);
 			}
 		}
 	}
@@ -240,8 +240,8 @@ int LargeZipfTest::filler_up(AtomSpace *space)
 	for (int w=0; w<NWORDS; w++)
 	{
 		hword[w] = space->add_node(CONCEPT_NODE, wrd + std::to_string(w));
-		TruthValuePtr tv(createCountTruthValue(1, 0, ((int) NWORDS/(w+1))));
-		hword[w]->setTruthValue(tv);
+		ValuePtr tv(createFloatValue(std::vector<double>{1, 0, ((int) NWORDS/(w+1))}));
+		hword[w]->setValue(truth_key(), tv);
 	}
 
 	// Emulate a zipfian distribution.
@@ -258,8 +258,8 @@ int LargeZipfTest::filler_up(AtomSpace *space)
 	while (p<NPAIRS)
 	{
 		hpair[p] = space->add_link(LIST_LINK, {hword[w1], hword[w2]});
-		TruthValuePtr tv(createCountTruthValue(1, 0, wmax));
-		hpair[p]->setTruthValue(tv);
+		ValuePtr tv(createFloatValue(std::vector<double>{1, 0, wmax}));
+		hpair[p]->setValue(truth_key(), tv);
 
 		w2++;
 		p++;
