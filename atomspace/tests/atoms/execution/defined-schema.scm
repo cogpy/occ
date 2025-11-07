@@ -20,7 +20,7 @@
 
 ; The re-written DAG edges will look like this:
 (define into-form
-	(Evaluation (Predicate "yikes")
+	(Edge (Predicate "yikes")
 		(ListLink (Variable "$head") (Variable "$tail"))))
 
 ; A defined Lambda, in atomese.
@@ -51,9 +51,10 @@
 	(DefinedSchemaNode "get-the-tail")
 	(Lambda
 		(Variable "$head")
-		(GetLink
-			(TypedVariable (Variable "$tail") (Type 'ConceptNode))
-			get-form)))
+		(CollectionOf
+			(MeetLink
+				(TypedVariable (Variable "$tail") (Type 'ConceptNode))
+				get-form))))
 
 ; Does it work as expected? Yes.
 ;(cog-execute!
@@ -133,16 +134,16 @@
 			(Variable "$out")
 			(ExecutionOutput
 				(DefinedSchemaNode "reversive-rewrite")
-					(List
-						(ExecutionOutputLink
-							(DefinedSchema "get-the-tail")
-							(List
-								(Variable "$hd")))
-						(ExecutionOutput
-							(DefinedSchemaNode "make-an-edge")
-							(List
-								(Variable "$hd")
-								(Variable "$out"))))))))
+				(List
+					(ExecutionOutputLink
+						(DefinedSchema "get-the-tail")
+						(List
+							(Variable "$hd")))
+					(ExecutionOutput
+						(DefinedSchemaNode "make-an-edge")
+						(List
+							(Variable "$hd")
+							(Variable "$out"))))))))
 
 
 ; (cog-execute!
@@ -154,20 +155,20 @@
 ; What the above generates, when executed.
 (define reversive-result
 	(SetLink
-		(EvaluationLink (PredicateNode "yikes") (ListLink
+		(EdgeLink (PredicateNode "yikes") (ListLink
 			(ConceptNode "F")
-			(EvaluationLink (PredicateNode "yikes") (ListLink
+			(EdgeLink (PredicateNode "yikes") (ListLink
 				(ConceptNode "B")
-				(EvaluationLink (PredicateNode "yikes") (ListLink
+				(EdgeLink (PredicateNode "yikes") (ListLink
 					(ConceptNode "A")
 					(ConceptNode "root")))))))
-		(EvaluationLink (PredicateNode "yikes") (ListLink
+		(EdgeLink (PredicateNode "yikes") (ListLink
 			(ConceptNode "D")
-			(EvaluationLink (PredicateNode "yikes") (ListLink
+			(EdgeLink (PredicateNode "yikes") (ListLink
 				(ConceptNode "C")
-				(EvaluationLink (PredicateNode "yikes") (ListLink
+				(EdgeLink (PredicateNode "yikes") (ListLink
 					(ConceptNode "B")
-					(EvaluationLink (PredicateNode "yikes") (ListLink
+					(EdgeLink (PredicateNode "yikes") (ListLink
 						(ConceptNode "A")
 						(ConceptNode "root"))))))))))
 )
@@ -180,11 +181,11 @@
 	(Lambda
 		(VariableList (Variable "$set"))
 		(Cond
-			(Equal (Set) (Bind (Glob "$elts")
+			(Equal (Set) (CollectionOf (Query (Glob "$elts")
 				(Equal (Variable "$set") (Set (Glob "$elts")))
-				(List (Glob "$elts"))))
+				(List (Glob "$elts")))))
 			(Variable "$set")
-			(Bind (Glob "$elts")
+			(Query (Glob "$elts")
 				(Equal (Variable "$set") (Set (Glob "$elts")))
 				(List (Glob "$elts"))))))
 
@@ -202,7 +203,7 @@
 (define unwrap-natural
 	(ExecutionOutput
 		(DefinedSchema "unwrap")
-		(Get (TypedVariable (Variable "$x") (Type 'ConceptNode))
+		(Meet (TypedVariable (Variable "$x") (Type 'ConceptNode))
 				(Inheritance (Concept "B") (Variable "$x")))))
 
 ; A defined Lambda, in atomese.
@@ -216,7 +217,7 @@
 			(List (Variable "$h")
 				(ExecutionOutput
 					(DefinedSchema "unwrap")
-						(Variable "$set"))))))
+					(Variable "$set"))))))
 
 ; Lets try it out. Does it work? Yes.
 ; (cog-execute!
@@ -230,7 +231,7 @@
 	(ExecutionOutput
 		(DefinedSchemaNode "make-a-tree")
 		(List (Concept "B")
-			(Get (TypedVariable (Variable "$x") (Type 'ConceptNode))
+			(Meet (TypedVariable (Variable "$x") (Type 'ConceptNode))
 				(Inheritance (Concept "B") (Variable "$x"))))))
 
 
@@ -248,8 +249,8 @@
 			(Equal (Set)
 				(ExecutionOutputLink
 					(DefinedSchema "get-the-tail")
-						(List
-							(Variable "$hd"))))
+					(List
+						(Variable "$hd"))))
 			(Variable "$hd")
 
 			; Else make an edge connecting head and tail.

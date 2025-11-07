@@ -541,20 +541,12 @@ ValuePtr Instantiator::instantiate(const Handle& expr,
 		return eolh->execute(_as, silent);
 	}
 
-	// The thread-links are ambiguously executable/evaluatable.
-	if (nameserver().isA(t, PARALLEL_LINK))
-	{
-		// XXX Don't we need to plug in the vars, first!?
-		// Yes, we do, but this is just not tested, right now.
-		return ValueCast(EvaluationLink::do_evaluate(_as, expr, silent));
-	}
-
 	// Execute any DefinedPredicateNodes
 	if (nameserver().isA(t, DEFINED_PREDICATE_NODE))
 	{
 		// XXX Don't we need to plug in the vars, first!?
 		// Maybe this is just not tested?
-		return ValueCast(EvaluationLink::do_evaluate(_as, expr, silent));
+		return EvaluationLink::do_evaluate(_as, expr, silent);
 	}
 
 	if (PUT_LINK == t)
@@ -629,6 +621,10 @@ ValuePtr Instantiator::execute(const Handle& expr, bool silent)
 	// if (expr->is_executable())
 	if (expr->is_type(EXECUTABLE_LINK))
 		return expr->execute(_as, silent);
+	if (expr->is_type(EVALUATION_LINK))
+		return expr->execute(_as, silent);
+	if (expr->is_type(EVALUATABLE_LINK))
+		return EvaluationLink::do_evaluate(exas, expr, silent);
 
 	if (expr->is_type(NODE) and expr->is_executable())
 		return expr->execute(_as, silent);

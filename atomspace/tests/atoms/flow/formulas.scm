@@ -6,128 +6,69 @@
 ;
 (use-modules (opencog) (opencog exec))
 
-(define atom-a (Concept "A" (stv 0.8 1.0)))
-(define atom-b (Concept "B" (stv 0.6 0.9)))
+(define tvkey (Predicate "*-TruthValueKey-*"))
+
+(define atom-a (Concept "A"))
+(define atom-b (Concept "B"))
+(cog-set-value! atom-a tvkey (FloatValue  0.8 1.0))
+(cog-set-value! atom-b tvkey (FloatValue  0.6 0.9))
+
+(define (strength-of ATOM) (ElementOf (Number 0) (ValueOf ATOM tvkey)))
+(define (confidence-of ATOM) (ElementOf (Number 1) (ValueOf ATOM tvkey)))
 
 ; Multiply the strength of the TV's of two atoms.
 (define prod
-	(Times (StrengthOf (Concept "A")) (StrengthOf (Concept "B"))))
-
-(define stv-const (FormulaPredicate (Number 0.7) (Number 0.314)))
+	(Times (strength-of (Concept "A")) (strength-of (Concept "B"))))
 
 (define formula-stv
-	(FormulaPredicate
+	(FloatColumn
 		(Minus
 			(Number 1)
-			(Times (StrengthOf (Concept "A")) (StrengthOf (Concept "B"))))
-		(Times (ConfidenceOf (Concept "A")) (ConfidenceOf (Concept "B")))))
-
-; The below computes a truth value, and attaches it to the
-; EvaluationLink.
-(define my-ev-link
-	(Evaluation
-		(FormulaPredicate (Number 0.75) (Number 0.628))
-		(List
-			(Concept "A")
-			(Concept "B"))))
+			(Times (strength-of (Concept "A")) (strength-of (Concept "B"))))
+		(Times (confidence-of (Concept "A")) (confidence-of (Concept "B")))))
 
 ; Formula with variables
-(define eval-formula
-	(Evaluation
+(define my-formula
+   (Lambda
+      (VariableList (Variable "$X") (Variable "$Y"))
 		; Compute TV = (1-sA*sB, cA*cB)
-		(FormulaPredicate
+		(FloatColumn
 			(Minus
 				(Number 1)
 				(Times
-					(StrengthOf (Variable "$X"))
-					(StrengthOf (Variable "$Y"))))
+					(strength-of (Variable "$X"))
+					(strength-of (Variable "$Y"))))
 			(Times
-				(ConfidenceOf (Variable "$X"))
-				(ConfidenceOf (Variable "$Y"))))
-		(List
-			(Concept "A")
-			(Concept "B"))))
+				(confidence-of (Variable "$X"))
+				(confidence-of (Variable "$Y"))))))
 
-; Optionally, you can wrap formulas with LambdaLinks. This doesn't
-; really change anything; formulas work fine without LambdaLinks.
-(define eval-lambda
-	(Evaluation
-		; Compute TV = (1-sA*sB, cA*cB)
-		(FormulaPredicate
-			(Lambda
-				; Lambda without a decl, intentionally so.
-				; (NopeVariableList (Variable "$X") (Variable "$Y"))
-				(Minus
-					(Number 1)
-					(Times
-						(StrengthOf (Variable "$X"))
-						(StrengthOf (Variable "$Y")))))
-			(Lambda
-				(VariableList (Variable "$X") (Variable "$Y"))
-				(Times
-					(ConfidenceOf (Variable "$X"))
-					(ConfidenceOf (Variable "$Y")))))
-		(List
-			(Concept "A")
-			(Concept "B"))))
-
-
-; Beta-reducation works as normal. The below will create an
-; EvaluationLink with ConceptNode A and B in it, and will set the
-; truth value according to the formula.
-(define put-link
-		(PutLink
-			(VariableList (Variable "$VA") (Variable "$VB"))
-			(Evaluation
-				; Compute TV = (1-sA*sB, cA*cB)
-				(FormulaPredicate
-					(Minus
-						(Number 1)
-						(Times
-							(StrengthOf (Variable "$VA"))
-							(StrengthOf (Variable "$VB"))))
-					(Times
-						(ConfidenceOf (Variable "$VA"))
-						(ConfidenceOf (Variable "$VB"))))
-				(List
-					(Variable "$VA") (Variable "$VB")))
-		(Set (List (Concept "A") (Concept "B")))))
-
+(define eval-formula
+	(ExecutionOutput my-formula (List (Concept "A") (Concept "B"))))
 
 ; One can also use DefinedPredicates, to give the formula a name.
-(DefineLink
-	(DefinedPredicate "has a reddish color")
-	(FormulaPredicate
-		(Minus
-			(Number 1)
-			(Times
-				(StrengthOf (Variable "$X"))
-				(StrengthOf (Variable "$Y"))))
-		(Times
-			(ConfidenceOf (Variable "$X"))
-			(ConfidenceOf (Variable "$Y")))))
+(DefineLink (DefinedProcedure "has a reddish color") my-formula)
 
-(Concept "A" (stv 0.9 0.98))
-(Concept "B" (stv 0.9 0.98))
+(cog-set-value! (Concept "A") tvkey (FloatValue 0.9 0.98))
+(cog-set-value! (Concept "B") tvkey (FloatValue 0.9 0.98))
 
 ; The will cause the formula to evaluate.
 (define red-form
-	(Evaluation
-		(DefinedPredicate "has a reddish color")
-		(List
-			(Concept "A")
-			(Concept "B"))))
+	(ExecutionOutput
+		(DefinedProcedure "has a reddish color")
+		(List (Concept "A") (Concept "B"))))
 
 ; --------------------------------------------------
 
-(define atom-a (Concept "A" (stv 0.8 1.0)))
-(define atom-b (Concept "B" (stv 0.6 0.9)))
+(cog-set-value! atom-a tvkey (FloatValue 0.8 1.0))
+(cog-set-value! atom-b tvkey (FloatValue 0.6 0.9))
 (define atom-c (Concept "C"))
 
 (define key (Predicate "key"))
 
-(define iab (Inheritance atom-a atom-b (stv 0.8 0.8)))
-(define ibc (Inheritance atom-b atom-c (stv 0.3 0.3)))
+(define iab (Inheritance atom-a atom-b))
+(define ibc (Inheritance atom-b atom-c))
+(cog-set-value! iab tvkey (FloatValue  0.8 0.8))
+(cog-set-value! ibc tvkey (FloatValue  0.3 0.3))
 
 (cog-set-value! iab key (FloatValue 1 2 3))
 (cog-set-value! ibc key (FloatValue 4 5 6))
@@ -157,170 +98,17 @@
 		(VariableList (Variable "$x") (Variable "$y"))
 		(SequentialAnd
 			(GreaterThan
-				(ConfidenceOf (Inheritance (Variable "$x") (Variable "$y")))
+				(confidence-of (Inheritance (Variable "$x") (Variable "$y")))
 				(Number 0.75))
 			(GreaterThan
 				(Number 0.85)
-				(ConfidenceOf (Inheritance (Variable "$x") (Variable "$y"))))
+				(confidence-of (Inheritance (Variable "$x") (Variable "$y"))))
 		)))
 
 ; Expect (its-conf atom-a atom-b) to be true,
 ; and (its-conf atom-b atom-c) to be false.
 (define (its-conf a b)
 	(Evaluation (DefinedPredicate "mostly-confident") (List a b)))
-
-; --------------------------------------------------
-; Testing naked predicate formulas (issue #2218).
-
-(define naked-pred1
-  (FormulaPredicate
-    (Number 1)
-    (Number 1)
-  )
-)
-
-(define naked-pred2
-  (FormulaPredicate
-    (Times
-      (Number 0.5)
-      (Number 1)
-    )
-    (Number 1)
-  )
-)
-
-(define naked-pred3
-  (FormulaPredicate
-    (Number 1)
-    (Times
-      (Number 0.5)
-      (Number 1)
-    )
-  )
-)
-
-(define apple-is-green (Concept "apple-is-green" (stv 1 0.5)))
-(define apple-is-red (Concept "apple-is-red" (stv 0.9 0.6)))
-
-(define naked-pred4
-  (FormulaPredicate
-    (Number 1)
-    (Times
-      (Number 1)
-      (Number 0.5)
-      (StrengthOf apple-is-green)
-      (ConfidenceOf apple-is-red)
-    )
-  )
-)
-
-(define (times x y)
-  (cog-execute! (Times x y))
-)
-
-(define naked-pred5
-  (FormulaPredicate
-    (Number 1)
-    (ExecutionOutput
-      (GroundedSchema "scm:times")
-      (List (Number 0.9) (Number 0.5))
-    )
-  )
-)
-
-(define naked-pred-crash1
-  (FormulaPredicate
-    (Concept "blabla")
-    (Number 1)
-  )
-)
-
-(define naked-pred-crash2
-  (FormulaPredicate
-    (Number 1)
-    (ExecutionOutput
-      (Lambda (Concept "blabla"))
-      (List)
-    )
-  )
-)
-
-; -------------------------------------------------
-; Testing defined predicate formulas (issue #2218).
-
-(Define
-  (DefinedPredicate "defined-pred1")
-  (FormulaPredicate
-    (Number 1)
-    (Number 1)
-  )
-)
-
-(Define
-  (DefinedPredicate "defined-pred2")
-  (FormulaPredicate
-    (Times
-      (Number 1)
-      (Number 0.5)
-    )
-    (Number 1)
-  )
-)
-
-(Define
-  (DefinedPredicate "defined-pred3")
-  (FormulaPredicate
-    (Number 1)
-    (Times
-      (Number 1)
-      (Number 0.5)
-    )
-  )
-)
-
-(Define
-  (DefinedPredicate "defined-pred4")
-  (FormulaPredicate
-    (Number 1)
-    (Times
-      (Number 1)
-      (Number 0.5)
-      (StrengthOf apple-is-green)
-      (ConfidenceOf apple-is-red)
-    )
-  )
-)
-
-(Define
-  (DefinedPredicate "defined-pred-crash1")
-  (FormulaPredicate
-    (ExecutionOutput
-      (Lambda (Concept "ahaha"))
-      (List)
-    )
-    (Times
-      (Number 1)
-      (Number 0.5)
-      (StrengthOf apple-is-green)
-      (ConfidenceOf apple-is-red)
-    )
-  )
-)
-
-(Define
-  (DefinedPredicate "defined-pred-crash2")
-  (FormulaPredicate
-    (Number 1)
-    (Concept "saboteur")
-  )
-)
-
-(define (eval-nullary name)
-  (Evaluation
-    (DefinedPredicate name)
-    (List)
-  )
-)
 
 ; -------------------------------------------------
 ; Testing defined predicate execution (issue #2312).
@@ -334,12 +122,12 @@
 	(True
 		(Put
 			(State (Anchor "sum") (Variable "$x"))
-			(Plus (Number 1) (Get (State (Anchor "sum") (Variable "$y")))))))
+			(Plus (Number 1) (Meet (State (Anchor "sum") (Variable "$y")))))))
 
-; GetLink returns a SetLink. Unwrap it to get the NumberNode.
+; MeetLink returns a UnisetValue. Unwrap it to get the NumberNode.
 (define (get-sum)
-	(cog-outgoing-atom (cog-execute!
-		(Get (State (Anchor "sum") (Variable "$x"))))
+	(cog-value-ref (cog-execute!
+		(Meet (State (Anchor "sum") (Variable "$x"))))
 		0))
 
 (*unspecified*)

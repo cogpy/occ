@@ -125,7 +125,7 @@ bool AtomSpace::content_compare(const AtomSpace& space_first,
 
         // If the atoms don't match... Compare the atoms not the pointers
         // which is the default if we just use Handle operator ==.
-        if (*((AtomPtr) atom_first) != *((AtomPtr) atom_second))
+        if (*atom_first != *atom_second)
         {
             if (emit_diagnostics)
                 std::cout << "compare_atomspaces - first atom " <<
@@ -265,6 +265,16 @@ void AtomSpace::setAtomSpace(AtomSpace* as)
 	// except that we don't have any viable mechanisms for such multiple
 	// membership, and so I don't know how to treat this right now.
 	// Fixme maybe later someday, if/when this is needed.
+	//
+	// Note, however, weird stuff can happen. Just now, Claude tried to
+	// do this:
+	//     (define main-as (cog-atomspace))
+	//     (define child-as (cog-new-atomspace main-as))
+	//     (cog-set-atomspace! main-as)
+	//     (cog-execute! (AtomSpaceOf child-as))
+	// This would have caused the chiled to be placed in a Link being held
+	// in the main AS, which is not exactly circular, but fringes onto it.
+	// The wisdom of allowing something like this is unclear.
 	if (not (nullptr == _atom_space or as == nullptr))
 		throw RuntimeException(TRACE_INFO,
 			"At this time, an AtomSpace can only be placed in one other\n"
@@ -352,48 +362,6 @@ Handle AtomSpace::add_atom(const Handle& h)
 
     // If it is a DeleteLink, then the addition will fail. Deal with it.
     // If its a GrantLink, addition might require extra care.
-    Handle rh;
-    try {
-        rh = add(h);
-    }
-    catch (const DeleteException& ex) {
-        // Hmmm. Need to notify the backing store
-        // about the deleted atom. But how?
-    }
-    catch (const SilentException& ex) {
-        // The SilentException is thrown by GrantLink, when the
-        // user attempts grants in non-base Frames. We want to
-        // disallow hiding of grants, so we end up here.
-        return lookupHide(h, false);  // Do not allow hiding!
-    }
-    return rh;
-}
-
-Handle AtomSpace::add_node(Type t, std::string&& name)
-{
-    // Cannot add atoms to a read-only atomspace. But if it's already
-    // in the atomspace, return it.
-    if (_read_only)
-        return lookupHandle(createNode(t, std::move(name)));
-
-    return add(createNode(t, std::move(name)));
-}
-
-Handle AtomSpace::get_node(Type t, std::string&& name) const
-{
-    return lookupHandle(createNode(t, std::move(name)));
-}
-
-Handle AtomSpace::add_link(Type t, HandleSeq&& outgoing)
-{
-    // Cannot add atoms to a read-only atomspace. But if it's already
-    // in the atomspace, return it.
-    if (_read_only)
-        return lookupHandle(createLink(std::move(outgoing), t));
-
-    // If it is a DeleteLink, then the addition will fail. Deal with it.
-    // If its a GrantLink, addition might require extra care.
-    Handle h(createLink(std::move(outgoing), t));
     try {
         return add(h);
     }
@@ -408,11 +376,6 @@ Handle AtomSpace::add_link(Type t, HandleSeq&& outgoing)
         return lookupHide(h, false);  // Do not allow hiding!
     }
     return Handle::UNDEFINED;
-}
-
-Handle AtomSpace::get_link(Type t, HandleSeq&& outgoing) const
-{
-    return lookupHandle(createLink(std::move(outgoing), t));
 }
 
 ValuePtr AtomSpace::add_atoms(const ValuePtr& vptr)
@@ -486,21 +449,6 @@ Handle AtomSpace::set_value(const Handle& h,
 {
    #define SETV(atm) atm->setValue(key, value);
 	COWBOY_CODE(SETV);
-}
-
-// Copy-on-write for setting truth values.
-Handle AtomSpace::set_truthvalue(const Handle& h, const TruthValuePtr& tvp)
-{
-   #define SET_TV(atm) atm->setTruthValue(tvp);
-	COWBOY_CODE(SET_TV);
-}
-
-// Copy-on-write for incrementing truth values.
-// The increment is atomic i.e. thread-safe.
-Handle AtomSpace::increment_countTV(const Handle& h, double cnt)
-{
-	#define INC_TV(atm) atm->incrementCountTV(cnt);
-	COWBOY_CODE(INC_TV);
 }
 
 // The increment is atomic i.e. thread-safe.
