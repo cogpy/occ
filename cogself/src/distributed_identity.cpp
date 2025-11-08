@@ -9,6 +9,7 @@
 #include <iostream>
 #include <map>
 #include <mutex>
+#include <cmath>
 
 namespace cogself {
 
@@ -60,6 +61,23 @@ public:
                (identityScore * identityWeight * 0.6) +
                (synergyScore * identityWeight * 0.4);
     }
+    
+    // Internal helper for propagating identity without locking
+    // Assumes caller holds the mutex
+    void propagateIdentityToNodeInternal(IdentityAwareNode& node) {
+        if (!identity) return;
+        
+        node.assignedAgentId = identity->getAgentId();
+        node.identityCoherence = identity->getSelfCoherence();
+        node.synergyAlignment = identity->getCognitiveIntegration();
+        
+        propagationCount++;
+        
+        std::cout << "[DistributedIdentityManager] Propagated identity to node " << node.nodeId 
+                  << " (coherence: " << node.identityCoherence << ")" << std::endl;
+        
+        identity->setDistributedNodeId(node.nodeId);
+    }
 };
 
 DistributedIdentityManager::DistributedIdentityManager()
@@ -101,9 +119,12 @@ void DistributedIdentityManager::registerNode(const IdentityAwareNode& node) {
                   << node.nodeId << " at " << node.address << ":" << node.port << std::endl;
     }
     
-    // Propagate identity if available
+    // Propagate identity if available (use internal method to avoid deadlock)
     if (pImpl->identity) {
-        propagateIdentityToNode(node.nodeId);
+        auto* nodePtr = pImpl->findNode(node.nodeId);
+        if (nodePtr) {
+            pImpl->propagateIdentityToNodeInternal(*nodePtr);
+        }
     }
 }
 
@@ -233,25 +254,23 @@ void DistributedIdentityManager::propagateIdentityToNode(const std::string& node
         return;
     }
     
-    node->assignedAgentId = pImpl->identity->getAgentId();
-    node->identityCoherence = pImpl->identity->getSelfCoherence();
-    node->synergyAlignment = pImpl->identity->getCognitiveIntegration();
-    
-    pImpl->propagationCount++;
-    
-    std::cout << "[DistributedIdentityManager] Propagated identity to node " << nodeId 
-              << " (coherence: " << node->identityCoherence << ")" << std::endl;
-    
-    pImpl->identity->setDistributedNodeId(nodeId);
+    pImpl->propagateIdentityToNodeInternal(*node);
 }
 
 void DistributedIdentityManager::propagateIdentityToAllNodes() {
+    std::lock_guard<std::mutex> lock(pImpl->managerMutex);
+    
     std::cout << "[DistributedIdentityManager] Propagating identity to all nodes" << std::endl;
     
-    auto nodes = getIdentityAwareNodes();
-    for (const auto& node : nodes) {
+    if (!pImpl->identity) {
+        std::cerr << "[DistributedIdentityManager] Cannot propagate: no identity set" 
+                  << std::endl;
+        return;
+    }
+    
+    for (auto& node : pImpl->nodes) {
         if (node.isActive) {
-            propagateIdentityToNode(node.nodeId);
+            pImpl->propagateIdentityToNodeInternal(node);
         }
     }
 }

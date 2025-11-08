@@ -52,6 +52,9 @@ struct IdentityShard {
     bool requiresIdentity;
     double identityDependency;  // How much this shard depends on identity (0.0-1.0)
     
+    IdentityShard() 
+        : requiresIdentity(false), identityDependency(0.0) {}
+    
     IdentityShard(const std::string& id, const std::string& purp, bool reqId = true, double dep = 0.5)
         : shardId(id), purpose(purp), requiresIdentity(reqId), identityDependency(dep) {}
 };
