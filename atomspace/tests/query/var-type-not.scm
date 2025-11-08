@@ -1,9 +1,7 @@
 
-(define (stv mean conf) (cog-new-stv mean conf))
-
 ; SENTENCE: [The color of the sky is blue.]
 ; _predadj (<<color>>, <<blue>>)
-(EvaluationLink (stv 1.0 1.0)
+(EvaluationLink
    (DefinedLinguisticRelationshipNode "_predadj")
    (ListLink
       (WordInstanceNode "color@8947b41d-b6d8-44c5-95a0-a909220596d5")
@@ -11,7 +9,7 @@
    )
 )
 ; of (<<color>>, <<sky>>)
-(EvaluationLink (stv 1.0 1.0)
+(EvaluationLink
    (PrepositionalRelationshipNode "of")
    (ListLink
       (WordInstanceNode "color@8947b41d-b6d8-44c5-95a0-a909220596d5")
@@ -26,7 +24,7 @@
 ;
 
 (define (rule-good)
-   (BindLink
+   (QueryLink
       (VariableList
          (TypedVariableLink
             (VariableNode "$var2")
@@ -43,7 +41,7 @@
          (VariableNode "$var1")
       )
       (AndLink
-         (EvaluationLink (stv 1 0.99999988)
+         (EvaluationLink
             (DefinedLinguisticRelationshipNode "_predadj")
             (ListLink
                (VariableNode "$var2")
@@ -51,7 +49,7 @@
             )
          )
          (AbsentLink
-            (EvaluationLink (stv 1 0.99999988)
+            (EvaluationLink
                (VariableNode "$prep")
                (ListLink
                   (VariableNode "$var2")
@@ -60,7 +58,7 @@
             )
          )
       )
-      (ListLink (stv 1 0.99999988)
+      (ListLink
          (VariableNode "$var1")
          (VariableNode "$var2")
       )
@@ -72,7 +70,7 @@
 ; PreposxitionalRelationshipNode is misspelled (on purpose,
 ; since we want to test for the mis-spelled case).
 (define (rule-bad)
-   (BindLink
+   (QueryLink
       (VariableList
          (TypedVariableLink
             (VariableNode "$var2")
@@ -89,7 +87,7 @@
          (VariableNode "$var1")
       )
       (AndLink
-         (EvaluationLink (stv 1 0.99999988)
+         (EvaluationLink
             (DefinedLinguisticRelationshipNode "_predadj")
             (ListLink
                (VariableNode "$var2")
@@ -97,7 +95,7 @@
             )
          )
          (AbsentLink
-            (EvaluationLink (stv 1 0.99999988)
+            (EvaluationLink
                (VariableNode "$prep")
                (ListLink
                   (VariableNode "$var2")
@@ -106,7 +104,7 @@
             )
          )
       )
-      (ListLink (stv 1 0.99999988)
+      (ListLink
          (VariableNode "$var1")
          (VariableNode "$var2")
       )
