@@ -30,11 +30,11 @@
 #include <opencog/atoms/base/Link.h>
 #include <opencog/atoms/base/Node.h>
 #include <opencog/atoms/value/FloatValue.h>
-#include <opencog/atoms/truthvalue/TruthValue.h>
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/atomspace/version.h>
 #include <opencog/persist/sexpr/Sexpr.h>
 #include <opencog/persist/proxy/ProxyNode.h>
+#include <opencog/persist/storage/storage_types.h>
 
 #include "Commands.h"
 
@@ -176,7 +176,7 @@ std::string Commands::cog_execute_cache(const std::string& cmd)
 	if (query->is_executable())
 		rslt = query->execute(_base_space.get());
 	else if (query->is_evaluatable())
-		rslt = ValueCast(query->evaluate(_base_space.get()));
+		rslt = query->evaluate(_base_space.get());
 	else
 		return "#f";
 
@@ -452,7 +452,7 @@ std::string Commands::cog_set_value(const std::string& cmd)
 
 // -----------------------------------------------
 // (cog-set-values! (Concept "foo") (AtomSpace "foo")
-//     (alist (cons (Predicate "bar") (stv 0.9 0.8)) ...))
+//     (alist (cons (Predicate "bar") (FloatValue 0.9 0.8)) ...))
 std::string Commands::cog_set_values(const std::string& cmd)
 {
 	size_t pos = 0;
@@ -474,34 +474,6 @@ std::string Commands::cog_set_values(const std::string& cmd)
 	// But still ... maybe fixme?
 	if (_proxy and _proxy->have_storeAtom)
 		_proxy->store_atom(h);
-
-	return "()";
-}
-
-// -----------------------------------------------
-// (cog-set-tv! (Concept "foo") (stv 1 0))
-// (cog-set-tv! (Concept "foo") (stv 1 0) (AtomSpace "foo"))
-std::string Commands::cog_set_tv(const std::string& cmd)
-{
-	size_t pos = 0;
-	Handle h = Sexpr::decode_atom(cmd, pos, _space_map);
-	ValuePtr vp = Sexpr::decode_value(cmd, ++pos);
-
-	// Search for optional AtomSpace argument
-	AtomSpace* as = get_opt_as(cmd, pos);
-
-	Handle ha = as->add_atom(h);
-	if (nullptr == ha) return "()"; // read-only atomspace.
-
-	TruthValuePtr tvp(TruthValueCast(vp));
-	ha = as->set_truthvalue(ha, tvp);
-
-	// Make sure we can store truth values!
-	if (nullptr == _truth_key)
-		_truth_key = as->add_node(PREDICATE_NODE, "*-TruthValueKey-*");
-
-	if (_proxy and _proxy->have_storeValue)
-		_proxy->store_value(ha, _truth_key);
 
 	return "()";
 }
