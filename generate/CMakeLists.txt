@@ -3,7 +3,7 @@
 #
 # We need at least version 3.13 to get TARGET_LINK_DIRECTORIES
 MESSAGE("Found CMake version ${CMAKE_VERSION}")
-CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
 PROJECT(generate)
 
@@ -31,10 +31,10 @@ ENDIF (COGUTIL_FOUND)
 # add the 'cmake' directory from cogutil to search path
 list(APPEND CMAKE_MODULE_PATH  ${COGUTIL_DATA_DIR}/cmake)
 
-include(${COGUTIL_DATA_DIR}/cmake/OpenCogGccOptions.cmake)
-include(${COGUTIL_DATA_DIR}/cmake/OpenCogLibOptions.cmake)
-include(${COGUTIL_DATA_DIR}/cmake/OpenCogInstallOptions.cmake)
-include(${COGUTIL_DATA_DIR}/cmake/Summary.cmake)
+include(OpenCogGccOptions)
+include(OpenCogLibOptions)
+include(OpenCogInstallOptions)
+include(Summary)
 
 # ===================================================================
 # Check for existance of various required, optional packages.
@@ -54,11 +54,9 @@ ENDIF (ATOMSPACE_FOUND)
 # Needed for unit tests.
 
 FIND_PACKAGE(Cxxtest)
-IF (CXXTEST_FOUND)
-	MESSAGE(STATUS "CxxTest found.")
-ELSE (CXXTEST_FOUND)
+IF (NOT CXXTEST_FOUND)
 	MESSAGE(STATUS "CxxTest missing: needed for unit tests.")
-ENDIF (CXXTEST_FOUND)
+ENDIF (NOT CXXTEST_FOUND)
 
 # ----------------------------------------------------------
 # This is required for Guile
@@ -71,7 +69,7 @@ include(OpenCogFindGuile)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR}
 	${COGUTIL_INCLUDE_DIR})
 
-INCLUDE("${ATOMSPACE_DATA_DIR}/cmake/OpenCogGuile.cmake")
+INCLUDE(OpenCogGuile)
 
 # ===================================================================
 # Add subdirectories
@@ -81,7 +79,7 @@ ADD_SUBDIRECTORY(opencog)
 IF (CXXTEST_FOUND)
 	ADD_CUSTOM_TARGET(tests)
 	ADD_SUBDIRECTORY(tests EXCLUDE_FROM_ALL)
-	ADD_CUSTOM_TARGET(test
+	ADD_CUSTOM_TARGET(check
 		DEPENDS tests
 		WORKING_DIRECTORY tests
 		COMMAND ${CMAKE_CTEST_COMMAND} --force-new-ctest-process --output-on-failure $(ARGS)
