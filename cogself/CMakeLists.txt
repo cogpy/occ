@@ -24,6 +24,8 @@ set(COGSELF_SOURCES
     src/cogself.cpp
     src/synergy_manager.cpp
     src/agi_goal_tracker.cpp
+    src/cogprime_identity.cpp
+    src/distributed_identity.cpp
 )
 
 # CogSelf library headers
@@ -31,6 +33,8 @@ set(COGSELF_HEADERS
     include/cogself/cogself.h
     include/cogself/synergy_manager.h
     include/cogself/agi_goal_tracker.h
+    include/cogself/cogprime_identity.h
+    include/cogself/distributed_identity.h
 )
 
 # Build CogSelf shared library
