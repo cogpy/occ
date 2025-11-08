@@ -122,7 +122,7 @@
    'count-type - Return the type of the Value holding the count. If the
        base class LLOBJ provides this method, then this type will be used
        when first creating a Value to hold the count. If the base class
-       does not provide this, then the default of `CountTruthValue` will
+       does not provide this, then the default of `FloatValue` will
        be used. The count-type should be a subtype of type `FloatValue`,
        as this is the only type capable of holding numbers.
 
@@ -131,19 +131,19 @@
        then this offset will be used when setting or incrementing the
        scalar count.  If the base class does not provide this, then the
        default of 2 will be used. This default is the location of the
-       count field on `CountTruthValue`'s and is thus backwards-compat
+       count field on `FloatValue`'s and is thus backwards-compat
        with older code.
 
        If 'count-ref is provided and returns #f, then all counts will
        be treated as vectors, so that gets, sets and increments all
        operate on vectors.
 "
-	; By default, the count is stored as a CountTruthValue.
+	; By default, the count is stored as a FloatValue.
 	; That means that it is on the TruthValue Key, and is the
 	; third number (the first two being strength and confidence.)
 	; These defaults are used if and only if the base object does
 	; not provide these.
-	(define (count-type) 'CountTruthValue)
+	(define (count-type) 'FloatValue)
 	(define (count-key) (PredicateNode "*-TruthValueKey-*"))
 	(define (count-ref) 2)
 
@@ -179,7 +179,7 @@
 		(cog-set-value-ref! PAIR cnt-key CNT cnt-ref))
 
 	; Increment location. Unlike cog-set-value-ref!, this will
-	; automatically create the FloatValue (or CountTruthValue).
+	; automatically create the FloatValue.
 	(define (inc-scalar-count PAIR CNT)
 		(cog-inc-value! PAIR cnt-key CNT cnt-ref))
 
@@ -351,8 +351,8 @@
 
 	; Return the observed count for the pair PAIR.
 	; If the pair has nothing at the storage key, fetch it.
-	; If the pair has the wrong type, e.g. SimpleTV instead of CountTV
-	; then fetch it. Be surgical w/ the fetch. Get only what we need.
+	; If the pair has the wrong type, then fetch it.
+	; Be surgical w/ the fetch. Get only what we need.
 	;
 	; This uses a mutex to minimize, but not avoid a race window
 	; involving fetch-and-add. Users that try to fetch non-existant
