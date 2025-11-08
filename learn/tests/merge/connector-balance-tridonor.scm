@@ -9,7 +9,7 @@
 
 (use-modules (srfi srfi-1))
 (use-modules (opencog) (opencog matrix))
-(use-modules (opencog nlp))
+(use-modules (opencog lg))
 (use-modules (opencog learn))
 
 (use-modules (opencog test-runner))
@@ -41,7 +41,9 @@
 
 	; Define matrix API to the data
 	(define pca (make-pseudo-cset-api))
-	(define gsc (add-covering-sections pca))
+	(define pcc (add-count-api pca))
+	(define gss (add-covering-sections pcc))
+	(define gsc (add-count-api gss))
 
 	; Verify that the data loaded correctly
 	; We expect 1 sections each on "a" and "b"
