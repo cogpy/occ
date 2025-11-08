@@ -100,7 +100,7 @@ void AggregationUTest::setup_dict()
 	dict->add_pole_pair(minus, plus);
 
 	// The lexis to use
-	HandleSet lex;
+	UnorderedHandleSet lex;
 	as->get_handles_by_type(lex, SECTION);
 	dict->add_to_lexis(lex);
 }
