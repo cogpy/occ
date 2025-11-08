@@ -1,7 +1,6 @@
 import unittest
 from opencog.utilities import set_default_atomspace, finalize_opencog
 from opencog.type_constructors import *
-from opencog.execute import evaluate_atom
 
 import __main__
 
@@ -20,7 +19,7 @@ class TestExceptions(unittest.TestCase):
     def test_bogus_get(self):
         atom1 = Concept("atom1")
         try:
-            Get(atom1, atom1, atom1)
+            Meet(atom1, atom1, atom1)
             self.assertFalse("call should fail")
         except RuntimeError as e:
                    # Use `nosetests3 --nocapture` to see this print...
@@ -31,13 +30,13 @@ class TestExceptions(unittest.TestCase):
     # First, make sure that evaluation works.
     def test_good_evaluation(self):
         atom1 = Concept("atom1")
-        eval_link = Evaluation(GroundedPredicate("py:good_tv"),
+        eval_link = Evaluation(GroundedPredicate("py:good_predicate"),
                                         atom1, atom1, atom1)
-        okay = evaluate_atom(self.space, eval_link)
+        okay = self.space.execute(eval_link)
 
         # Use `nosetests3 --nocapture` to see this print...
         print(f"The good TV is {str(okay)}")
-        expect = TruthValue(0.5, 0.5)
+        expect = BoolValue(True)
         self.assertTrue(okay == expect)
 
     # --------------------------------------------------------------
@@ -47,10 +46,10 @@ class TestExceptions(unittest.TestCase):
         eval_link = Evaluation(GroundedPredicate("py:foobar"),
                                         atom1, atom1, atom1)
         try:
-            evaluate_atom(self.space, eval_link)
+            self.space.execute(eval_link)
             self.assertFalse("call should fail")
         except RuntimeError as e:
-                   # Use `nosetests3 --nocapture` to see this print...
+            # Use `nosetests3 --nocapture` to see this print...
             print(f"The exception message is {str(e)}")
             self.assertTrue("not found in module" in str(e))
 
@@ -60,7 +59,7 @@ class TestExceptions(unittest.TestCase):
         eval_link = Evaluation(GroundedPredicate("py:no_ret"),
                                         atom1, atom1, atom1)
         try:
-            evaluate_atom(self.space, eval_link)
+            self.space.execute(eval_link)
             self.assertFalse("call should fail")
         except RuntimeError as e:
             # Use `nosetests3 --nocapture` to see this print...
@@ -72,7 +71,7 @@ class TestExceptions(unittest.TestCase):
         eval_link = Evaluation(GroundedPredicate("py:ret_num"),
                                         atom1, atom1, atom1)
         try:
-            evaluate_atom(self.space, eval_link)
+            self.space.execute(eval_link)
             self.assertFalse("call should fail")
         except RuntimeError as e:
             # Use `nosetests3 --nocapture` to see this print...
@@ -84,7 +83,7 @@ class TestExceptions(unittest.TestCase):
         eval_link = Evaluation(GroundedPredicate("py:ret_str"),
                                         atom1, atom1, atom1)
         try:
-            evaluate_atom(self.space, eval_link)
+            self.space.execute(eval_link)
             self.assertFalse("call should fail")
         except RuntimeError as e:
             # Use `nosetests3 --nocapture` to see this print...
@@ -96,7 +95,7 @@ class TestExceptions(unittest.TestCase):
         eval_link = Evaluation(GroundedPredicate("py:ret_nil"),
                                         atom1, atom1, atom1)
         try:
-            evaluate_atom(self.space, eval_link)
+            self.space.execute(eval_link)
             self.assertFalse("call should fail")
         except RuntimeError as e:
             # Use `nosetests3 --nocapture` to see this print...
@@ -108,7 +107,7 @@ class TestExceptions(unittest.TestCase):
         eval_link = Evaluation(GroundedPredicate("py:ret_lst"),
                                         atom1, atom1, atom1)
         try:
-            evaluate_atom(self.space, eval_link)
+            self.space.execute(eval_link)
             self.assertFalse("call should fail")
         except RuntimeError as e:
             # Use `nosetests3 --nocapture` to see this print...
@@ -125,7 +124,7 @@ class TestExceptions(unittest.TestCase):
 
         # Use `nosetests3 --nocapture` to see this print...
         print(f"The good TV is {str(okay)}")
-        expect = TruthValue(0.5, 0.5)
+        expect = FloatValue([0.5, 0.5])
         self.assertTrue(okay == expect)
 
     # --------------------------------------------------------------
@@ -210,9 +209,13 @@ class TestExceptions(unittest.TestCase):
 
 
 
+def good_predicate(*args):
+    print(args)
+    return True
+
 def good_tv(*args):
     print(args)
-    return TruthValue(0.5, 0.5)
+    return FloatValue([0.5, 0.5])
 
 def no_ret(*args):
     print(args)
@@ -233,6 +236,7 @@ def ret_lst(*args):
     print(args)
     return ['a', 'b', 'c']
 
+__main__.good_predicate = good_predicate
 __main__.good_tv = good_tv
 __main__.no_ret = no_ret
 __main__.ret_num = ret_num

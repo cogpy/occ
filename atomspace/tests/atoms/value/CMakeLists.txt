@@ -12,7 +12,11 @@ IF (HAVE_GUILE)
 	ADD_CXXTEST(StreamUTest)
 	TARGET_LINK_LIBRARIES(StreamUTest smob)
 
+	ADD_CXXTEST(SortedValueUTest)
+	TARGET_LINK_LIBRARIES(SortedValueUTest smob)
+
 	ADD_GUILE_TEST(BoolValuePrintTest bool-value-print-test.scm)
 	ADD_GUILE_TEST(CtorArgsTest ctor-args-test.scm)
+	ADD_GUILE_TEST(FlatStreamTest flat-stream-test.scm)
 ENDIF (HAVE_GUILE)
 
