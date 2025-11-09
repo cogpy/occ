@@ -5,19 +5,19 @@
 ;
 
 ; Populate the AtomSpace with some data
-(Evaluation
+(Edge
 	(Predicate "has-color")
 	(List
 		(Concept "apple")
 		(Concept "green")))
 
-(Evaluation
+(Edge
 	(Predicate "has-color")
 	(List
 		(Concept "banana")
 		(Concept "yellow")))
 
-(Evaluation
+(Edge
 	(Predicate "has-color")
 	(List
 		(Concept "strawberry")
@@ -27,8 +27,8 @@
 ; This won't work; although it looks nice, the ChoiceLink cannot
 ; be used in this way. Sorry.
 (define find-fruit
-	(Get
-		(Evaluation
+	(Meet
+		(Edge
 			(Predicate "has-color")
 			(List
 				(Variable "$fruit")
@@ -39,14 +39,14 @@
 
 ; This will work; the ChoiceLink appears at the top.
 (define find-fruit
-	(Get
+	(Meet
 		(Choice
-			(Evaluation
+			(Edge
 				(Predicate "has-color")
 				(List
 					(Variable "$fruit")
 					(Concept "red")))
-			(Evaluation
+			(Edge
 				(Predicate "has-color")
 				(List
 					(Variable "$fruit")

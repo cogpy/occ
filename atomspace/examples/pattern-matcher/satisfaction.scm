@@ -13,20 +13,20 @@
 ; Define a very simple satisfaction link.
 (define satlink
 	(Satisfaction
-		(Evaluation
+		(Edge
 			(Predicate "foobar")
 			(List
 				(Concept "funny")
 				(Variable "$x")))))
 
 ; Create something that will satisfy the above.
-(Evaluation
+(Edge
 	(Predicate "foobar")
 	(List
 		(Concept "funny")
 		(Concept "thing")))
 
-; Actually run it - this should return TrueTV i.e. `(stv 1 1)`
+; Actually run it - this should return TrueTV i.e. `#t`
 ; because the SatisfactionLink is satisfiable.
 (cog-execute! satlink)
 
@@ -37,7 +37,7 @@
 (define gnd-sat
 	(Satisfaction
 		(Anchor "please put groundings here")
-		(Evaluation
+		(Edge
 			(Predicate "foobar")
 			(List
 				(Concept "funny")
@@ -58,7 +58,7 @@
 		(VariableList
 			(Variable "$x")
 			(Anchor "please put groundings here"))
-		(Evaluation
+		(Edge
 			(Predicate "foobar")
 			(List
 				(Concept "funny")
@@ -75,7 +75,7 @@
 			(Variable "$p")
 			(Variable "$x")
 			(Anchor "please put groundings here"))
-		(Evaluation
+		(Edge
 			(Variable "$p")
 			(List
 				(Concept "funny")
@@ -85,11 +85,11 @@
 (cog-incoming-by-type anchr 'Member)
 
 (define gnd2-get
-	(Get
+	(Meet
 		(VariableList
 			(Variable "$p")
 			(Variable "$x"))
-		(Evaluation
+		(Edge
 			(Variable "$p")
 			(List
 				(Concept "funny")

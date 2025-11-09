@@ -21,8 +21,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <opencog/atomspace/AtomSpace.h>
 #include <opencog/atoms/core/TypeNode.h>
 #include <opencog/atoms/value/LinkValue.h>
+#include <opencog/atoms/value/ValueFactory.h>
 
 #include "LinkSignatureLink.h"
 
@@ -42,7 +44,7 @@ LinkSignatureLink::LinkSignatureLink(const HandleSeq&& oset, Type t)
 		throw InvalidParamException(TRACE_INFO,
 			"Expecting LinkSignatureLink with at least one argument");
 
-	if (TYPE_NODE != oset[0]->get_type())
+	if (not oset[0]->is_type(TYPE_NODE))
 		throw InvalidParamException(TRACE_INFO,
 			"LinkSignatureLink only supports TypeNode at this time, got %s",
 			oset[0]->to_string().c_str());
@@ -53,13 +55,15 @@ LinkSignatureLink::LinkSignatureLink(const HandleSeq&& oset, Type t)
 // ---------------------------------------------------------------
 
 /// Return a LinkValue of the desired type.
-ValuePtr LinkSignatureLink::construct(const ValueSeq&& newset)
+/// If kind is a Link type, then return that Link.
+/// For this case, if anything in the newset is NOT an Atom,
+/// it is silently ignored. (XXX FIXME Perhaps exception should
+/// be thrown? I dunno.)
+ValuePtr LinkSignatureLink::construct(AtomSpace* as, const ValueSeq&& newset) const
 {
-	if (LINK_VALUE == _kind)
-		return createLinkValue(std::move(newset));
+	if (nameserver().isA(_kind, LINK_VALUE))
+		return valueserver().create(_kind, std::move(newset));
 
-	// Yuck. User should have called the other constructor.
-	// But this is rare, so we'll allow.
 	if (nameserver().isA(_kind, LINK))
 	{
 		HandleSeq oset;
@@ -68,27 +72,13 @@ ValuePtr LinkSignatureLink::construct(const ValueSeq&& newset)
 			const Handle& h(HandleCast(vp));
 			if (h) oset.push_back(h);
 		}
-		return createLink(std::move(oset), _kind);
+		return as->add_link(_kind, std::move(oset));
 	}
 
-	// Should support other kinds too.
-	const std::string& tname = nameserver().getTypeName(_kind);
-	throw InvalidParamException(TRACE_INFO,
-		"Unsupported type %s", tname.c_str());
-}
-
-// ---------------------------------------------------------------
-
-/// Return either a Link or a LinkValue of the desired type.
-ValuePtr LinkSignatureLink::construct(const HandleSeq&& noset)
-{
-	if (LINK_VALUE == _kind)
-		return createLinkValue(noset);
-
-	if (nameserver().isA(_kind, LINK))
-		return createLink(std::move(noset), _kind);
-
-	// Should support other kinds too.
+	// Should support other kinds too.  XXX FIXME
+	// (???) I guess we could also cast FloatVectors to NumberNodes
+	// or perform other kinds of transformations between vectors
+	// and LinkValues, ... or something. Unclear at this time.
 	const std::string& tname = nameserver().getTypeName(_kind);
 	throw InvalidParamException(TRACE_INFO,
 		"Unsupported type %s", tname.c_str());
@@ -99,6 +89,13 @@ ValuePtr LinkSignatureLink::construct(const HandleSeq&& noset)
 /// Return either a Link or a LinkValue of the desired type.
 ValuePtr LinkSignatureLink::execute(AtomSpace* as, bool silent)
 {
+	// The _kind will usually be some LinkValue. One interesting
+	// case is the stream, which takes some Handle argument that
+	// controls the stream operation. Examples include SortedStream
+	// and FlatStream. Pss that directly to the correct factory.
+	if (nameserver().isA(_kind, HANDLE_ARG))
+		return valueserver().create(_kind, _outgoing[1]);
+
 	ValueSeq voset;
 	for (size_t i=1; i < _outgoing.size(); i++)
 	{
@@ -110,7 +107,7 @@ ValuePtr LinkSignatureLink::execute(AtomSpace* as, bool silent)
 			voset.emplace_back(_outgoing[i]);
 	}
 
-	return construct(std::move(voset));
+	return construct(as, std::move(voset));
 }
 
 DEFINE_LINK_FACTORY(LinkSignatureLink, LINK_SIGNATURE_LINK)
