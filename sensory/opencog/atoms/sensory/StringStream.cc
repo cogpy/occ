@@ -1,7 +1,7 @@
 /*
- * opencog/atoms/sensory/ReadStream.cc
+ * opencog/atoms/sensory/StringStream.cc
  *
- * Copyright (C) 2025 Linas Vepstas
+ * Copyright (C) 2025 BrainyBlaze Dynamics, Inc.
  * All Rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,12 +27,12 @@
 #include <opencog/atoms/value/ValueFactory.h>
 
 #include <opencog/sensory/types/atom_types.h>
-#include "ReadStream.h"
+#include "StringStream.h"
 
 using namespace opencog;
 
-ReadStream::ReadStream(const Handle& senso)
-	: LinkValue(READ_STREAM)
+StringStream::StringStream(const Handle& senso)
+	: StringValue(STRING_STREAM, std::vector<std::string>())
 {
 	if (not senso->is_type(SENSORY_NODE))
 		throw RuntimeException(TRACE_INFO,
@@ -41,44 +41,72 @@ ReadStream::ReadStream(const Handle& senso)
 	_snp = SensoryNodeCast(senso);
 }
 
-ReadStream::~ReadStream()
+StringStream::~StringStream()
 {
 }
 
 // ==============================================================
 
 // This will read one item at a time from the object, and return
-// that item.
+// that item as a string.
 // So, still, a line-oriented, buffered interface. For now.
 //
 // This accesses the SensoryNode private methods directly; the
 // alternative would be to call the public getValue() method, but
 // that does nothing except add overhead.
-void ReadStream::update() const
+void StringStream::update() const
 {
-	if (not _snp->connected()) return;
+	if (not _snp->connected())
+	{
+		_value.clear();
+		return;
+	}
 
-	// _value.emplace_back(_snp->read());
-	_value.resize(1);
-	_value[0] = _snp->read();
+	ValuePtr vp = _snp->read();
+
+	// nullpointr and VoidValue denote explicit EOF
+	if (nullptr == vp or VOID_VALUE == vp->get_type())
+	{
+		_value.clear();
+		return;
+	}
+
+	// Convert the value to a string
+	std::string str;
+	if (vp->is_type(STRING_VALUE))
+	{
+		std::vector<std::string> next = StringValueCast(vp)->value();
+		_value.swap(next);
+		return;
+	}
+
+	if (vp->is_type(NODE))
+	{
+		_value.resize(1);
+		_value[0] = HandleCast(vp)->get_name();
+		return;
+	}
+
+	// Don't know what else to do, if not handled above.
+	_value.clear();
 }
 
 // ==============================================================
 // XXX TODO. Someday, we need a working to_short_string() that
 // can be used by RocksStorage to ... store this thing. I guess.
 
-std::string ReadStream::to_string(const std::string& indent) const
+std::string StringStream::to_string(const std::string& indent) const
 {
    std::string rv = indent + "(" + nameserver().getTypeName(_type);
    rv += "\n" + _snp->to_short_string(indent + "   ") + ")\n";
    rv += indent + "; Current sample:\n";
-   rv += LinkValue::to_string(indent + "; ", LINK_VALUE);
+   rv += StringValue::to_string(indent + "; ", STRING_VALUE);
    return rv;
 }
 
 // ==============================================================
 
 // Adds factory when library is loaded.
-DEFINE_VALUE_FACTORY(READ_STREAM, createReadStream, Handle)
+DEFINE_VALUE_FACTORY(STRING_STREAM, createStringStream, Handle)
 
 // ====================================================================
