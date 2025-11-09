@@ -24,7 +24,7 @@
 #define _OPENCOG_STREAM_EQUAL_LINK_H
 
 #include <opencog/atoms/core/UnorderedLink.h>
-#include <opencog/atoms/truthvalue/TruthValue.h>
+#include <opencog/atoms/value/Value.h>
 #include <opencog/sensory-v0/types/atom_types.h>
 
 namespace opencog
@@ -56,7 +56,7 @@ public:
 	// Same as evaluation.
 	virtual bool is_executable(void) const { return true; }
 	virtual ValuePtr execute(AtomSpace* as, bool silent) {
-		return ValueCast(evaluate(as, silent)); }
+		return evaluate(as, silent); }
 
 	static Handle factory(const Handle&);
 };
