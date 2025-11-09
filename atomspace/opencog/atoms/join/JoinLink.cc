@@ -27,7 +27,6 @@
 #include <opencog/atoms/atom_types/atom_types.h>
 #include <opencog/atoms/core/FindUtils.h>
 #include <opencog/atoms/core/TypeUtils.h>
-#include <opencog/atoms/execution/EvaluationLink.h>
 #include <opencog/atoms/value/LinkValue.h>
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/atomspace/Transient.h>
@@ -358,10 +357,9 @@ HandleSet JoinLink::principals(AtomSpace* as,
 
 	// If we are here, the expression had variables in it.
 	// Perform a search to ground those.
-	AtomSpace* temp = grab_transient_atomspace(as);
-	Handle meet = temp->add_atom(_meet);
+	Transient scratch(as);
+	Handle meet = scratch.tmp->add_atom(_meet);
 	ValuePtr vp = meet->execute();
-	release_transient_atomspace(temp);
 
 	// The MeetLink returned everything that the variables in the
 	// clause could ever be...
@@ -608,10 +606,7 @@ HandleSet JoinLink::constrain(AtomSpace* as, bool silent,
                               Traverse& trav) const
 {
 	HandleSet rejects;
-
-	AtomSpace* temp = nullptr;
-	if (0 < _top_clauses.size())
-		temp = grab_transient_atomspace(as);
+	Transient scratch(as);
 
 	for (const Handle& h : trav.containers)
 	{
@@ -639,17 +634,14 @@ HandleSet JoinLink::constrain(AtomSpace* as, bool silent,
 
 			// Plug in any variables ...
 			Handle topper = Replacement::replace_nocheck(toc, plugs);
-			topper = temp->add_atom(topper);
-			TruthValuePtr tvp =
-				EvaluationLink::do_evaluate(temp, topper, silent);
-			if (tvp->get_mean() < 0.5)
+			topper = scratch.tmp->add_atom(topper);
+			if (not topper->bevaluate(scratch.tmp, silent))
 			{
 				rejects.insert(h);
 				break;
 			}
 		}
 	}
-	if (temp) release_transient_atomspace(temp);
 
 	// Remove the rejects
 	HandleSet accept;

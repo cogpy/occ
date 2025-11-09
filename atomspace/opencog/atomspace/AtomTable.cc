@@ -237,13 +237,6 @@ Handle AtomSpace::lookupHide(const Handle& a, bool hide) const
     return Handle::UNDEFINED;
 }
 
-/// Search for an equivalent atom that we might be holding.
-Handle AtomSpace::get_atom(const Handle& a) const
-{
-    if (nullptr == a) return Handle::UNDEFINED;
-    return lookupHandle(a);
-}
-
 /// Helper utility for adding atoms to the atomspace. Checks to see
 /// if the indicated atom already is in the atomspace. If it is, it
 /// returns that atom. Copies over values in the process.
@@ -271,7 +264,7 @@ Handle AtomSpace::check(const Handle& orig, bool force)
     // If this is a transient atomspace, then just grab any version
     // we find. This alters the behavior of glob matching in the
     // MinerUTest (specifically, test_glob and test_typed_glob).
-    // I'm not sure what the deal is, though, why we need to check.
+    // I'm not sure what the deal is, though, why we need to check?
     if (_transient)
         return lookupHandle(orig);
 
