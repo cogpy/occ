@@ -43,22 +43,22 @@
 (Member (Concept "ochre ball")    (Concept "yellows basket"))
 
 ; Predicate that tests the colors of the balls
-(Evaluation (Predicate "is red") (Concept "red ball"))
-(Evaluation (Predicate "is red") (Concept "red ball too"))
-(Evaluation (Predicate "is red") (Concept "red ball also"))
-(Evaluation (Predicate "is red") (Concept "a red ball"))
-(Evaluation (Predicate "is red") (Concept "b red ball"))
+(Edge (Predicate "is red") (Concept "red ball"))
+(Edge (Predicate "is red") (Concept "red ball too"))
+(Edge (Predicate "is red") (Concept "red ball also"))
+(Edge (Predicate "is red") (Concept "a red ball"))
+(Edge (Predicate "is red") (Concept "b red ball"))
 
-(Evaluation (Predicate "is green")  (Concept "green ball"))
+(Edge (Predicate "is green")  (Concept "green ball"))
 
-(Evaluation (Predicate "is yellow") (Concept "yellow ball"))
-(Evaluation (Predicate "is yellow") (Concept "ochre ball"))
+(Edge (Predicate "is yellow") (Concept "yellow ball"))
+(Edge (Predicate "is yellow") (Concept "ochre ball"))
 
 ; ---------------------------------------------------------
 ; The query below will search for those baskets that have
 ; only red balls in them.
 (define get-baskets-with-only-red-balls
-	(Bind
+	(Query
 		(VariableList
 			(TypedVariable (Variable "basket") (Type 'ConceptNode))
 			(TypedVariable (Variable "ball")   (Type 'ConceptNode))
@@ -73,7 +73,7 @@
 			; Always means that *every* ball in the basket MUST
 			; be red! Any single failure to satisfy this invalidates
 			; the entire search.
-			(Always (Evaluation (Predicate "is red") (Variable "ball")))
+			(Always (Edge (Predicate "is red") (Variable "ball")))
 		)
 
 		; Report the basket which has only red balls in it.
@@ -92,7 +92,7 @@
 ; then the basket is reported.
 
 (define baskets-with-same-color
-	(Bind
+	(Query
 		(VariableList
 			(TypedVariable (Variable "basket")      (Type 'ConceptNode))
 			(TypedVariable (Variable "some ball")   (Type 'ConceptNode))
@@ -107,8 +107,8 @@
 			; Pick out two balls from the same basket.
 			(Member (Variable "some ball")         (Variable "basket"))
 			(Member (Variable "other ball")        (Variable "basket"))
-			(Evaluation (Variable "some color")    (Variable "some ball"))
-			(Evaluation (Variable "other color")   (Variable "other ball"))
+			(Edge (Variable "some color")          (Variable "some ball"))
+			(Edge (Variable "other color")         (Variable "other ball"))
 
 			; Are those two balls of the same color?
 			(Always (Equal (Variable "some color") (Variable "other color")))
@@ -128,7 +128,7 @@
 
 (define not-baskets-with-not-red
 	; Return those things that ....
-	(Get (Variable "basket")
+	(Meet (Variable "basket")
 		(And
 			; ... things that are baskets ...
 			(Inheritance (Variable "basket") (Concept "basket"))
@@ -144,7 +144,7 @@
 						; ... the ball is not red. That is, the clause
 						; below cannot be found in the AtomSpace.
 						(Absent
-							(Evaluation (Predicate "is red") (Variable "ball")))
+							(Edge (Predicate "is red") (Variable "ball")))
 						; So, the SatisfactionLink evaluates to "true" if
 						; if the basket contains some ball (any ball) that
 						; is not red.

@@ -45,9 +45,11 @@
 #define USE_HASHABLE_WEAK_PTR 1
 #endif
 
+#include <opencog/util/exceptions.h>
+
 #include <opencog/atoms/base/Handle.h>
 #include <opencog/atoms/value/Value.h>
-#include <opencog/atoms/truthvalue/TruthValue.h>
+#include <opencog/atoms/value/BoolValue.h>
 
 namespace opencog
 {
@@ -243,16 +245,16 @@ typedef std::map<const Handle, ValuePtr> KVPMap;
  *
  * Inserted into the AtomSpace: ?? per hash bucket. I guess 24 or 32
  * Per addition to incoming set: 64 per std::_Rb_tree node
- * Per non-default truth value, e.g. CountTruthValue:
+ * With a value of three doubles, e.g. FloatValue:
  * -- 24 Bytes std::enable_shared_from_this<Value>
  * --  8 Bytes Type _type plus padding
  * -- 24 Bytes std::vector<double> _value
  * -- 24 Bytes 3*sizeof(double)
  * -- 64 std::_Rb_tree node in the Atom holding the TV
- * Total: 144 Bytes per CountTV (ouch).
+ * Total: 144 Bytes per FloatValue (ouch).
  *
  * A "typical" Link of size 2, held in one other Link, in AtomSpace,
- *   holding a CountTV in it: 344 Bytes. With a large incomnig set,
+ *   holding a FloatValue in it: 344 Bytes. With a large incomnig set,
  *   this expands to 750 Byte to 2KByte range. This is indeed what is
  *   measured in real-life large datasets.
  *
@@ -323,10 +325,11 @@ protected:
     #define KVP_UNIQUE_LOCK std::unique_lock<std::shared_mutex> lck(_MTX);
     #define KVP_SHARED_LOCK std::shared_lock<std::shared_mutex> lck(_MTX);
 #else
-    #define INCOMING_SHARED_LOCK std::shared_lock<std::shared_mutex> lck(_mtx);
-    #define INCOMING_UNIQUE_LOCK std::unique_lock<std::shared_mutex> lck(_mtx);
-    #define KVP_UNIQUE_LOCK std::unique_lock<std::shared_mutex> lck(_mtx);
-    #define KVP_SHARED_LOCK std::shared_lock<std::shared_mutex> lck(_mtx);
+    #define _MTX _mtx
+    #define INCOMING_SHARED_LOCK std::shared_lock<std::shared_mutex> lck(_MTX);
+    #define INCOMING_UNIQUE_LOCK std::unique_lock<std::shared_mutex> lck(_MTX);
+    #define KVP_UNIQUE_LOCK std::unique_lock<std::shared_mutex> lck(_MTX);
+    #define KVP_SHARED_LOCK std::shared_lock<std::shared_mutex> lck(_MTX);
 #endif
 
     // Packed flas. Single byte per atom.
@@ -334,7 +337,9 @@ protected:
         ABSENT_FLAG     = 0x01,  // 0000 0001
         MARKED_FLAG     = 0x02,  // 0000 0010
         CHECKED_FLAG    = 0x04,  // 0000 0100
-        USE_ISET_FLAG   = 0x08   // 0000 1000
+        USE_ISET_FLAG   = 0x08,  // 0000 1000
+        IS_KEY_FLAG     = 0x10,  // 0001 0000
+        IS_MESSAGE_FLAG = 0x20   // 0010 0000
     };
     mutable std::atomic<uint8_t> _flags;
 
@@ -459,6 +464,12 @@ private:
     bool setAbsent();
     bool setPresent();
 
+    /** Indicate this Atom is used as a key */
+    void markIsKey();
+
+    /** Indicate this Atom is used as a message */
+    void markIsMessage();
+
     void getLocalInc(const AtomSpace*, HandleSet&, Type) const;
     void getCoveredInc(const AtomSpace*, HandleSet&, Type) const;
 
@@ -523,12 +534,9 @@ public:
         throw RuntimeException(TRACE_INFO, "Not evaluatable!");
     }
 
-    // Non-crisp evaluation is deprecated. This method will be removed,
-    //  someday.
-    virtual TruthValuePtr evaluate(AtomSpace* as, bool silent=false) {
-        if (bevaluate(as, silent))
-            return TruthValue::TRUE_TV();
-        return TruthValue::FALSE_TV();
+    // Non-crisp evaluation is deprecated. Changed to return BoolValue.
+    virtual ValuePtr evaluate(AtomSpace* as, bool silent=false) {
+        return ValueCast(createBoolValue(bevaluate(as, silent)));
     }
     virtual bool is_evaluatable() const { return false; }
 
@@ -558,8 +566,17 @@ public:
     ValuePtr incrementCount(const Handle& key, const std::vector<double>&);
     ValuePtr incrementCount(const Handle& key, size_t idx, double);
 
+    /// Return true if this Atom is used as a key, somewhere, anywhere.
+    bool isKey() const { return _flags.load() & IS_KEY_FLAG; }
+
+    /// Return true if this Atom is used as a message, somewhere, anywhere.
+    bool isMessage() const { return _flags.load() & IS_MESSAGE_FLAG; }
+
     /// Get the set of all keys in use for this Atom.
     HandleSet getKeys() const;
+
+    /// Get the set of all object messages supported by this Atom.
+    virtual HandleSeq getMessages() const { return HandleSeq(); }
 
     /// Copy all the values from the other atom to this one.
     void copyValues(const Handle&);
@@ -576,18 +593,6 @@ public:
     /// Remove all values. The only anticipated users of this are the
     // storage backends, manipulating multi-AtomSpace bulk loads.
     void clearValues();
-
-    // ---------------------------------------------------
-    // Old TruthValue API. Deprcated; should be removed.
-    /** Returns the TruthValue object of the atom. */
-    TruthValuePtr getTruthValue() const;
-
-    //! Sets the TruthValue object of the atom.
-    void setTruthValue(const TruthValuePtr&);
-
-    /// Increment the CountTruthValue atomically.
-    /// Return the new TruthValue
-    TruthValuePtr incrementCountTV(double);
 
     // ---------------------------------------------------
     //! Return true if the incoming set is empty.
@@ -650,6 +655,7 @@ public:
     }
 
     /** Ordering operator for Atoms. */
+    using Value::operator<;  // Bring base class operator< into scope
     virtual bool operator<(const Atom&) const = 0;
 };
 
@@ -662,14 +668,8 @@ public:
 
 #define CREATE_DECL(CNAME)  std::make_shared<CNAME>
 
-static inline AtomPtr AtomCast(const ValuePtr& pa)
-    { return std::dynamic_pointer_cast<Atom>(pa); }
-
-static inline AtomPtr AtomCast(const Handle& h)
-    { return AtomPtr(h); }
-
 static inline Handle HandleCast(const ValuePtr& pa)
-    { return Handle(AtomCast(pa)); }
+    { return Handle(std::dynamic_pointer_cast<Atom>(pa)); }
 
 static inline ValuePtr ValueCast(const Handle& h)
     { return std::dynamic_pointer_cast<Value>(h); }

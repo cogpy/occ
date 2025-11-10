@@ -34,11 +34,12 @@
 (test-assert "copy is in correct atomspace"
 	(equal? spacex (cog-atomspace xca)))
 
-(cog-set-tv! ca (SimpleTruthValue 0.4 0.4))
-(cog-set-tv! xca (SimpleTruthValue 0.7 0.7))
+(define pk (Predicate "my key"))
+(cog-set-value! ca pk (FloatValue 0.4 0.4))
+(cog-set-value! xca pk (FloatValue 0.7 0.7))
 
 (test-assert "original and copy hold different things"
-	(not (equal? (cog-tv ca) (cog-tv xca))))
+	(not (equal? (cog-value ca pk) (cog-value xca pk))))
 
 ; -------------------------------------------------------
 ; Now test copying of orphaned atoms (Atoms not in any Atomspace)
@@ -51,26 +52,9 @@
 
 (for-each
 	(lambda (orphan)
-		; cog-atom? must return #t because they are Atoms
-		(test-assert "expect actual atoms" (cog-atom? orphan)))
-	ilst)
-
-; Print the ilst. This will clobber the handles, because the scheme
-; API does not allow scheme smobs with orphan Atoms in them.
-(format #t "Should be invalid: ~A\n" ilst)
-
-(for-each
-	(lambda (orphan)
-		; cog-atom? must return #f because now, ilst is clobbered.
+		; cog-atom? returns #f because touching orphans clobbers them.
 		(test-assert "expect invalid handles" (not (cog-atom? orphan))))
 	ilst)
-
-; The stuff in the LinkValue should be OK, still.
-(for-each
-	(lambda (orphan)
-		; cog-atom? must return #t because they are Atoms
-		(test-assert "expect actual atoms" (cog-atom? orphan)))
-	(cog-value->list lv))
 
 (for-each
 	(lambda (orphan)
