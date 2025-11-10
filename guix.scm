@@ -173,16 +173,50 @@
                      (bin (string-append out "/bin"))
                      (lib (string-append out "/lib"))
                      (share (string-append out "/share/opencog-collection"))
+                     (guile-site (string-append out "/share/guile/site/3.0"))
                      (python (search-input-file inputs "/bin/python3")))
                 (format #t "~%=== Installing Additional Components ===~%")
                 
                 (mkdir-p share)
                 (mkdir-p bin)
                 (mkdir-p lib)
+                (mkdir-p guile-site)
                 
                 ;; Navigate back to source directory from build directory
                 (chdir "../source")
                 (format #t "Current directory: ~a~%" (getcwd))
+                
+                ;; ========== Install Scheme Modules ==========
+                ;; Install all Scheme modules from synergy/ directory
+                (when (file-exists? "synergy")
+                  (format #t "Installing Scheme modules from synergy/...~%")
+                  (for-each
+                    (lambda (scm-file)
+                      (let* ((rel-path (if (string-prefix? "./" scm-file)
+                                          (string-drop scm-file 2)
+                                          scm-file))
+                             (dir-path (dirname rel-path))
+                             (target-dir (string-append guile-site "/" dir-path)))
+                        (format #t "  Installing: ~a -> ~a~%" scm-file target-dir)
+                        (mkdir-p target-dir)
+                        (install-file scm-file target-dir)))
+                    (find-files "synergy" "\\.scm$"))
+                  
+                  ;; Verify installation
+                  (format #t "Installed Scheme modules:~%")
+                  (for-each
+                    (lambda (f) (format #t "  ~a~%" f))
+                    (find-files (string-append guile-site "/synergy") "\\.scm$")))
+                
+                ;; Install test scripts
+                (when (file-exists? "tests/synergy/interoperability-test.sh")
+                  (let ((test-dir (string-append share "/tests/synergy")))
+                    (format #t "Installing test scripts...~%")
+                    (mkdir-p test-dir)
+                    (install-file "tests/synergy/interoperability-test.sh" test-dir)
+                    (chmod (string-append test-dir "/interoperability-test.sh") #o755)
+                    (format #t "  Installed: tests/synergy/interoperability-test.sh~%")))
+                ;; ============================================
                 
                 ;; Install Python demonstration application if present
                 (when (file-exists? "app.py")
