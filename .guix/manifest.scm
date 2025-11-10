@@ -6,8 +6,6 @@
              (gnu packages python)
              (gnu packages python-xyz)
              (gnu packages python-science)
-             (gnu packages rust)
-             (gnu packages crates-io)
              (gnu packages cmake)
              (gnu packages pkg-config)
              (gnu packages guile)
@@ -28,8 +26,6 @@
  '(;; Build tools and compilers
    "cmake"
    "pkg-config"
-   "rust"
-   "rust:cargo"
    "gcc-toolchain"
    "make"
    "autoconf"
