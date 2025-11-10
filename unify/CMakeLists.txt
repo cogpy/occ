@@ -11,6 +11,10 @@
 # cogutils already requires 3.12, so may as well ask for that.
 CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 
+IF(CMAKE_VERSION VERSION_GREATER 3.31)
+	CMAKE_POLICY(SET CMP0177 NEW)
+ENDIF(CMAKE_VERSION VERSION_GREATER 3.31)
+
 PROJECT(unify)
 
 # ----------------------------------------------------------
@@ -87,28 +91,6 @@ include(OpenCogGccOptions)
 include(OpenCogLibOptions)
 include(OpenCogInstallOptions)
 include(Summary)
-
-# ----------------------------------------------------------
-# Check for boost. We need dynamic-linked, threaded libs by default.
-SET(Boost_USE_STATIC_LIBS OFF)
-SET(Boost_USE_MULTITHREADED ON)
-SET(MIN_BOOST 1.46)
-
-# Required boost packages
-FIND_PACKAGE(Boost ${MIN_BOOST} REQUIRED)
-
-IF(Boost_FOUND)
-	SET(Boost_FOUND_SAVE 1)
-ELSE(Boost_FOUND)
-	MESSAGE(FATAL_ERROR "Boost ${MIN_BOOST} or newer is needed to build OpenCog!")
-ENDIF(Boost_FOUND)
-
-MESSAGE(STATUS "Boost version ${Boost_VERSION} found.")
-
-# Arghhh. Except cmake is treating above as required, not optional. #$%**&
-IF(Boost_FOUND_SAVE)
-	SET(Boost_FOUND 1)
-ENDIF(Boost_FOUND_SAVE)
 
 # ----------------------------------------------------------
 # Needed for unit tests.
@@ -281,7 +263,6 @@ SET(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local")
 SET(DEPENDENCY_LIST
 	"guile-2.2-dev (>= 2.2.2)"
 	"python3-dev (>= 3.6.7)"
-	"libboost-random-dev (>= ${MIN_BOOST})"
 	"libstdc++6 (>= 4.7)"
 	"libcogutil-dev (>= 2.0.2)"
 	"atomspace-dev (>= 5.0.3)"
