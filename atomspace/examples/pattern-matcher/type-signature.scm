@@ -17,7 +17,7 @@
 
 ; Define a search that should return only the first inheritance link.
 (define get-foo
-	(GetLink
+	(MeetLink
 		(TypedVariable (Variable "$x")
 			(Signature (Inheritance (Concept "foo") (Type "ConceptNode"))))
 
@@ -31,7 +31,7 @@
 
 ; Define a search that should return the first two inheritance links.
 (define get-foobar
-	(GetLink
+	(MeetLink
 		(TypedVariable (Variable "$x")
 			(TypeChoice
 				(Signature (Inheritance (Concept "foo") (Type "ConceptNode")))
@@ -49,25 +49,25 @@
 ; A more complex example
 
 ; More data:
-(Evaluation
+(Edge
 	(PredicateNode "foo")
 	(List (ConceptNode "bingo") (ConceptNode "yes!")))
 
-(Evaluation
+(Edge
 	(AnchorNode "bar")
 	(List (ConceptNode "hurrah") (ConceptNode "yay!")))
 
-(Evaluation
+(Edge
 	(ConceptNode "baz")
 	(List (ConceptNode "oops") (ConceptNode "Oh no, Mr. Bill!")))
 
 ; A search pattern that looks for predicates or grounded predicates.
 (define predicate-search
-	(Get
+	(Meet
 		(TypedVariable
 			(Variable "$x")
 			(Signature
-				(Evaluation
+				(Edge
 					(TypeChoice
 						(Type "PredicateNode")
 						(Type "AnchorNode"))

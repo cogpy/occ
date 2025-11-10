@@ -25,13 +25,14 @@
 #include <opencog/atoms/value/ValueFactory.h>
 #include <opencog/atoms/base/Atom.h>
 #include <opencog/atomspace/AtomSpace.h>
+#include <opencog/atomspace/Transient.h>
 
 using namespace opencog;
 
 // ==============================================================
 
 FutureStream::FutureStream(const Handle& h) :
-	LinkValue(FUTURE_STREAM), _formula({h}), _as(h->getAtomSpace())
+	LinkValue(FUTURE_STREAM), _formula({h})
 {
 	init();
 }
@@ -43,12 +44,10 @@ FutureStream::FutureStream(const HandleSeq&& oset) :
 		throw SyntaxException(TRACE_INFO,
 			"Expecting at least one atom!");
 
-	_as = _formula[0]->getAtomSpace();
-
 	init();
 }
 
-// Same as above, but Handles as a ValueSeq. The Sexper decoder
+// Same as above, but Handles as a ValueSeq. The sexpr decoder
 // will create these when it deserializes FutureStreams.
 FutureStream::FutureStream(const ValueSeq& voset) :
 	LinkValue(FUTURE_STREAM)
@@ -62,8 +61,6 @@ FutureStream::FutureStream(const ValueSeq& voset) :
 	if (0 == _formula.size())
 		throw SyntaxException(TRACE_INFO,
 			"Expecting at least one atom!");
-
-	_as = _formula[0]->getAtomSpace();
 
 	init();
 }
@@ -85,6 +82,8 @@ void FutureStream::init(void)
 				h->to_string().c_str());
 		}
 	}
+
+	_scratch = grab_transient_atomspace(_formula[0]->getAtomSpace());
 }
 
 
@@ -92,13 +91,16 @@ void FutureStream::init(void)
 
 void FutureStream::update() const
 {
+	// Don't allow the transient to accumulate cruft.
+	_scratch->clear_transient();
+
 	std::vector<ValuePtr> newval;
 	for (const Handle& h : _formula)
 	{
 		if (h->is_executable())
-			newval.emplace_back(h->execute(_as));
+			newval.emplace_back(h->execute(_scratch));
 		else if (h->is_evaluatable())
-			newval.emplace_back(ValueCast(h->evaluate(_as)));
+			newval.emplace_back(h->evaluate(_scratch));
 	}
 	_value.swap(newval);
 }
