@@ -12,19 +12,19 @@
 	(Concept "transistor")
 	(Concept "electrical device"))
 
-(Evaluation
+(Edge
 	(Predicate "PartOf")
 	(List
 		(Concept "battery")
 		(Variable "car")))
 
-(Evaluation
+(Edge
 	(Predicate "PartOf")
 	(List
 		(Concept "transistor")
 		(Variable "phone")))
 
-(Evaluation
+(Edge
 	(Predicate "PartOf")
 	(List
 		(Concept "windshield")
@@ -38,7 +38,7 @@
 		(Inheritance
 			(Variable "$x")
 			(Concept "electrical device"))
-		(Evaluation
+		(Edge
 			(Predicate "PartOf")
 			(List
 				(Variable "$x")
@@ -47,7 +47,7 @@
 ;; Define a pattern to find the electrical parts of things.
 ;; Variables are automatically extracted from the definition.
 (define get-elect
-	(Get (DefinedPredicate "Electrical Part Of")))
+	(Meet (DefinedPredicate "Electrical Part Of")))
 
 ;; Search the AtomSpace for electrical things.
 (cog-execute! get-elect)
@@ -65,7 +65,7 @@
 
 (DefineLink
 	(DefinedPredicate "Part-whole Relation")
-	(Evaluation
+	(Edge
 		(Predicate "PartOf")
 		(List
 			(Variable "$x")
@@ -77,7 +77,7 @@
 (define (do-stuff atom)
 	(set! cnt (+ cnt 1))
 	(format #t "At count ~a found this part: ~a \n" cnt atom)
-	(stv 1 1))
+	#t)
 
 (DefineLink
 	(DefinedPredicate "Counter Printer")
@@ -87,7 +87,7 @@
 ;; Assemble a pattern out of the parts above. Notice that the variables
 ;; in each of the different defines are joined together.
 (define get-electrical-parts
-	(Get
+	(Meet
 		(And
 			(DefinedPredicate "Electrical Thing")
 			(DefinedPredicate "Part-whole Relation")

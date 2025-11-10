@@ -66,14 +66,6 @@ std::string Link::to_short_string(const std::string& indent) const
 
     answer += "(" + nameserver().getTypeShortName(_type);
 
-    // Print the TV only if its not the default.
-    {
-        KVP_SHARED_LOCK;
-        auto pr = _values.find(truth_key());
-        if (_values.end() != pr)
-            answer += ' ' + pr->second->to_string();
-    }
-
     answer += "\n";
     // Here, the outset string is made. If a target is a node,
     // its name is concatenated. If it's a link, then recurse.
@@ -91,13 +83,8 @@ std::string Link::to_string(const std::string& indent) const
     std::string answer = indent;
     std::string more_indent = indent + "  "; // two spaces
 
-    answer += "(" + nameserver().getTypeName(_type);
+    answer += "(" + nameserver().getTypeName(_type) + "\n";
 
-    // Print the TV only if its not the default.
-    if (getTruthValue() and not getTruthValue()->isDefaultTV())
-        answer += " " + getTruthValue()->to_string();
-
-    answer += "\n";
     // Here, the outset string is made. If a target is a node,
     // its name is concatenated. If it's a link, then recurse.
     for (const Handle& h : _outgoing)
@@ -124,7 +111,7 @@ bool Link::operator==(const Atom& other) const
     const HandleSeq& rhs = other.getOutgoingSet();
     for (Arity i = 0; i < sz; i++)
     {
-        if (*((AtomPtr)_outgoing[i]) != *((AtomPtr)rhs[i]))
+        if (*(_outgoing[i]) != *(rhs[i]))
             return false;
     }
     return true;
@@ -161,7 +148,7 @@ bool Link::operator<(const Atom& other) const
     for (Arity i=0; i < arity; i++)
     {
         const Handle& ll(outgoing[i]);
-        const AtomPtr& rl(other_outgoing[i]);
+        const Handle& rl(other_outgoing[i]);
         if (ll->operator!=(*rl))
             return ll->operator<(*rl);
     }
