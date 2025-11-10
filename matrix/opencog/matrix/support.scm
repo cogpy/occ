@@ -90,12 +90,6 @@
 		(cog-set-value! ATOM norm-key (FloatValue L0 L1 L2 LQ SU)))
 
 	; -----------------
-	; Set the grand-total count. Use the CountTruthValue.
-	; Backwards-compatibility method. Remove this someday.
-	(define (set-wild-wild-count CNT)
-		(cog-set-tv! (LLOBJ 'wild-wild) (CountTruthValue 0 0 CNT)))
-
-	; -----------------
 	(define left-total-key-name
 		(if is-filtered?
 			(string-append "*-Left Total Key " ID)
@@ -104,7 +98,6 @@
 	(define left-total-key (PredicateNode left-total-key-name))
 
 	(define (set-left-totals L0 L1 SU)
-		(set-wild-wild-count L1)
 		(cog-set-value! (LLOBJ 'wild-wild) left-total-key (FloatValue L0 L1 SU)))
 
 	(define right-total-key-name
@@ -115,7 +108,6 @@
 	(define right-total-key (PredicateNode right-total-key-name))
 
 	(define (set-right-totals L0 L1 SU)
-		(set-wild-wild-count L1)
 		(cog-set-value! (LLOBJ 'wild-wild) right-total-key (FloatValue L0 L1 SU)))
 
 	; -----------------
@@ -201,15 +193,6 @@
 	(define (get-total-count-right)   (get-total right-total-key 1))
 	(define (get-total-sum-right)     (get-total right-total-key 2))
 
-	;--------
-	; Backwards-compatibility method. Remove this someday.
-	; Note that various old datasets store wild-card counts here,
-	; and so this method is explicitly needed to access old data.
-	; The old data does not have the support-totals, above.
-	; Return the grand-total count. Use the CountTruthValue.
-	(define (get-wild-wild-count)
-		(cog-tv-count (cog-tv (LLOBJ 'wild-wild))))
-
 	;-------------------------------------------
 	; Force data to be recomputed, by clobbering any
 	; existing data.
@@ -273,10 +256,6 @@
 			((total-count-right)  (get-total-count-right))
 			((total-sum-left)     (get-total-sum-left))
 			((total-sum-right)    (get-total-sum-right))
-
-			; The 'wild-wild-count method provides backwards-compat
-			; with the old `add-pair-count-api` object. Remove whenever.
-			((wild-wild-count)    (get-wild-wild-count))
 
 			((set-size)           (apply set-size args))
 			((set-left-norms)     (apply set-left-norms args))
