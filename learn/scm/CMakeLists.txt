@@ -29,8 +29,6 @@ ADD_GUILE_MODULE (FILES
 	gram-class/similarity.scm
 	gram-class/singletons.scm
 
-	lg-compare.scm
-
 	MODULE_DESTINATION "${GUILE_SITE_DIR}/opencog/learn"
 )
 
