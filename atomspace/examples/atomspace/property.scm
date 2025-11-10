@@ -3,7 +3,7 @@
 ;
 ; Many knowledge representation systems want to view the world in
 ; terms of objects that have properties on them. This can already
-; be done quite easily with EvaluationLinks and Predicates.
+; be done quite easily with EdgeLinks and Predicates.
 ; But what if one wants a strict guarantee that there is only one
 ; property of a given name, and then change it time to time?
 ;
@@ -71,7 +71,7 @@
 ;     (List (Concept "qwerty") (Predicate "truthiness"))
 ; which is perhaps an example of "really bad knowledgebase design".
 ; A better design might have been
-;     (Evaluation (Predicate "truthiness") (List (Concept "qwerty")))
+;     (Edge (Predicate "truthiness") (List (Concept "qwerty")))
 ; or even
 ;     (Inheritance (Predicate "truthiness") (Concept "qwerty"))
 ;
@@ -80,8 +80,8 @@
 ; interpreted as the degree of membership in a fuzzy set. Or it
 ; could be something else. It doesn't have to be a number.
 ;
-; The TruthValue is a much better way of representing truth in the
-; Atomspace. This is covered in the next example.
+; Values are a much better way of representing frequently changing
+; contents in the Atomspace. This is covered in the next example.
 ;
 ; NumberNodes are a terribly inefficient way of representing numbers
 ; in the Atomspace.  A much, much better way are the Values, in the

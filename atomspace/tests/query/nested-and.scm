@@ -15,10 +15,10 @@
 (define (foo x)
 	(format #t "foo: ~A\n" x)
 	(set! did-call #t)
-	(stv 1 1))
+	#t)
 
 (define nestand
-	(Get
+	(Meet
 		(TypedVariable (Variable "$component") (Type 'Concept))
 		(And
 			(And
