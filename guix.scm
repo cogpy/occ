@@ -6,7 +6,6 @@
              (guix git-download)
              (guix gexp)
              (guix build-system python)
-             (guix build-system cargo)
              (guix build-system cmake)
              (guix build-system gnu)
              (guix build-system trivial)
@@ -17,9 +16,6 @@
              (gnu packages python-xyz)
              (gnu packages python-science)
              (gnu packages machine-learning)
-             (gnu packages rust)
-             (gnu packages rust-apps)
-             (gnu packages crates-io)
              (gnu packages cmake)
              (gnu packages pkg-config)
              (gnu packages guile)
@@ -47,7 +43,6 @@
                                              (string-contains file "/.cache/")
                                              (string-contains file "/target/")
                                              (string-contains file "/__pycache__/")
-                                             (string-contains file "/.cargo/")
                                              (string-suffix? ".pyc" file)
                                              (string-suffix? ".o" file)
                                              (string-suffix? ".so" file))))))
@@ -210,55 +205,12 @@
                   (format #t "Installing LICENSE...~%")
                   (install-file "LICENSE" share))
                 
-                ;; Optionally build and install Rust/Hyperon components
-                ;; This is wrapped in a catch to make it non-fatal if Rust build fails
-                (when (file-exists? "Cargo.toml")
-                  (catch #t
-                    (lambda ()
-                      (format #t "~%Building Rust components...~%")
-                      
-                      ;; Check if cargo is available
-                      (if (which "cargo")
-                        (begin
-                          (setenv "CARGO_HOME" (string-append (getcwd) "/.cargo"))
-                          (setenv "RUSTFLAGS" "-C opt-level=2")
-                          
-                          ;; Try to build Rust components
-                          (invoke "cargo" "build" "--release" "--workspace")
-                          
-                          ;; Install any executable binaries that were built
-                          (when (file-exists? "target/release")
-                            (let ((release-files (find-files "target/release")))
-                              (for-each
-                                (lambda (file-path)
-                                  (let ((stat-info (stat file-path)))
-                                    (when (and (eq? 'regular (stat:type stat-info))
-                                               (not (zero? (logand #o111 (stat:perms stat-info))))
-                                               (not (string-suffix? ".so" file-path))
-                                               (not (string-suffix? ".a" file-path))
-                                               (not (string-suffix? ".d" file-path))
-                                               (not (string-contains file-path "build-script"))
-                                               (not (string-contains file-path ".dSYM"))
-                                               (not (string-contains file-path "incremental")))
-                                      (format #t "Installing Rust binary: ~a~%" file-path)
-                                      (install-file file-path bin))))
-                                release-files))))
-                        (format #t "Cargo not found, skipping Rust build~%")))
-                    (lambda (key . args)
-                      (format #t "Note: Rust build skipped or failed (this is optional): ~a ~a~%" 
-                              key args)
-                      ;; Don't fail the build if Rust components can't be built
-                      #t)))
-                
                 (format #t "~%=== Additional Components Installation Complete ===~%~%")
                 #t))))))
     (native-inputs
      (list pkg-config
            cmake-minimal
-           gcc-toolchain
-           ;; Add rust and cargo for optional Rust components
-           rust
-           rust-cargo))
+           gcc-toolchain))
     (inputs
      (list python
            python-numpy
@@ -309,7 +261,6 @@ Advanced Cognitive Architecture:
 Additional Features:
 @itemize
 @item Python-based machine learning demonstrations using scikit-learn
-@item Rust-based Hyperon cognitive computing framework (optional)
 @item Complete source code for research and development
 @item Modular architecture for flexible deployment
 @end itemize

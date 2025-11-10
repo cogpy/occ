@@ -6,7 +6,6 @@
   #:use-module (guix git-download)
   #:use-module (guix gexp)
   #:use-module (guix build-system python)
-  #:use-module (guix build-system cargo)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system trivial)
@@ -15,8 +14,6 @@
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-xyz)
   #:use-module (gnu packages python-science)
-  #:use-module (gnu packages rust)
-  #:use-module (gnu packages crates-io)
   #:use-module (gnu packages cmake)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages guile)
@@ -79,20 +76,10 @@
                 
                 (when (file-exists? "README.md")
                   (install-file "README.md" share))
-                
-                ;; Build and install Rust components if present
-                (when (file-exists? "Cargo.toml")
-                  (setenv "CARGO_HOME" (string-append (getcwd) "/.cargo"))
-                  (invoke "cargo" "build" "--release")
-                  (when (file-exists? "target/release/hyperon")
-                    (install-file "target/release/hyperon" bin))
-                  (when (file-exists? "target/release/libhyperon.so")
-                    (install-file "target/release/libhyperon.so" (string-append out "/lib"))))
                 #t))))))
     (native-inputs
      (list pkg-config
            cmake
-           rust
            cxxtest))
     (inputs
      (list python
@@ -119,7 +106,7 @@ The collection brings together multiple OpenCog-related projects into a coherent
 whole for cognitive synergy.
 
 The package includes the core OpenCog components for building cognitive systems
-and conducting AGI research, with both C++ and Rust implementations available.")
+and conducting AGI research.")
     (license license:mit)))
 
 ;; Export the package for use in other modules

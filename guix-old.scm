@@ -5,7 +5,6 @@
              (guix download)
              (guix git-download)
              (guix build-system python)
-             (guix build-system cargo)
              (guix build-system cmake)
              (guix build-system gnu)
              (guix build-system trivial)
@@ -14,8 +13,6 @@
              (gnu packages python)
              (gnu packages python-xyz)
              (gnu packages python-science)
-             (gnu packages rust)
-             (gnu packages crates-io)
              (gnu packages cmake)
              (gnu packages pkg-config)
              (gnu packages guile)
@@ -80,24 +77,10 @@ exec ~a ~a/app.py \"$@\"~%"
                             (which "python3")
                             (string-append out "/share/opencog-collection"))))
                 (chmod (string-append bin "/opencog-demo") #o755)
-                #t)))
-          (add-after 'install 'install-rust-components
-            (lambda* (#:key outputs #:allow-other-keys)
-              (let ((out (assoc-ref outputs "out")))
-                ;; Build and install Rust Hyperon component if present
-                (when (file-exists? "Cargo.toml")
-                  (setenv "CARGO_HOME" (string-append (getcwd) "/.cargo"))
-                  (invoke "cargo" "build" "--release")
-                  (when (file-exists? "target/release/hyperon")
-                    (install-file "target/release/hyperon" (string-append out "/bin")))
-                  (when (file-exists? "target/release/libhyperon.so")
-                    (install-file "target/release/libhyperon.so" (string-append out "/lib"))))
                 #t))))))
     (native-inputs
      (list pkg-config
            cmake
-           rust
-           `(,rust "cargo")
            cxxtest))
     (inputs
      (list python
@@ -137,7 +120,6 @@ The package includes the core OpenCog components:
 Additionally includes:
 @itemize
 @item Python-based machine learning demonstration using scikit-learn
-@item Rust-based Hyperon cognitive computing framework
 @item Complete source for research and development
 @item Development environment for cognitive computing applications
 @end itemize")

@@ -4,7 +4,6 @@
              (guix build-system gnu)
              (guix build-system cmake)
              (guix build-system python)
-             (guix build-system cargo)
              ((guix licenses) #:prefix license:)
              (gnu packages base)
              (gnu packages python)
@@ -13,8 +12,6 @@
              (gnu packages pkg-config)
              (gnu packages guile)
              (gnu packages boost)
-             (gnu packages rust)
-             (gnu packages crates-io)
              (gnu packages maths)
              (gnu packages check))
 
@@ -41,8 +38,7 @@
               #t)))))
     (native-inputs
      (list pkg-config
-           cmake
-           rust))
+           cmake))
     (inputs
      (list python
            guile-3.0
