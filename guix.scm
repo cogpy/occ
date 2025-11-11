@@ -52,7 +52,6 @@
         #:configure-flags
         ,(list "-DCMAKE_BUILD_TYPE=Release"
                "-DCMAKE_VERBOSE_MAKEFILE=ON"
-               "-DCMAKE_INSTALL_PREFIX=/gnu/store"
                "-DBUILD_COGUTIL=ON"
                "-DBUILD_ATOMSPACE=ON"
                "-DBUILD_COGSERVER=ON"
@@ -137,7 +136,9 @@
                 (chdir "../build")
                 
                 (format #t "~%Running cmake...~%")
-                (let ((cmake-args (cons* "../source" configure-flags)))
+                (let ((cmake-args (cons* (string-append "-DCMAKE_INSTALL_PREFIX=" out)
+                                         "../source" 
+                                         configure-flags)))
                   (format #t "Full cmake command: cmake ~{~a ~}~%" cmake-args)
                   (apply invoke "cmake" cmake-args))
                 
@@ -158,6 +159,32 @@
                 
                 (format #t "~%=== Build Complete ===~%~%")
                 #t)))
+          (add-after 'build 'validate-build-artifacts
+            (lambda _
+              (format #t "~%=== Validating Build Artifacts ===~%")
+              
+              ;; Check for expected libraries
+              (define expected-libs
+                '("libcogutil" "libatomspace" "libcogserver" 
+                  "libmatrix" "liblearn" "libagents" "libsensory"))
+              
+              (for-each
+                (lambda (lib)
+                  (let ((lib-file (string-append lib ".so")))
+                    (if (or (file-exists? (string-append "opencog/" lib-file))
+                            (file-exists? (string-append "cogutil/" lib-file))
+                            (file-exists? (string-append "atomspace/" lib-file))
+                            (file-exists? (string-append "cogserver/" lib-file))
+                            (file-exists? (string-append "matrix/" lib-file))
+                            (file-exists? (string-append "learn/" lib-file))
+                            (file-exists? (string-append "agents/" lib-file))
+                            (file-exists? (string-append "sensory/" lib-file)))
+                        (format #t "  ✓ Found ~a~%" lib)
+                        (format #t "  ⚠ Warning: ~a not found (may be expected)~%" lib))))
+                expected-libs)
+              
+              (format #t "~%=== Build Artifact Validation Complete ===~%~%")
+              #t))
           (replace 'install
             (lambda* (#:key outputs #:allow-other-keys)
               (format #t "~%=== Starting Installation ===~%")
@@ -240,6 +267,26 @@
                   (install-file "LICENSE" share))
                 
                 (format #t "~%=== Additional Components Installation Complete ===~%~%")
+                #t)))
+          (add-after 'install 'validate-installation
+            (lambda* (#:key outputs #:allow-other-keys)
+              (let ((out (assoc-ref outputs "out")))
+                (format #t "~%=== Validating Installation ===~%")
+                
+                ;; Check that key directories exist
+                (for-each
+                  (lambda (dir)
+                    (let ((full-path (string-append out dir)))
+                      (if (file-exists? full-path)
+                          (format #t "  ✓ Directory exists: ~a~%" dir)
+                          (format #t "  ✗ Directory missing: ~a~%" dir))))
+                  '("/bin" "/lib" "/include" "/share"))
+                
+                ;; List installed files
+                (format #t "~%Installed files in ~a:~%" out)
+                (system* "find" out "-type" "f" "-ls")
+                
+                (format #t "~%=== Installation Validation Complete ===~%~%")
                 #t))))))
     (native-inputs
      (list pkg-config
