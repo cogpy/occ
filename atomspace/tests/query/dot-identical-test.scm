@@ -10,17 +10,20 @@
 (define tname "dot-identical-test")
 (test-begin tname)
 
-(Evaluation (Predicate "has legs") (Concept "dog") (CountTruthValue 1 0 1))
-(Evaluation (Predicate "has nose") (Concept "dog") (CountTruthValue 1 0 2))
-(Evaluation (Predicate "has tail") (Concept "dog") (CountTruthValue 1 0 3))
-(Evaluation (Predicate "furry")    (Concept "dog") (CountTruthValue 1 0 4))
-(Evaluation (Predicate "domestic") (Concept "dog") (CountTruthValue 1 0 5))
+(define tvkey (Predicate "*-TruthValueKey-*"))
+(define (count-of ATOM) (ElementOf (Number 2) (ValueOf ATOM tvkey)))
 
-(Evaluation (Predicate "has legs") (Concept "cat") (CountTruthValue 1 0 1))
-(Evaluation (Predicate "has nose") (Concept "cat") (CountTruthValue 1 0 2))
-(Evaluation (Predicate "has tail") (Concept "cat") (CountTruthValue 1 0 3))
-(Evaluation (Predicate "furry")    (Concept "cat") (CountTruthValue 1 0 4))
-(Evaluation (Predicate "domestic") (Concept "cat") (CountTruthValue 1 0 5))
+(cog-set-value! (Edge (Predicate "has legs") (Concept "dog")) tvkey (FloatValue 1 0 1))
+(cog-set-value! (Edge (Predicate "has nose") (Concept "dog")) tvkey (FloatValue 1 0 2))
+(cog-set-value! (Edge (Predicate "has tail") (Concept "dog")) tvkey (FloatValue 1 0 3))
+(cog-set-value! (Edge (Predicate "furry")    (Concept "dog")) tvkey (FloatValue 1 0 4))
+(cog-set-value! (Edge (Predicate "domestic") (Concept "dog")) tvkey (FloatValue 1 0 5))
+
+(cog-set-value! (Edge (Predicate "has legs") (Concept "cat")) tvkey (FloatValue 1 0 1))
+(cog-set-value! (Edge (Predicate "has nose") (Concept "cat")) tvkey (FloatValue 1 0 2))
+(cog-set-value! (Edge (Predicate "has tail") (Concept "cat")) tvkey (FloatValue 1 0 3))
+(cog-set-value! (Edge (Predicate "furry")    (Concept "cat")) tvkey (FloatValue 1 0 4))
+(cog-set-value! (Edge (Predicate "domestic") (Concept "cat")) tvkey (FloatValue 1 0 5))
 
 ; Define a Query that looks for the basis elements on the "dog" and
 ; "cat" vectors. Once these are found, obtain the counts, and multiply
@@ -30,26 +33,26 @@
 		; The search variable.
 		(VariableList
 			(TypedVariable (Variable "$prop") (Type 'Predicate))
-			(TypedVariable (Variable "$dog") (Type 'Evaluation))
-			(TypedVariable (Variable "$cat") (Type 'Evaluation))
+			(TypedVariable (Variable "$dog") (Type 'Edge))
+			(TypedVariable (Variable "$cat") (Type 'Edge))
 		)
 
 		(And
 			; We can explicitly ask for presence, but it should be
 			; enough to implicitly assume it, with the IdenticalLink.
 			;(Present
-			;	(Evaluation (Variable "$prop") (Concept "dog"))
-			;	(Evaluation (Variable "$prop") (Concept "cat")))
+			;	(Edge (Variable "$prop") (Concept "dog"))
+			;	(Edge (Variable "$prop") (Concept "cat")))
 			(Identical (Variable "$dog")
-				(Evaluation (Variable "$prop") (Concept "dog")))
+				(Edge (Variable "$prop") (Concept "dog")))
 			(Identical (Variable "$cat")
-				(Evaluation (Variable "$prop") (Concept "cat")))
+				(Edge (Variable "$prop") (Concept "cat")))
 		)
 
 		; Multiply the counts on the search results.
 		(Times
-			(CountOf (Variable "$dog"))
-			(CountOf (Variable "$cat")))))
+			(count-of (Variable "$dog"))
+			(count-of (Variable "$cat")))))
 
 ; Accumulate the numeric values: this should return 1+4+9+16+25 = 55.
 (define five-five (cog-execute! (Accumulate qdot-math)))

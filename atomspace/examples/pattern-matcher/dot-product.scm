@@ -9,22 +9,25 @@
 
 (use-modules (opencog) (opencog exec))
 
+(define tvkey (Predicate "counting key"))
+(define (count-of ATOM) (ElementOf (Number 2) (ValueOf ATOM tvkey)))
+
 ; Define a pair of vectors. One vector is called "dog", the other is
 ; called "cat". The basis elements of both vectors are "has legs",
 ; "has nose" and so on. The numeric value for that basis element is
-; stored in a CountTruthValue attached to each.
+; stored in a FloatValue attached to each.
 ;
-(Evaluation (Predicate "has legs") (Concept "dog") (CountTruthValue 1 0 1))
-(Evaluation (Predicate "has nose") (Concept "dog") (CountTruthValue 1 0 2))
-(Evaluation (Predicate "has tail") (Concept "dog") (CountTruthValue 1 0 3))
-(Evaluation (Predicate "furry")    (Concept "dog") (CountTruthValue 1 0 4))
-(Evaluation (Predicate "domestic") (Concept "dog") (CountTruthValue 1 0 5))
+(cog-set-value! (Edge (Predicate "has legs") (Concept "dog")) tvkey (FloatValue 1 0 1))
+(cog-set-value! (Edge (Predicate "has nose") (Concept "dog")) tvkey (FloatValue 1 0 2))
+(cog-set-value! (Edge (Predicate "has tail") (Concept "dog")) tvkey (FloatValue 1 0 3))
+(cog-set-value! (Edge (Predicate "furry")    (Concept "dog")) tvkey (FloatValue 1 0 4))
+(cog-set-value! (Edge (Predicate "domestic") (Concept "dog")) tvkey (FloatValue 1 0 5))
 
-(Evaluation (Predicate "has legs") (Concept "cat") (CountTruthValue 1 0 1))
-(Evaluation (Predicate "has nose") (Concept "cat") (CountTruthValue 1 0 2))
-(Evaluation (Predicate "has tail") (Concept "cat") (CountTruthValue 1 0 3))
-(Evaluation (Predicate "furry")    (Concept "cat") (CountTruthValue 1 0 4))
-(Evaluation (Predicate "domestic") (Concept "cat") (CountTruthValue 1 0 5))
+(cog-set-value! (Edge (Predicate "has legs") (Concept "cat")) tvkey (FloatValue 1 0 1))
+(cog-set-value! (Edge (Predicate "has nose") (Concept "cat")) tvkey (FloatValue 1 0 2))
+(cog-set-value! (Edge (Predicate "has tail") (Concept "cat")) tvkey (FloatValue 1 0 3))
+(cog-set-value! (Edge (Predicate "furry")    (Concept "cat")) tvkey (FloatValue 1 0 4))
+(cog-set-value! (Edge (Predicate "domestic") (Concept "cat")) tvkey (FloatValue 1 0 5))
 
 ; Define a Query that looks for the basis elements on the "dog" and
 ; "cat" vectors. Once these are found, obtain the counts, and multiply
@@ -36,13 +39,13 @@
 
 		; What to look for.
 		(Present
-			(Evaluation (Variable "$prop") (Concept "dog"))
-			(Evaluation (Variable "$prop") (Concept "cat")))
+			(Edge (Variable "$prop") (Concept "dog"))
+			(Edge (Variable "$prop") (Concept "cat")))
 
 		; Multiply the counts on the search results.
 		(Times
-			(CountOf (Evaluation (Variable "$prop") (Concept "dog")))
-			(CountOf (Evaluation (Variable "$prop") (Concept "cat"))))))
+			(count-of (Edge (Variable "$prop") (Concept "dog")))
+			(count-of (Edge (Variable "$prop") (Concept "cat"))))))
 
 ; Dry run -- this should return a list of numbers 1,4,9,16,25
 (cog-execute! qdot-math)

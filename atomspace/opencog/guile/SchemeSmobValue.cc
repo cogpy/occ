@@ -26,6 +26,7 @@
 
 #include <opencog/atoms/core/NumberNode.h>
 #include <opencog/atoms/value/BoolValue.h>
+#include <opencog/atoms/value/Float32Value.h>
 #include <opencog/atoms/value/FloatValue.h>
 #include <opencog/atoms/value/LinkValue.h>
 #include <opencog/atoms/value/StringValue.h>
@@ -247,7 +248,7 @@ SchemeSmob::scm_to_string_list (SCM svalue_list)
  *    implemented for the C++ types, this seems plausible. However,
  *    actually writing code to do this, and making it run as a plug
  *    in module for other scheme modules not in the git repo... ouch.
- *    Seems complicated, and I could not thik of a good way of doing
+ *    Seems complicated, and I could not think of a good way of doing
  *    this. So punt on the factory idea.
  *
  * Option B)
@@ -495,17 +496,19 @@ SCM SchemeSmob::ss_set_value_ref (SCM satom, SCM skey, SCM svalue, SCM sindex)
 	ValuePtr nvp;
 
 	// OK. What we do next depends on the actual type of the value.
-	if (nameserver().isA(t, FLOAT_VALUE))
+	if (nameserver().isA(t, FLOAT32_VALUE))
+	{
+		std::vector<float> v = Float32ValueCast(pa)->value();
+		if (v.size() <= index) v.resize(index+1);
+		v[index] = (float) verify_real(svalue, "cog-set-value-ref!", 3);
+		nvp = valueserver().create(t, v);
+	}
+	else if (nameserver().isA(t, FLOAT_VALUE))
 	{
 		std::vector<double> v = FloatValueCast(pa)->value();
 		if (v.size() <= index) v.resize(index+1);
 		v[index] = verify_real(svalue, "cog-set-value-ref!", 3);
-
-		// Explicitly run the TruthValue factory.
-		if (nameserver().isA(t, TRUTH_VALUE))
-			nvp = ValueCast(TruthValue::factory(t, v));
-		else
-			nvp = createFloatValue(t, v);
+		nvp = valueserver().create(t, v);
 	}
 
 	if (nameserver().isA(t, BOOL_VALUE))
@@ -513,7 +516,7 @@ SCM SchemeSmob::ss_set_value_ref (SCM satom, SCM skey, SCM svalue, SCM sindex)
 		std::vector<bool> v = BoolValueCast(pa)->value();
 		if (v.size() <= index) v.resize(index+1);
 		v[index] = verify_bool(svalue, "cog-set-value-ref!", 3);
-		nvp = createBoolValue(t, v);
+		nvp = valueserver().create(t, v);
 	}
 
 	if (nameserver().isA(t, STRING_VALUE))
@@ -521,7 +524,7 @@ SCM SchemeSmob::ss_set_value_ref (SCM satom, SCM skey, SCM svalue, SCM sindex)
 		std::vector<std::string> v = StringValueCast(pa)->value();
 		if (v.size() <= index) v.resize(index+1);
 		v[index] = verify_string(svalue, "cog-set-value-ref!", 3);
-		nvp = createStringValue(t, v);
+		nvp = valueserver().create(t, v);
 	}
 
 	if (nameserver().isA(t, LINK_VALUE))
@@ -529,7 +532,7 @@ SCM SchemeSmob::ss_set_value_ref (SCM satom, SCM skey, SCM svalue, SCM sindex)
 		std::vector<ValuePtr> v = LinkValueCast(pa)->value();
 		if (v.size() <= index) v.resize(index+1);
 		v[index] = verify_protom(svalue, "cog-set-value-ref!", 3);
-		nvp = createLinkValue(t, std::move(v));
+		nvp = valueserver().create(t, std::move(v));
 	}
 
 	return set_value(atom, key, nvp, satom, "cog-set-value-ref!");
@@ -675,6 +678,12 @@ SCM SchemeSmob::ss_value_to_list (SCM svalue)
 	ValuePtr pa(verify_protom(svalue, "cog-value->list"));
 	Type t = pa->get_type();
 
+	if (nameserver().isA(t, FLOAT32_VALUE))
+	{
+		const std::vector<float>& v = Float32ValueCast(pa)->value();
+		CPPL_TO_SCML(v, scm_from_double)
+	}
+
 	if (nameserver().isA(t, FLOAT_VALUE))
 	{
 		const std::vector<double>& v = FloatValueCast(pa)->value();
@@ -701,7 +710,7 @@ SCM SchemeSmob::ss_value_to_list (SCM svalue)
 
 	if (nameserver().isA(t, LINK))
 	{
-		const HandleSeq& v = AtomCast(pa)->getOutgoingSet();
+		const HandleSeq& v = HandleCast(pa)->getOutgoingSet();
 		CPPL_TO_SCML(v, handle_to_scm)
 	}
 
@@ -712,7 +721,7 @@ SCM SchemeSmob::ss_value_to_list (SCM svalue)
 			const std::vector<double>& v = NumberNodeCast(pa)->value();
 			CPPL_TO_SCML(v, scm_from_double)
 		}
-		const std::string& name = AtomCast(pa)->get_name();
+		const std::string& name = HandleCast(pa)->get_name();
 		return scm_cons(scm_from_utf8_string(name.c_str()), SCM_EOL);
 	}
 
@@ -756,37 +765,43 @@ SCM SchemeSmob::value_ref (const ValuePtr& pa, size_t index)
 {
 	Type t = pa->get_type();
 
-	if (nameserver().isA(t, FLOAT_VALUE))
+	if (nameserver().isA(t, FLOAT32_VALUE))
+	{
+		const std::vector<float>& v = Float32ValueCast(pa)->value();
+		if (index < v.size()) return scm_from_double(v[index]);
+	}
+
+	else if (nameserver().isA(t, FLOAT_VALUE))
 	{
 		const std::vector<double>& v = FloatValueCast(pa)->value();
 		if (index < v.size()) return scm_from_double(v[index]);
 	}
 
-	if (nameserver().isA(t, BOOL_VALUE))
+	else if (nameserver().isA(t, BOOL_VALUE))
 	{
 		const std::vector<bool>& v = BoolValueCast(pa)->value();
 		if (index < v.size()) return scm_from_bool(v[index]);
 	}
 
-	if (nameserver().isA(t, STRING_VALUE))
+	else if (nameserver().isA(t, STRING_VALUE))
 	{
 		const std::vector<std::string>& v = StringValueCast(pa)->value();
 		if (index < v.size()) return scm_from_string(v[index]);
 	}
 
-	if (nameserver().isA(t, LINK_VALUE))
+	else if (nameserver().isA(t, LINK_VALUE))
 	{
 		const std::vector<ValuePtr>& v = LinkValueCast(pa)->value();
 		if (index < v.size()) return protom_to_scm(v[index]);
 	}
 
-	if (nameserver().isA(t, LINK))
+	else if (nameserver().isA(t, LINK))
 	{
-		const HandleSeq& v = AtomCast(pa)->getOutgoingSet();
+		const HandleSeq& v = HandleCast(pa)->getOutgoingSet();
 		if (index < v.size()) return handle_to_scm(v[index]);
 	}
 
-	if (nameserver().isA(t, NODE))
+	else if (nameserver().isA(t, NODE))
 	{
 		if (nameserver().isA(t, NUMBER_NODE))
 		{
@@ -795,7 +810,7 @@ SCM SchemeSmob::value_ref (const ValuePtr& pa, size_t index)
 		}
 		else
 		{
-			const std::string& name = AtomCast(pa)->get_name();
+			const std::string& name = HandleCast(pa)->get_name();
 			if (0 == index) return scm_from_string(name);
 		}
 	}

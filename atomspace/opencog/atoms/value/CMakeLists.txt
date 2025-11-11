@@ -4,6 +4,8 @@ ADD_LIBRARY (value
 	Value.cc
 	BoolValue.cc
 	ContainerValue.cc
+	Float32Value.cc
+	FlatStream.cc
 	FloatValue.cc
 	FormulaStream.cc
 	FutureStream.cc
@@ -11,6 +13,7 @@ ADD_LIBRARY (value
 	QueueValue.cc
 	RandomStream.cc
 	SectionValue.cc
+	SortedStream.cc
 	StringValue.cc
 	UnisetValue.cc
 	ValueFactory.cc
@@ -32,6 +35,8 @@ INSTALL (TARGETS value EXPORT AtomSpaceTargets
 INSTALL (FILES
 	BoolValue.h
 	ContainerValue.h
+	FlatStream.h
+	Float32Value.h
 	FloatValue.h
 	FormulaStream.h
 	FutureStream.h
@@ -39,6 +44,7 @@ INSTALL (FILES
 	QueueValue.h
 	RandomStream.h
 	SectionValue.h
+	SortedStream.h
 	StringValue.h
 	UnisetValue.h
 	Value.h

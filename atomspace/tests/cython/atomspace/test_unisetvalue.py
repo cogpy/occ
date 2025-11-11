@@ -148,11 +148,10 @@ class UnisetValueTest(unittest.TestCase):
         # Close the set first to prevent blocking
         value.close()
 
-        # Popping from closed empty set should raise RuntimeError
-        with self.assertRaises(RuntimeError) as cm:
-            value.pop()
-
-        self.assertIn("Cannot remove from closed empty set", str(cm.exception))
+        # Popping from closed empty set should return empty value
+        result = value.pop()
+        self.assertEqual(0, len(result.to_list()),
+                        "Expected empty value when popping from closed empty set")
 
     def test_pop_until_empty_then_close(self):
         value = UnisetValue()
@@ -169,9 +168,10 @@ class UnisetValueTest(unittest.TestCase):
         # Now close the empty set
         value.close()
 
-        # Trying to pop should raise RuntimeError
-        with self.assertRaises(RuntimeError):
-            value.pop()
+        # Trying to pop should return empty value
+        result = value.pop()
+        self.assertEqual(0, len(result.to_list()),
+                        "Expected empty value when popping from closed empty set")
 
     def test_str(self):
         value = UnisetValue([FloatValue(42), StringValue('foo')])

@@ -21,19 +21,18 @@
  */
 
 #include <opencog/atoms/value/UnisetValue.h>
+#include <opencog/atoms/value/VoidValue.h>
 #include <opencog/atoms/value/ValueFactory.h>
 
 using namespace opencog;
 
-typedef concurrent_set<ValuePtr> conset;
-
 // ==============================================================
 
 UnisetValue::UnisetValue(const ValueSeq& vseq)
-	: ContainerValue(UNISET_VALUE)
+	: ContainerValue(UNISET_VALUE), _set(ValueComp(this))
 {
 	for (const ValuePtr& v: vseq)
-		conset::insert(v);
+		_set.insert(v);
 
 	// Since this constructor placed stuff on the queue,
 	// we also close it, to indicate we are "done" placing
@@ -58,7 +57,7 @@ UnisetValue::UnisetValue(const ValueSeq& vseq)
 void UnisetValue::update() const
 {
 	// Do nothing; we don't want to clobber the _value
-	if (is_closed() and 0 == conset::size()) return;
+	if (is_closed() and 0 == _set.size()) return;
 
 	// Reset, to start with.
 	_value.clear();
@@ -69,23 +68,17 @@ void UnisetValue::update() const
 		while (true)
 		{
 			ValuePtr val;
-			const_cast<UnisetValue*>(this) -> get(val);
+			const_cast<UnisetValue*>(this)->_set.get(val);
 			_value.emplace_back(val);
 		}
 	}
-	catch (typename conset::Canceled& e)
+	catch (typename concurrent_set<ValuePtr, ValueComp>::Canceled& e)
 	{}
 
-	// If we are here, the queue closed up. Reopen it
-	// just long enough to drain any remaining values.
-	const_cast<UnisetValue*>(this) -> cancel_reset();
-	while (not is_empty())
-	{
-		ValuePtr val;
-		const_cast<UnisetValue*>(this) -> get(val);
-		_value.emplace_back(val);
-	}
-	const_cast<UnisetValue*>(this) -> cancel();
+	// If we are here, the queue closed up.
+	// Drain any remaining values.
+	ValueSeq rem(const_cast<UnisetValue*>(this)->_set.try_get(SIZE_MAX));
+	_value.insert(_value.end(), rem.begin(), rem.end());
 }
 
 // ==============================================================
@@ -93,45 +86,62 @@ void UnisetValue::update() const
 void UnisetValue::open()
 {
 	if (not is_closed()) return;
-	conset::open();
+	_set.open();
 }
 
 void UnisetValue::close()
 {
 	if (is_closed()) return;
-	conset::close();
+	_set.close();
 }
 
 bool UnisetValue::is_closed() const
 {
-	return conset::is_closed();
+	return _set.is_closed();
 }
 
 // ==============================================================
 
 void UnisetValue::add(const ValuePtr& vp)
 {
-	conset::insert(vp);
+	_set.insert(vp);
 }
 
 void UnisetValue::add(ValuePtr&& vp)
 {
-	conset::insert(vp);
+	_set.insert(vp);
 }
 
 ValuePtr UnisetValue::remove(void)
 {
-	return conset::value_get();
+	// Use try_get first, in case the set is closed.
+	ValuePtr vp;
+	if (_set.try_get(vp))
+		return vp;
+
+	// If we are here, then the set is empty.
+	// If it is closed, then it's end-of-stream.
+	// Else, we block and wait.
+	// If it closes while we are blocked, we will catch an exception.
+	// Return VoidValue as the end-of-stream marker.
+	try
+	{
+		return _set.value_get();
+	}
+	catch (typename concurrent_set<ValuePtr, ValueComp>::Canceled& e)
+	{}
+
+	return createVoidValue();
 }
 
 size_t UnisetValue::size(void) const
 {
 	if (is_closed())
 	{
-		if (0 != conset::size()) update();
+		if (0 != _set.size()) update();
 		return _value.size();
 	}
-	return conset::size();
+	return _set.size();
 }
 
 // ==============================================================
@@ -142,28 +152,26 @@ void UnisetValue::clear()
 	_value.clear();
 
 	// Do nothing; we don't want to clobber the _value
-	if (conset::is_closed())
+	if (_set.is_closed())
 	{
-		conset::wait_and_take_all();
+		_set.wait_and_take_all();
 		return;
 	}
 
-	conset::close();
-	conset::wait_and_take_all();
-	conset::open();
+	_set.close();
+	_set.wait_and_take_all();
+	_set.open();
 }
 
 // ==============================================================
 
 bool UnisetValue::operator==(const Value& other) const
 {
-	// Derived classes use this, so use get_type()
-	if (get_type() != other.get_type()) return false;
-
 	if (this == &other) return true;
 
 	if (not is_closed()) return false;
-	if (not ((const UnisetValue*) &other)->is_closed()) return false;
+	if (other.is_type(UNISET_VALUE) and
+	    not ((const UnisetValue*) &other)->is_closed()) return false;
 
 	return LinkValue::operator==(other);
 }
