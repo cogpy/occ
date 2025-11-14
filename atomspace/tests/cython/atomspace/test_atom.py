@@ -1,7 +1,7 @@
 import unittest
 from unittest import TestCase
 
-from opencog.atomspace import Atom
+from opencog.atomspace import Atom, tvkey
 
 from opencog.atomspace import types, is_a, get_type, get_type_name, create_child_atomspace
 
@@ -32,12 +32,11 @@ class AtomTest(TestCase):
         keys = atom.get_keys()
         self.assertEqual(0, len(keys))
 
-        tv = TruthValue(0.7, 0.7)
-        atom.tv = tv
+        tv = FloatValue([0.7, 0.7])
+        atom.set_value(tvkey, tv)
         keys = atom.get_keys()
         self.assertEqual(1, len(keys))
-        # Since the type or name of the TruthValue key may change, check that
-        # the value it refers to is the same.
+        # Check that the value it refers to is the same.
         self.assertEqual(tv, atom.get_value(keys[0]))
 
         key = Predicate('bar')
@@ -105,11 +104,11 @@ class AtomTest(TestCase):
 
 def grounded_cond1(*args):
     print(args)
-    return TruthValue(0, 0)
+    return False
 
 def grounded_cond2(*args):
     print(args)
-    return TruthValue(1, 1)
+    return True
 
 import __main__
 

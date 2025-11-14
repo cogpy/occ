@@ -27,6 +27,7 @@
 #include <opencog/util/Logger.h>
 #include <opencog/atoms/execution/ExecutionOutputLink.h>
 #include <opencog/atoms/execution/EvaluationLink.h>
+#include <opencog/atoms/value/BoolValue.h>
 
 using namespace opencog;
 
@@ -57,14 +58,11 @@ class SCMExecutionOutputUTest :  public CxxTest::TestSuite
 	void tearDown(void);
 
 	void test_execute(void);
-	void test_evaluate(void);
-	void test_wrapped_evaluate(void);
 
 	void test_multi_threads(void);
 	void threadedAdd(int thread_id, int N);
 
 	void test_recursive(void);
-	void test_nested(void);
 
 	void test_boolean(void);
 	void test_numeric(void);
@@ -72,7 +70,6 @@ class SCMExecutionOutputUTest :  public CxxTest::TestSuite
 	void test_dsn(void);
 
 	void test_execute_single_arg(void);
-	void test_evaluate_single_arg(void);
 
 	void test_bad_gsn(void);
 	void test_bad_gpn(void);
@@ -133,7 +130,7 @@ void SCMExecutionOutputUTest::test_execute(void)
 // Use a unique evaluator for this thread.
 void SCMExecutionOutputUTest::threadedAdd(int thread_id, int N)
 {
-	SchemeEval* ev = SchemeEval::get_evaluator(as);
+	SchemeEval* ev = SchemeEval::get_scheme_evaluator(as);
 	int counter = 0;
 
 	// Define a Scheme procedure that will be used in the
@@ -150,10 +147,11 @@ void SCMExecutionOutputUTest::threadedAdd(int thread_id, int N)
 		counter ++;
 
 		std::ostringstream oss;
-		oss << "(InheritanceLink (ConceptNode "
-		    << jules.str() << ")"
-		    << "(ConceptNode \"prince\")"
-		    << "(cog-new-stv " << strength << " " << confidence << "))";
+		oss << "(begin "
+		    << "(define inh (InheritanceLink (ConceptNode "
+		    << jules.str() << ") (ConceptNode \"prince\"))) "
+		    << "(cog-set-value! inh (Predicate \"*-TruthValueKey-*\") (FloatValue " << strength << " " << confidence << ")) "
+		    << "inh)";
 
 		Handle h = ev->eval_h(oss.str());
 		CHKEV(ev);
@@ -198,13 +196,14 @@ void SCMExecutionOutputUTest::test_multi_threads(void)
 	// 1 prince
 	// 1 grounded schema
 	// 1 king
+	// 1 Predicate "*-TruthValueKey-*"
 	// num_atoms * n_threads  Concept    julians
 	// num_atoms * n_threads  Inheritance  julian prince
 	// num_atoms * n_threads  ListLink  julian
 	// num_atoms * n_threads  ExecutionOutputLink
 	// num_atoms * n_threads  Inheritance  julian king
-	// for a total of 3 + 5 * num_atoms * n_threads atoms created, total.
-	TS_ASSERT_EQUALS(size, 5 * num_atoms * n_threads + 3);
+	// for a total of 4 + 5 * num_atoms * n_threads atoms created, total.
+	TS_ASSERT_EQUALS(size, 5 * num_atoms * n_threads + 4);
 
 	// Everyone gets to be a king!  Yayyyy!
 	Handle king = as->add_node(CONCEPT_NODE, "king");
@@ -231,7 +230,12 @@ void SCMExecutionOutputUTest::test_recursive(void)
 		"   (InheritanceLink x (ConceptNode \"king\")))"
 		"(define (make-queen x)"
 		"   (InheritanceLink x (ConceptNode \"queen\")))"
-		"(define (stv mean conf) (cog-new-stv mean conf))"
+		"(define (fv mean conf) (FloatValue mean conf))"
+		"(define tvkey (Predicate \"*-TruthValueKey-*\"))"
+		"(define (get-mean atom)"
+		"   (cog-value-ref (cog-value atom tvkey) 0))"
+		"(define (get-conf atom)"
+		"   (cog-value-ref (cog-value atom tvkey) 1))"
 	);
 	CHKEV(eval);
 
@@ -239,9 +243,9 @@ void SCMExecutionOutputUTest::test_recursive(void)
 	// viz the atom TV mean is incremented by cnt
 	eval->eval(
 		"(define (royal-incr atom cnt)"
-		"   (cog-set-tv! atom"
-		"       (stv (+ (cog-mean atom) cnt)"
-		"           (cog-confidence atom))))"
+		"   (cog-set-value! atom tvkey"
+		"       (fv (+ (get-mean atom) cnt)"
+		"           (get-conf atom))))"
 	);
 	CHKEV(eval);
 
@@ -251,7 +255,7 @@ void SCMExecutionOutputUTest::test_recursive(void)
 	// That is, 0.9/0.1 = 9.
 	eval->eval(
 		"(define (royalize x)"
-		"   (if (> (cog-mean x) 0.9)"
+		"   (if (> (get-mean x) 0.9)"
 		"      (make-king x)"
 		"      (royalize (royal-incr x 0.1))))"
 	);
@@ -266,7 +270,7 @@ void SCMExecutionOutputUTest::test_recursive(void)
 	// ExecutionOutputLink::do_execute() onto the stack.
 	eval->eval(
 		"(define (promote x)"
-		"   (if (> (cog-mean x) 0.9)"
+		"   (if (> (get-mean x) 0.9)"
 		"      (make-queen x)"
 		"      (exe-royalize (royal-incr x 0.01))))"
 	);
@@ -283,13 +287,16 @@ void SCMExecutionOutputUTest::test_recursive(void)
 
 	// Start out with Julian a newborn prince.
 	eval->eval(
-		"(define julian (ConceptNode \"julian\" (stv 0 0)))"
+		"(begin "
+		"  (define julian (ConceptNode \"julian\")) "
+		"  (cog-set-value! julian (Predicate \"*-TruthValueKey-*\") (fv 0 0)) "
+		"  julian)"
 	);
 	CHKEV(eval);
 
-	// Initially, atomspace has one atom: just julian
+	// Initially, atomspace has two atoms: julian + tvkey predicate
 	size = as->get_size();
-	TS_ASSERT_EQUALS(size, 1);
+	TS_ASSERT_EQUALS(size, 2);
 
 	eval->eval(
 		"(royalize julian)"
@@ -297,16 +304,20 @@ void SCMExecutionOutputUTest::test_recursive(void)
 	CHKEV(eval);
 
 	// Now, the atomspace has three atoms (Inheritance julian king)
+	// Plus also (Predicate "*-TruthValueKey-*")
 	size = as->get_size();
-	TS_ASSERT_EQUALS(size, 3);
+	TS_ASSERT_EQUALS(size, 4);
 
 	// Start out with Anneliese a newborn princess.
 	eval->eval(
-		"(define anne (ConceptNode \"Anneliese\" (stv 0 0)))"
+		"(begin "
+		"  (define anne (ConceptNode \"Anneliese\")) "
+		"  (cog-set-value! anne (Predicate \"*-TruthValueKey-*\") (fv 0 0)) "
+		"  anne)"
 	);
 	CHKEV(eval);
 	size = as->get_size();
-	TS_ASSERT_EQUALS(size, 4);
+	TS_ASSERT_EQUALS(size, 5);
 
 	eval->eval(
 		"(exe-royalize anne)"
@@ -317,148 +328,11 @@ void SCMExecutionOutputUTest::test_recursive(void)
 	// 3:  (Inheritance julian king)
 	// 3:  (Inheritance anne queen)
 	// 3:  (ExecutionLink (GroundedSchemaNode) (ListLink anne))
+	// Plus also (Predicate "*-TruthValueKey-*")
 	size = as->get_size();
-	TS_ASSERT_EQUALS(size, 9);
+	TS_ASSERT_EQUALS(size, 10);
 
 	size = as->get_size();
-
-	logger().debug("END TEST: %s", __FUNCTION__);
-}
-
-// Test nested execution links. github issue #1340
-//
-// The following should work:
-//   ExecutionOutputLink
-//       "scm-eager: *"
-//       ListLink
-//            ExecutionOutputLink
-//                 "scm: +"
-//                 ListLink
-//                     NumberNode 1
-//                     NumberNode 2
-//            NumberNode 3
-//
-// is a representation of (1 + 2) * 3
-//
-void SCMExecutionOutputUTest::test_nested(void)
-{
-	logger().debug("BEGIN TEST: %s", __FUNCTION__);
-
-	// Empty out the atomspace
-	as->clear();
-	size_t size = as->get_size();
-	TS_ASSERT_EQUALS(size, 0);
-
-	// Define various generic utilities
-	eval->eval(
-		"(define (oc-plus x y)"
-		"   (NumberNode (+ (cog-number x) (cog-number y))))"
-		"(define (oc-times x y)"
-		"   (NumberNode (* (cog-number x) (cog-number y))))"
-	);
-	CHKEV(eval);
-
-	eval->eval(
-		"(define nestor"
-		"   (ExecutionOutputLink "
-		"      (GroundedSchemaNode \"scm-eager: oc-times\")"
-		"      (ListLink "
-		"         (ExecutionOutputLink "
-		"            (GroundedSchemaNode \"scm: oc-plus\")"
-		"            (ListLink "
-		"               (NumberNode 1)"
-		"               (NumberNode 2)))"
-		"         (NumberNode 3))))"
-	);
-	CHKEV(eval);
-
-	Handle enine = eval->eval_h("(cog-execute! nestor)");
-	Handle nine = eval->eval_h("(NumberNode \"9\")");
-	TS_ASSERT_EQUALS(nine, enine);
-
-	NumberNodePtr ne(NumberNodeCast(enine));
-	NumberNodePtr ni(NumberNodeCast(nine));
-	double dne = ne->get_value();
-	double dni = ni->get_value();
-	TS_ASSERT_LESS_THAN(fabs(dne - dni), 0.000001);
-	TS_ASSERT_LESS_THAN(fabs(9.0 - dne), 0.000001);
-
-	logger().debug("END TEST: %s", __FUNCTION__);
-}
-
-void SCMExecutionOutputUTest::test_evaluate(void)
-{
-	logger().debug("BEGIN TEST: %s", __FUNCTION__);
-
-	// Define a Scheme procedure that return a TV
-	eval->eval("(define (grab-tv x) (cog-tv x))");
-	CHKEV(eval);
-
-	// Wrap the procedure, returning a TV
-	eval->eval(
-		"(define (evl-tv x) "
-		"   (cog-evaluate! "
-		"      (EvaluationLink "
-		"          (GroundedPredicateNode \"scm: grab-tv\") "
-		"          (ListLink x))))"
-	);
-	CHKEV(eval);
-
-	// Compare the TV's that were obtained in two different ways.
-	eval->eval(
-		"(define (chk-tv x) "
-		"  (if (not (equal? (cog-tv x) (evl-tv x))) "
-		"     (throw 'bad-tv-compate \"chk-tv\" \"test case failed\")))"
-	);
-	CHKEV(eval);
-
-	// Perform the actual checks
-	eval->eval("(chk-tv (ConceptNode \"bogus\" (cog-new-stv 0.3 0.42)))");
-	CHKEV(eval);
-	eval->eval("(chk-tv (ConceptNode \"glurg\" (cog-new-ctv 0.123 0.456 789)))");
-	CHKEV(eval);
-
-	logger().debug("END TEST: %s", __FUNCTION__);
-}
-
-
-// the fix for bug #695 (contents of True/False links not evaluated)
-void SCMExecutionOutputUTest::test_wrapped_evaluate(void)
-{
-	logger().debug("BEGIN TEST: %s", __FUNCTION__);
-
-	// Define a Scheme procedure that return a TV
-	eval->eval(
-		"(define (copy-tv x) "
-		"    (begin (ConceptNode \"cpy\" (cog-tv x)) (cog-new-stv 1 1)))");
-	CHKEV(eval);
-
-	// Wrap the procedure, returning a TV
-	eval->eval(
-		"(define (cevl-tv x) "
-		"   (cog-evaluate! "
-		"      (FalseLink "
-		"          (EvaluationLink "
-		"              (GroundedPredicateNode \"scm: copy-tv\") "
-		"              (ListLink x)))))"
-	);
-	CHKEV(eval);
-
-	// Compare the TV's that were obtained in two different ways.
-	eval->eval(
-		"(define (chk-copied-tv x) "
-		"  (begin "
-		"     (cevl-tv x) "
-		"     (if (not (equal? (cog-tv (ConceptNode \"cpy\")) (cog-tv x))) "
-		"        (throw 'bad-tv-compate \"chk-tv\" \"test case failed\"))))"
-	);
-	CHKEV(eval);
-
-	// Perform the actual checks
-	eval->eval("(chk-copied-tv (ConceptNode \"bogus\" (cog-new-stv 0.3 0.42)))");
-	CHKEV(eval);
-	eval->eval("(chk-copied-tv (ConceptNode \"glurg\" (cog-new-ctv 0.123 0.456 789)))");
-	CHKEV(eval);
 
 	logger().debug("END TEST: %s", __FUNCTION__);
 }
@@ -507,9 +381,10 @@ void SCMExecutionOutputUTest::test_boolean(void)
 	CHKEV(eval);
 
 	// Evaluate the boolean expreson; it should be true.
-	TruthValuePtr tv = eval->eval_tv("(cog-evaluate! expr)");
+	ValuePtr vp = eval->eval_v("(cog-execute! expr)");
 	CHKEV(eval);
-	TS_ASSERT_LESS_THAN_EQUALS(0.999, tv->get_mean());
+	BoolValuePtr bvp = BoolValueCast(vp);
+	TS_ASSERT(bvp->get_bit(0));
 
 	// Another boolean expression
 	Handle boolex = eval->eval_h(
@@ -520,8 +395,8 @@ void SCMExecutionOutputUTest::test_boolean(void)
 	CHKEV(eval);
 
 	// When evaluated, this one should be false.
-	tv = EvaluationLink::do_evaluate(as.get(), boolex);
-	TS_ASSERT_LESS_THAN_EQUALS(tv->get_mean(), 0.001);
+	bool result = EvaluationLink::crisp_eval_scratch(as.get(), boolex, as.get());
+	TS_ASSERT(not result);
 
 	logger().debug("END TEST: %s", __FUNCTION__);
 }
@@ -598,7 +473,7 @@ void SCMExecutionOutputUTest::test_execute_single_arg(void)
 
 	eval->eval(
 	   "(define (single-arg-fun x)"
-	   "   (And (Concept \"A\") x))"
+	   "   (List (Concept \"A\") x))"
 	);
 	CHKEV(eval);
 
@@ -611,65 +486,10 @@ void SCMExecutionOutputUTest::test_execute_single_arg(void)
 	CHKEV(eval);
 
 	Handle expect =
-		eval->eval_h("(And (Concept \"A\") (Concept \"B\"))");
+		eval->eval_h("(List (Concept \"A\") (Concept \"B\"))");
 	std::cout << "Expression is " << result->to_string() << std::endl;
 	std::cout << "Expected " << expect->to_string() << std::endl;
 	TS_ASSERT_EQUALS(result, expect);
-
-	// Test scheme execution function taking a single argument that
-	// itself requires to be executed (eagerly by default).
-
-	result = eval->eval_h(
-	   "(cog-execute!"
-	   "   (ExecutionOutputLink"
-	   "      (GroundedSchema \"scm-eager: single-arg-fun\")"
-	   "      (ExecutionOutputLink"
-	   "         (GroundedSchema \"scm: single-arg-fun\")"
-	   "         (Concept \"B\"))))"
-	);
-	CHKEV(eval);
-
-	expect =
-		eval->eval_h("(And (Concept \"A\")"
-		             "     (And (Concept \"A\") (Concept \"B\")))");
-	std::cout << "Expression is " << result->to_string() << std::endl;
-	std::cout << "Expected " << expect->to_string() << std::endl;
-	TS_ASSERT_EQUALS(result, expect);
-
-	logger().debug("END TEST: %s", __FUNCTION__);
-}
-
-void SCMExecutionOutputUTest::test_evaluate_single_arg(void)
-{
-	logger().debug("BEGIN TEST: %s", __FUNCTION__);
-
-	// Define a Scheme procedure that return a TV
-	eval->eval("(define (grab-tv x) (cog-tv x))");
-	CHKEV(eval);
-
-	// Wrap the procedure, returning a TV
-	eval->eval(
-		"(define (single-arg-evl-tv x) "
-		"   (cog-evaluate! "
-		"      (EvaluationLink "
-		"          (GroundedPredicateNode \"scm: grab-tv\") "
-		"          x)))"
-	);
-	CHKEV(eval);
-
-	// Compare the TV's that were obtained in two different ways.
-	eval->eval(
-		"(define (chk-tv x) "
-		"  (if (not (equal? (cog-tv x) (single-arg-evl-tv x))) "
-		"     (throw 'bad-tv-compate \"chk-tv\" \"test case failed\")))"
-	);
-	CHKEV(eval);
-
-	// Perform the actual checks
-	eval->eval("(chk-tv (ConceptNode \"bogus\" (cog-new-stv 0.3 0.42)))");
-	CHKEV(eval);
-	eval->eval("(chk-tv (ConceptNode \"glurg\" (cog-new-ctv 0.123 0.456 789)))");
-	CHKEV(eval);
 
 	logger().debug("END TEST: %s", __FUNCTION__);
 }
@@ -727,39 +547,12 @@ void SCMExecutionOutputUTest::test_bad_gpn(void)
 
 	eval->eval(
 	   "(define (call-gpn str)"
-	   "   (cog-evaluate!"
+	   "   (cog-execute!"
 	   "      (EvaluationLink"
 	   "         (GroundedPredicate str)"
 	   "         (Concept \"A\"))))"
 	);
 	CHKEV(eval);
-
-#if 0
-	// No longer tested. The API has been changed to run the function,
-	// but return VoidValue for all of these cases. This seems much more
-	// user freindly. A future rainy-day project is to convert the scheme
-	// return values to some mostly-appropriate Atomese of some kind.
-
-	eval->eval("(define (no-ret x) *unspecified*)");
-	CHKEV(eval);
-	TS_ASSERT_THROWS_ANYTHING(eval->eval_h("(call-gpn \"scm: no-ret\")"));
-
-	eval->eval("(define (ret-num x) 42)");
-	CHKEV(eval);
-	TS_ASSERT_THROWS_ANYTHING(eval->eval_h("(call-gpn \"scm: ret-num\")"));
-
-	eval->eval("(define (ret-str x) \"oh noooo!\")");
-	CHKEV(eval);
-	TS_ASSERT_THROWS_ANYTHING(eval->eval_h("(call-gpn \"scm: ret-str\")"));
-
-	eval->eval("(define (ret-nil x) '())");
-	CHKEV(eval);
-	TS_ASSERT_THROWS_ANYTHING(eval->eval_h("(call-gpn \"scm: ret-nil\")"));
-
-	eval->eval("(define (ret-lst x) (list 'a 'b 'c))");
-	CHKEV(eval);
-	TS_ASSERT_THROWS_ANYTHING(eval->eval_h("(call-gpn \"scm: ret-lst\")"));
-#endif
 
 	logger().debug("END TEST: %s", __FUNCTION__);
 }

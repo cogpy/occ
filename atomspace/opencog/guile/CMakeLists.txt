@@ -16,7 +16,6 @@ ADD_LIBRARY (smob
 	SchemeSmobGC.cc
 	SchemeSmobNew.cc
 	SchemeSmobPrint.cc
-	SchemeSmobTV.cc
 	SchemeSmobValue.cc
 	SchemeSmobLogger.cc
 )
@@ -30,6 +29,7 @@ TARGET_LINK_LIBRARIES(smob
 	# to run the ctors for C++-backed atom types, resulting in
 	# screwball failures.
 	${NO_AS_NEEDED}
+	generic-eval
 	clearbox
 	join
 	pattern
@@ -39,7 +39,6 @@ TARGET_LINK_LIBRARIES(smob
 	atomcore
 	foreign
 	atombase
-	truthvalue
 	atomspace
 	${GUILE_LIBRARIES}
 	${COGUTIL_LIBRARY}
