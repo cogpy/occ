@@ -31,9 +31,9 @@
   (package
     (name "occ-hurdcog-unified")
     (version "1.0.0")
-    (source (local-file "/home/ubuntu/occ" "occ-checkout"
+    (source (local-file (dirname (current-filename)) "occ-checkout"
                         #:recursive? #t
-                        #:select? (git-predicate "/home/ubuntu/occ")))
+                        #:select? (git-predicate (dirname (current-filename)))))
     (build-system cmake-build-system)
     (arguments
      (list #:tests? #f  ; Disable tests for initial build
