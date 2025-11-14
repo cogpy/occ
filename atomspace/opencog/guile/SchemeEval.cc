@@ -38,7 +38,7 @@
 #include <opencog/util/Logger.h>
 #include <opencog/util/oc_assert.h>
 #include <opencog/util/platform.h>
-#include <opencog/atoms/truthvalue/TruthValue.h>
+#include <opencog/atoms/value/BoolValue.h>
 
 #include "SchemeEval.h"
 #include "SchemePrimitive.h"
@@ -313,23 +313,16 @@ static void init_only_once(void)
 }
 
 SchemeEval::SchemeEval(AtomSpace* as)
+	: GenericASEval(as)
 {
 	init_only_once();
-
-	// If it is coming from the pool, the as will be null.
-	if (as)
-		_atomspace = AtomSpaceCast(as->shared_from_this());
-	else
-		_atomspace = nullptr;
-
 	scm_with_guile(c_wrap_init, this);
 }
 
 SchemeEval::SchemeEval(AtomSpacePtr& asp)
+	: GenericASEval(asp)
 {
 	init_only_once();
-	_atomspace = asp;
-
 	scm_with_guile(c_wrap_init, this);
 }
 
@@ -917,9 +910,7 @@ void * SchemeEval::c_wrap_eval_v(void * p)
 
 /**
  * Evaluate a string containing a scheme expression, returning a
- * ProtoAtom (Handle, TruthValue or Value).  If an evaluation error
- * occurs, an exception is thrown, and the stack trace is logged to
- * the log file.
+ * ValuePtr.  If an evaluation error occurs, an exception is thrown.
  */
 ValuePtr SchemeEval::eval_v(const std::string &expr)
 {
@@ -956,7 +947,7 @@ ValuePtr SchemeEval::eval_v(const std::string &expr)
 		throw RuntimeException(TRACE_INFO, "%s", _error_msg.c_str());
 
 	// We do not want this->_retval to point at anything after we return.
-	// This is so that we do not hold a long-term reference to the TV.
+	// This is so that we do not hold a long-term reference to the Value.
 	ValuePtr rv;
 	swap(rv, _retval);
 	return rv;
@@ -965,8 +956,7 @@ ValuePtr SchemeEval::eval_v(const std::string &expr)
 /**
  * Evaluate a string containing a scheme expression, returning an
  * AtomSpace.
- * If an evaluation error occurs, an exception is thrown, and the stack
- * trace is logged to the log file.
+ * If an evaluation error occurs, an exception is thrown.
  */
 AtomSpacePtr SchemeEval::eval_as(const std::string &expr)
 {
@@ -1072,13 +1062,13 @@ SCM SchemeEval::do_apply_scm(const std::string& func, const ValuePtr& varargs)
 /* ============================================================== */
 /**
  * apply_v -- apply named function func to arguments in ListLink.
- * Return an OpenCog ValuePtr (Handle, TruthValue or Value).
+ * Return an OpenCog ValuePtr.
+ *
  * It is assumed that varargs is a ListLink, containing a list of
- * atom handles. This list is unpacked, and then the function func
+ * Handles. This list is unpacked, and then the function func
  * is applied to them. The function is presumed to return pointer
- * to a ProtoAtom [now renamed Value] object. If the function does
- * not return a ProtoAtom, or if n error occurred during evaluation,
- * then a C++ exception is thrown.
+ * to a ValuePtr. If the function does not return a Valueptr, or if
+ * an error occurred during evaluation, then a C++ exception is thrown.
  */
 ValuePtr SchemeEval::apply_v(const std::string &func, ValuePtr varargs)
 {
@@ -1087,14 +1077,18 @@ ValuePtr SchemeEval::apply_v(const std::string &func, ValuePtr varargs)
 	// Just go.
 	if (_in_eval) {
 		SCM smob = do_apply_scm(func, varargs);
+
+		// If error, rethrow. It would be better to just allow exceptions
+		// to pass on through, but thus breaks some unit tests.
+		// XXX FIXME -- idealy we should avoid catch-and-rethrow.
 		if (eval_error())
-		{
-			// Rethrow.  It would be better to just allow exceptions
-			// to pass on through, but thus breaks some unit tests.
-			// XXX FIXME -- idealy we should avoid catch-and-rethrow.
-			// At any rate, we must not return a TV of any sort, here.
 			throw RuntimeException(TRACE_INFO, "%s", _error_msg.c_str());
-		}
+
+		// Check if the return value is a scheme boolean (#t or #f)
+		// and convert to BoolValue
+		if (scm_is_bool(smob))
+			return createBoolValue(scm_to_bool(smob) != 0);
+
 		return SchemeSmob::scm_to_protom(smob);
 	}
 
@@ -1112,7 +1106,7 @@ ValuePtr SchemeEval::apply_v(const std::string &func, ValuePtr varargs)
 			_error_msg.c_str());
 
 	// We do not want this->_retval to point at anything after we return.
-	// This is so that we do not hold a long-term reference to the TV.
+	// This is so that we do not hold a long-term reference to the Value.
 	ValuePtr rv;
 	swap(rv, _retval);
 	return rv;
@@ -1123,41 +1117,23 @@ void * SchemeEval::c_wrap_apply_v(void * p)
 	SchemeEval *self = (SchemeEval *) p;
 	SCM smob = self->do_apply_scm(*self->_pexpr, self->_hargs);
 	if (self->eval_error()) return self;
-	self->_retval = SchemeSmob::scm_to_protom(smob);
+
+	// Check if the return value is a scheme boolean (#t or #f)
+	// and convert to BoolValue
+	if (scm_is_bool(smob))
+		self->_retval = createBoolValue(scm_to_bool(smob) != 0);
+	else
+		self->_retval = SchemeSmob::scm_to_protom(smob);
+
 	return self;
 }
 
 /* ============================================================== */
 
-// A pool of scheme evaluators, sitting hot and ready to go.
-// This is used to implement get_evaluator(), below.  The only
-// reason this is done with a pool, instead of simply new() and
-// delete() is because calling delete() from TLS conflicts with
-// the guile garbage collector, when the thread is destroyed. See
-// the note below.
-static concurrent_stack<SchemeEval*> pool;
-static std::mutex pool_mtx;
-
-static SchemeEval* get_from_pool(void)
+// Factory function for creating new SchemeEval instances
+GenericASEval* SchemeEval::create_evaluator()
 {
-	std::lock_guard<std::mutex> lock(pool_mtx);
-	SchemeEval* ev = NULL;
-	if (pool.try_pop(ev)) return ev;
-	return new SchemeEval();
-}
-
-static void return_to_pool(SchemeEval* ev)
-{
-	ev->clear_pending();
-	std::lock_guard<std::mutex> lock(pool_mtx);
-
-	// try..catch is needed during library exit; the stack may
-	// already be gone. So just ignore the resulting exception.
-	// This should only happen during finalization.
-	try {
-		pool.push(ev);
-	}
-	catch (const concurrent_stack<SchemeEval*>::Canceled&) {}
+	return new SchemeEval(nullptr);
 }
 
 /// Return evaluator, for this thread and atomspace combination.
@@ -1167,53 +1143,16 @@ static void return_to_pool(SchemeEval* ev)
 /// Use thread-local storage (TLS) in order to avoid repeatedly
 /// creating and destroying the evaluator.
 ///
-SchemeEval* SchemeEval::get_evaluator(const AtomSpacePtr& asp)
+SchemeEval* SchemeEval::get_scheme_evaluator(const AtomSpacePtr& asp)
 {
-	static thread_local std::map<AtomSpacePtr,SchemeEval*> issued;
-
-	// The eval_dtor runs when this thread is destroyed.
-	class eval_dtor {
-		public:
-		~eval_dtor() {
-			for (auto ev : issued)
-			{
-				SchemeEval* evaluator = ev.second;
-
-				// It would have been easier to just call delete evaluator
-				// instead of return_to_pool.  Unfortunately, the delete
-				// won't work, because the TLS thread destructor has already
-				// run the guile GC at this point, for this thread, and so
-				// calling delete will lead to a crash in c_wrap_finish().
-				// It would be nice if we got called before guile did, but
-				// there is no way in TLS to control execution order...
-				evaluator->_atomspace = nullptr;
-				return_to_pool(evaluator);
-			}
-		}
-	};
-	static thread_local eval_dtor killer;
-
-	auto ev = issued.find(asp);
-	if (ev != issued.end())
-		return ev->second;
-
-	SchemeEval* evaluator = get_from_pool();
-	evaluator->_atomspace = asp;
-	issued[asp] = evaluator;
-
-	return evaluator;
+	return static_cast<SchemeEval*>(
+		GenericASEval::get_evaluator(asp, &SchemeEval::create_evaluator));
 }
 
-SchemeEval* SchemeEval::get_evaluator(AtomSpace* as)
+SchemeEval* SchemeEval::get_scheme_evaluator(AtomSpace* as)
 {
-	// A null AtomSpace is passed from the cython initialization
-	// code. That code scramble to create an AtomSpace, after
-	// guile is initialized.
-	static AtomSpacePtr nullasp;
-	if (nullptr == as) return get_evaluator(nullasp);
-
-	const AtomSpacePtr& asp = AtomSpaceCast(as->shared_from_this());
-	return get_evaluator(asp);
+	return static_cast<SchemeEval*>(
+		GenericASEval::get_evaluator(as, &SchemeEval::create_evaluator));
 }
 
 /* ============================================================== */
@@ -1225,7 +1164,7 @@ void* SchemeEval::c_wrap_get_atomspace(void * p)
 	return self;
 }
 
-AtomSpacePtr SchemeEval::get_scheme_as(void)
+AtomSpacePtr SchemeEval::get_atomspace(void)
 {
 	scm_with_guile(c_wrap_get_atomspace, this);
 
@@ -1239,8 +1178,7 @@ void* SchemeEval::c_wrap_set_atomspace(void * vas)
 {
 	if (nullptr == vas) return vas;
 	AtomSpace* as = (AtomSpace*) vas;
-	const AtomSpacePtr& asp = AtomSpaceCast(as->shared_from_this());
-	SchemeSmob::ss_set_env_as(asp);
+	SchemeSmob::ss_set_env_as(AtomSpaceCast(as));
 	return vas;
 }
 
@@ -1254,25 +1192,24 @@ void SchemeEval::set_scheme_as(AtomSpace* as)
 	scm_with_guile(c_wrap_set_atomspace, as);
 }
 
-void SchemeEval::set_scheme_as(const AtomSpacePtr& as)
+void SchemeEval::set_atomspace(const AtomSpacePtr& as)
 {
 	scm_with_guile(c_wrap_set_atomspace, as.get());
 }
 
 void SchemeEval::init_scheme(void)
 {
-	// XXX FIXME only a subset is needed.
-	SchemeEval sch;
+	// XXX FIXME only a subset of what this does is acutally needed.
+	SchemeEval sch(nullptr);
 }
 
 extern "C" {
 // Thin wrapper for easy dlopen/dlsym dynamic loading
 opencog::SchemeEval* get_scheme_evaluator(opencog::AtomSpace* as)
 {
-	return opencog::SchemeEval::get_evaluator(as);
+	return opencog::SchemeEval::get_scheme_evaluator(as);
 }
 
 };
-
 
 /* ===================== END OF FILE ============================ */

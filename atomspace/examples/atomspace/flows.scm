@@ -11,8 +11,7 @@
 ; be searched!).
 ;
 ; But how does the "fluid" flow in the "pipes"? The example below walks
-; through ways in which TruthValues (in the first part of the example)
-; and general Values can be pulled out of specific Atoms, then
+; through ways in which Values can be pulled out of specific Atoms, then
 ; transformed or mutated in some specific way, and then re-injected.
 ; In these examples, the mutations are arithmetic formulas that are
 ; applied to the Values. The formulas themselves are expressed as
@@ -29,91 +28,88 @@
 
 (use-modules (opencog) (opencog exec))
 
-; An atom with a TruthValue on it...  See below for a way of setting
-; TruthValues directly, using NumberNodes.
-(Concept "foo" (stv 0.3 0.7))
+; The Value is located at key (Predicate "*-TruthValueKey-*")
+(define tvkey (Predicate "*-TruthValueKey-*"))
 
-; The TruthValue can be fetched in either of two ways.
-(cog-evaluate! (TruthValueOf (Concept "foo")))
-(cog-execute!  (TruthValueOf (Concept "foo")))
+; An atom with a FloatValue on it...
+(cog-set-value! (Concept "foo") tvkey (FloatValue 0.3 0.7))
 
-; Transfer the TruthValue from "foo" to "bar" ... copy it.
+; This is how we get it's Value ...
+(cog-execute! (ValueOf (Concept "foo") tvkey))
+
+; Transfer the FloatValue from "foo" to "bar" ... copy it.
 (cog-execute!
-	(SetTV
-		(Concept "bar")
-		(TruthValueOf (Concept "foo"))))
+	(SetValue (Concept "bar") tvkey
+		(ValueOf (Concept "foo") tvkey)))
 
 ; Verify that the TV on "bar" has changed.
-(cog-tv (Concept "bar"))
+(cog-value (Concept "bar") tvkey)
 
-; The DefinedFormulaLink can be used to create SimpleTruthValues out
-; of a pair of numbers. For example:
-(cog-execute! (SetTV (Concept "bar")
-	(FormulaPredicate (Number 0.2718) (Number 0.314))))
-
-; Explicitly look at it.
-(cog-tv (Concept "bar"))
-
-; SetTV is interesting because it allows complex arithmetic expressions
+; SetValue is interesting because it allows complex arithmetic expressions
 ; to be specified in Atomese. Below, simply take the square of the TV.
 (cog-execute!
-	(SetTV
-		(Concept "bar")
+	(SetValue
+		(Concept "bar") tvkey
 		(Times
-			(TruthValueOf (Concept "foo"))
-			(TruthValueOf (Concept "foo")))))
+			(FloatValueOf (Concept "foo") tvkey)
+			(FloatValueOf (Concept "foo") tvkey))))
 
 ; Formulas can be used to compute TV's, as shown in the `formula.scm`
 ; example. Consider a named formula, with variables.
+(define (strength-of ATOM) (ElementOf (Number 0) (ValueOf ATOM tvkey)))
+(define (confidence-of ATOM) (ElementOf (Number 1) (ValueOf ATOM tvkey)))
+
 (DefineLink
-   (DefinedPredicate "has a reddish color")
-   (FormulaPredicate
-      (Minus
-         (Number 1)
-         (Times
-            (StrengthOf (Variable "$X"))
-            (StrengthOf (Variable "$Y"))))
-      (Times
-         (ConfidenceOf (Variable "$X"))
-         (ConfidenceOf (Variable "$Y")))))
+   (DefinedProcedure "has a reddish color")
+	(Lambda
+		(VariableList (Variable "$X") (Variable "$Y"))
+		(FloatColumn
+			(Minus
+				(Number 1)
+				(Times
+					(strength-of (Variable "$X"))
+					(strength-of (Variable "$Y"))))
+			(Times
+				(confidence-of (Variable "$X"))
+				(confidence-of (Variable "$Y"))))))
 
 ; Some data...
-(Concept "A" (stv 0.9 0.98))
-(Concept "B" (stv 0.9 0.98))
+(cog-set-value! (Concept "A") tvkey (FloatValue 0.9 0.98))
+(cog-set-value! (Concept "B") tvkey (FloatValue 0.9 0.98))
 
 ; Use the formula to compute a new TV, and attach that TV to some Atom.
-; This is little more than the copy above, except that the Evaluation
+; This is little more than the copy above, except that the evaluation
 ; is actually performed, so that the new TV is computed, before being
-; copied. In general, if the second Atom passed to SetTV is evaluatable,
-; then it will be evaluated to obtain the TV.
+; copied. In general, if the third Atom passed to SetValue is executable,
+; then it will be executed to obtain the TV.
 (cog-execute!
-	(SetTV
-		(Concept "bar")
-		(Evaluation
-			(DefinedPredicate "has a reddish color")
+	(SetValue
+		(Concept "bar") tvkey
+		(ExecutionOutput
+			(DefinedProcedure "has a reddish color")
 			(List (Concept "A") (Concept "B")))))
 
 ; That the above really does flow the TV from one place to another can
 ; be seen by looking at dynamic changes. So -- change the TV on A,
 ; and recompute...
-(Concept "A" (stv 0.8 0.9))
+(cog-set-value! (Concept "A") tvkey (FloatValue 0.8 0.9))
 (cog-execute!
-	(SetTV
-		(Concept "bar")
-		(Evaluation
-			(DefinedPredicate "has a reddish color")
+	(SetValue
+		(Concept "bar") tvkey
+		(ExecutionOutput
+			(DefinedProcedure "has a reddish color")
 			(List (Concept "A") (Concept "B")))))
 
-; In many ways, the SetTVLink behaves a lot like a generalized
+; In many ways, the SetValueLink behaves a lot like a generalized
 ; EvaluationLink. So: normally, an EvaluationLink consists of a
 ; predicate, and the list of arguments that it applies to. The
 ; SetTVLink is similar, except that it couples the predicate to
 ; the target Atom that it should apply to.  This can be seen in
 ; the equivalent form, below.
 (cog-execute!
-	(SetTV
-		(Concept "bar")
-		(DefinedPredicate "has a reddish color")
+	(SetValue
+		(Concept "bar") tvkey
+		(DefinedProcedure "has a reddish color")
 		(List (Concept "A") (Concept "B"))))
 
 ; -----------------------------------------------------------
@@ -145,12 +141,12 @@
 ; Verify
 (cog-execute! (ValueOf bar kee))
 
-; Define a schema that computes N(N+1)/2 aka a "triangle number".
-; A Schema is used, instead of a DefinedPredicate, since, in principle,
-; DefinedPredicates should be limited to TruthValues, whereas this
-; can be applied to arbitrary (numeric) expressions.
+; Define a procedure that computes N(N+1)/2 aka a "triangle number".
+; A Procedure is used, instead of a DefinedSchema, since, in principle,
+; DefinedSchema should be limited to returning only Atoms, and not
+; Values in general.
 (DefineLink
-   (DefinedSchema "triangle numbers")
+   (DefinedProcedure "triangle numbers")
 	(Lambda
 		(Variable "$X")
 		(Divide
@@ -161,7 +157,7 @@
 ; the bar Atom, much as before.
 (cog-execute!
 	(SetValue bar kee
-		(DefinedSchema "triangle numbers")
+		(DefinedProcedure "triangle numbers")
 		(FloatValueOf foo key)))
 ;
 ; -------- THE END -----------

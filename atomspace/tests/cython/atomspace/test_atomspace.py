@@ -1,11 +1,11 @@
 from unittest import TestCase
 
 import opencog.atomspace
-from opencog.atomspace import Atom
+from opencog.atomspace import Atom, tvkey
 from opencog.atomspace import types, is_a, get_type, get_type_name, create_child_atomspace
 
 from opencog.type_constructors import *
-from opencog.utilities import set_default_atomspace, finalize_opencog, tmp_atomspace
+from opencog.utilities import set_default_atomspace, tmp_atomspace
 
 from time import sleep
 
@@ -16,7 +16,6 @@ class AtomSpaceTest(TestCase):
         set_default_atomspace(self.space)
 
     def tearDown(self):
-        finalize_opencog()
         del self.space
 
     def test_bare(self):
@@ -45,7 +44,7 @@ class AtomSpaceTest(TestCase):
                 0, True)
         # Test with bad type
         self.assertRaises(TypeError, self.space.add_node, "ConceptNode", "test",
-                TruthValue(0.5, 0.8))
+                FloatValue([0.5, 0.8]))
 
         # From here on out we'll use the more compact type constructors
         a1 = Node("test")
@@ -63,12 +62,8 @@ class AtomSpaceTest(TestCase):
         self.assertEqual(caught, True)
 
         # Test adding with a truthvalue
-        a3 = Node("test_w_tv").truth_value(0.5, 0.8)
+        a3 = Node("test_w_tv").set_value(tvkey, FloatValue([0.5, 0.8]))
         self.assertEqual(self.space.size(), 3)
-
-        # Test alternative way of adding with a truthvalue
-        a4 = Node("test_w_tv_alt", tv=TruthValue(0.5, 0.8))
-        self.assertEqual(self.space.size(), 4)
 
     def test_add_link(self):
         n1 = Node("test1")
@@ -80,12 +75,9 @@ class AtomSpaceTest(TestCase):
         self.assertTrue(l2 == l1)
 
         n3 = Node("test3")
-        l3 = Link(n1, n3).truth_value(0.5, 0.8)
+        l3 = Link(n1, n3)
         self.assertTrue(l3 is not None)
-
-        n4 = Node("test4")
-        l4 = Link(n1, n4, tv=TruthValue(0.5, 0.8))
-        self.assertTrue(l4 is not None)
+        l3.set_value(tvkey, FloatValue([0.5, 0.8]))
 
         # Should fail when adding an intentionally bad type
         caught = False
@@ -101,29 +93,6 @@ class AtomSpaceTest(TestCase):
         self.assertTrue(self.space.is_valid(a1))
         # check with bad type
         self.assertRaises(TypeError, self.space.is_valid, "test")
-
-    def test_truth_value(self):
-        # check attributes come back as assigned
-        tv = TruthValue(0.5, 0.8)
-        self.assertEqual(tv.mean, 0.5)
-        self.assertAlmostEqual(tv.confidence, 0.8, places=4)
-        # test string representation
-        self.assertEqual(str(tv), "(stv 0.5 0.8)")
-
-        # check equality
-        tv2 = TruthValue(0.5, 0.8)
-        tv3 = TruthValue(0.6, 0.8)
-        self.assertTrue(tv == tv2)
-        self.assertFalse(tv == tv3)
-
-        # check truth_value function of atom
-        atom = Node("atom with tv")
-        default_tv = atom.tv
-        atom.truth_value(0.75, 0.9)
-        new_tv = atom.tv
-        self.assertFalse(new_tv == default_tv)
-        self.assertEqual(new_tv.mean, 0.75)
-        self.assertAlmostEqual(new_tv.confidence, 0.9, places=4)
 
     def test_get_by_type(self):
         a1 = Node("test1")
@@ -227,7 +196,6 @@ class AtomTest(TestCase):
         set_default_atomspace(self.space)
 
     def tearDown(self):
-        finalize_opencog()
         del self.space
 
     def test_create_child_atomspace(self):
@@ -241,16 +209,13 @@ class AtomTest(TestCase):
     def test_creation(self):
         a = Node("test1")
         self.assertEqual(a.name, "test1")
-        self.assertEqual(a.tv, TruthValue(1.0, 0.0)) # default is true, no confidence
+        self.assertEqual(a.get_value(tvkey), None)
 
     def test_w_truthvalue(self):
-        tv = TruthValue(0.5, 100)
-        a = Node("test2", tv)
-        self.assertEqual(a.tv, tv)
-
-        # test set tv
-        a.tv = TruthValue(0.1, 10)
-        self.assertEqual(a.tv, TruthValue(0.1, 10))
+        a = Node("test2")
+        tv = FloatValue([0.5, 100])
+        a.set_value(tvkey, tv)
+        self.assertEqual(a.get_value(tvkey), tv)
 
     def test_out(self):
         # test get out
@@ -258,8 +223,9 @@ class AtomTest(TestCase):
 
         self.assertEqual(a1.out, [])
 
-        tv = TruthValue(0.5, 100)
-        a2 = Node("test3", tv)
+        a2 = Node("test3")
+        tv = FloatValue([0.5, 100])
+        a2.set_value(tvkey, tv)
 
         l = Link(a1, a2)
         self.assertEqual(l.out, [a1, a2])
@@ -272,8 +238,9 @@ class AtomTest(TestCase):
 
         self.assertEqual(a1.arity, 0)
 
-        tv = TruthValue(0.5, 100)
-        a2 = Node("test3", tv)
+        a2 = Node("test3")
+        tv = FloatValue([0.5, 100])
+        a2.set_value(tvkey, tv)
 
         l = Link(a1, a2)
         self.assertEqual(l.arity, 2)
@@ -304,12 +271,8 @@ class AtomTest(TestCase):
 
     def test_strings(self):
         # set up a link and atoms
-        tv = TruthValue(0.5, 0.8)
-        a1 = Node("test1", tv)
-
+        a1 = Node("test1")
         a2 = Node("test2")
-        a2.tv = TruthValue(0.1, 0.3)
-
         l = Link(a1, a2)
 
         space_uuid = 0
@@ -317,12 +280,12 @@ class AtomTest(TestCase):
         # test string representation
         a1_expected = "(Node \"test1\") ; [{0}]\n".format(space_uuid)
         a1_expected_long = \
-            "(Node \"test1\" (stv 0.500000 0.800000)) ; [{0}]\n"\
+            "(Node \"test1\") ; [{0}]\n"\
             .format(space_uuid)
 
         a2_expected = "(Node \"test2\") ; [{0}]\n".format(space_uuid)
         a2_expected_long = \
-            "(Node \"test2\" (stv 0.100000 0.300000)) ; [{0}]\n"\
+            "(Node \"test2\") ; [{0}]\n"\
             .format(space_uuid)
 
         l_expected = \
