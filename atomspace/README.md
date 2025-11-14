@@ -630,6 +630,27 @@ Current work is split between two locations: the "sheaf" subdirectory
 in this repo, and the [generate](https://github.com/opencog/generate)
 repo.
 
+Obsolesence
+===========
+The AtomSpace gets ongoing maintance. This includes marking certain
+things as being obsolete, and then removing them. Here's a list of
+things that are gone:
+* OCaml bindings. The OCaml static type systems appears to be
+  fundamentally incompatible with the OpenCog dynamic type system.
+  There seems to be no point in trying to reconcile them. The
+  OCaml binds wer removed in Octoboer 2025.
+* Haskell bindings. Its been ten years since thier creation. No one
+  used them. They are gone.
+
+On the way out:
+* TruthValues. Just use FloatValue instead. They continue to show up
+  in a handfule of examples, and some unit tests. These will eventually
+  be gone.
+* `cog-evaluate!` will be gone, or replaced by a crisp boolean
+  true/false interface. Non-crisp evaluations will be gone.
+* `BindLink` and `GetLink`. Just use `QueryLink` and `MeetLink`
+  instead.
+
 Building and Installing
 =======================
 The Atomspace runs on more-or-less any flavor of GNU/Linux. It does not
@@ -682,16 +703,7 @@ during the build, will be more precise as to which parts will not be built.
 * https://cython.org
 * For Debian/Ubuntu,  `apt install cython libpython3-dev`
 * For Fedora/Redhat,  `yum install cython python3-devel`
-
-###### Haskell
-* Haskell bindings (experimental).
-* Optional; almost no existing code makes use of Haskell.
-* https://www.haskell.org/
-
-###### OCaml
-* OCaml bindings (experimental).
-* Optional; almost no existing code makes use of OCaml.
-* https://www.ocaml.org/ | `apt install ocaml ocaml-findlib`
+* For unit tests: `python3-pytest`
 
 ### Building AtomSpace
 
@@ -702,9 +714,9 @@ Perform the following steps at the shell prompt:
     mkdir build
     cd build
     cmake ..
-    make -j4
+    make -j8
     sudo make install
-    make -j4 check
+    make -j8 check
 ```
 Libraries will be built into subdirectories within build, mirroring
 the structure of the source directory root.
@@ -715,11 +727,11 @@ the structure of the source directory root.
 To build and run the unit tests, from the `./build` directory enter
 (after building opencog as above):
 ```
-    make -j4 check
+    make -j8 check
 ```
 Most tests can be run in parallel:
 ```
-    make -j4 check ARGS=-j4
+    make -j8 check ARGS=-j4
 ```
 
 Specific subsets of the unit tests can be run:
@@ -765,9 +777,6 @@ TODO - Notes - Open Projects
 * Porting to Android: multiple issues described in
   [cogroid/b-obstacles](https://github.com/cogroid/b-obstacles).
   See also [bug 2995](https://github.com/opencog/atomspace/issues/2995).
-
-* Bug: Crashes on Arm v7a:
-  [bug 2944](https://github.com/opencog/atomspace/issues/2944).
 
 Interesting Reading
 ===================

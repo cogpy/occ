@@ -23,7 +23,6 @@
 #include <thread>
 
 #include <opencog/guile/SchemeEval.h>
-#include <opencog/atoms/truthvalue/SimpleTruthValue.h>
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/util/Logger.h>
 #include <cxxtest/TestSuite.h>
@@ -49,7 +48,7 @@ public:
 		logger().set_timestamp_flag(false);
 
 		as = createAtomSpace();
-		SchemeEval* eval = SchemeEval::get_evaluator(as);
+		SchemeEval* eval = SchemeEval::get_scheme_evaluator(as);
 		eval->eval("(use-modules (opencog exec))");
 		eval->eval("(add-to-load-path \"" PROJECT_SOURCE_DIR "\")");
 
@@ -81,7 +80,7 @@ void GetStateUTest::setUp(void)
 
 void GetStateUTest::Setter(void)
 {
-	SchemeEval* eval = SchemeEval::get_evaluator(as);
+	SchemeEval* eval = SchemeEval::get_scheme_evaluator(as);
 #define LOOP_CNT 20000
 	for (int lc=0; lc<LOOP_CNT; lc++)
 	{
@@ -93,14 +92,14 @@ void GetStateUTest::Setter(void)
 
 void GetStateUTest::Getter(void)
 {
-	SchemeEval* eval = SchemeEval::get_evaluator(as);
+	SchemeEval* eval = SchemeEval::get_scheme_evaluator(as);
 	eval->eval(
-			"(define getter (Get (State anch (Variable \"foovar\"))))");
+			"(define getter (Meet (State anch (Variable \"foovar\"))))");
 
 	int fail_count = 0;
 	for (int lc=0; lc<LOOP_CNT; lc++)
 	{
-		Handle got = eval->eval_h("(cog-execute! getter)");
+		Handle got = eval->eval_h("(cog-execute! (CollectionOf getter))");
 
 		TSM_ASSERT("Expected a valid handle", nullptr != got);
 		TSM_ASSERT("Expected a StateLink", got->get_type() == SET_LINK);
@@ -125,7 +124,7 @@ void GetStateUTest::test_race(void)
 {
 	logger().debug("BEGIN TEST: %s", __FUNCTION__);
 
-	SchemeEval* eval = SchemeEval::get_evaluator(as);
+	SchemeEval* eval = SchemeEval::get_scheme_evaluator(as);
 	eval->eval("(define anch (Anchor \"foo-anchor\"))");
 	eval->eval_h("(State anch (Concept \"initial value\"))");
 

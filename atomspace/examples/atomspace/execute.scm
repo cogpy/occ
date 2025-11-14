@@ -24,7 +24,7 @@
 ; as a closure. If you really want closures and continuations, then
 ; treat Atom types as C++ classes or as Python objects. In brief:
 ; a type is a type is a type: Atom types can be C++ classes, and
-; that is exactly how BindLink, GetLink and PutLink are implemented.
+; that is exactly how QueryLink and MeetLink are implemented.
 ; Don't be afraid of creating more types and classes to do your work.
 ;
 ; What else is wrong with ExecutionOutputLink? Well, one of the big
@@ -67,15 +67,6 @@
 			(Concept "1")
 			(Concept "2"))))
 
-; Similar to the above, but, in this case, a TruthValue is returned.
-; Notice that cog-evaluate! is used instead of cog-execute!
-(cog-evaluate!
-	(Evaluation
-		(GroundedPredicate "py:my_py_predicate")
-		(List
-			(Concept "3")
-			(Concept "4"))))
-
 ; -------------------------------------------------------------
 ; Equivalent example, invokes scheme code.
 ;
@@ -94,10 +85,10 @@
 			(Concept "2"))))
 
 ; -------------------------------------------------------------
-; Another example, using a DefineLink to define a SchemaNode
+; Another example, using a DefineLink to define a ProcedureNode
 
 (DefineLink
-	(DefinedSchema "x+y*10")
+	(DefinedProcedure "x+y*10")
 	(Lambda
 		(VariableList
 			(Variable "$X")
@@ -110,21 +101,10 @@
 
 (cog-execute!
 	(ExecutionOutput
-		(DefinedSchema "x+y*10")
+		(DefinedProcedure "x+y*10")
 		(List
 			(Number "2")
 			(Number "4"))))
-
-; One can also do this, although it is a bit more subtle: the
-; PutLink substitutes arguments for variables. The result of the
-; beta-reduction is executable, so cog-execute! executes it.
-
-(cog-execute!
-   (Put
-      (DefinedSchema "x+y*10")
-      (List
-         (Number "2")
-         (Number "4"))))
 
 ; -------------------------------------------------------------
 ; Similar to the above, except that it skips using the DefineLink

@@ -24,21 +24,26 @@
  python-call-with-as FUNC ATOMSPACE
     Call the python function FUNC, passing the ATOMSPACE as an argument.
     The FUNC should be a scheme string.  This is meant to allow both
-    scheme and python to share a common atomspace, by using the example
-    below.
+    scheme and python to share a common atomspace.
 
-    Example:
-      (python-call-with-as \"set_type_ctor_atomspace\" (cog-atomspace))
-
-    A more complicated example:
+    Simple example - verify the atomspace is passed correctly:
       (python-eval \"
-      from opencog.atomspace import AtomSpace, TruthValue
+      def check_atomspace(asp):
+          print('AtomSpace size:', asp.size())
+      \")
+      (python-call-with-as \"check_atomspace\" (cog-atomspace))
+
+    Example showing atomspace modification:
+      (python-eval \"
       from opencog.atomspace import types
+      from opencog.type_constructors import FloatValue
 
       def foo(asp):
-          TV = TruthValue(0.42, 0.69)
-          asp.add_node(types.ConceptNode, 'Apple', TV)
+          apple = asp.add_node(types.ConceptNode, 'Apple')
+          key = asp.add_node(types.PredicateNode, 'lookup key')
+          value = FloatValue([1,2,3])
+          apple.set_value(key, value)
       \")
       (python-call-with-as \"foo\" (cog-atomspace))
-      (cog-node 'ConceptNode \"Apple\")
+      (cog-value (Concept \"Apple\") (Predicate \"lookup key\"))
 ")

@@ -26,11 +26,11 @@
 
 ; Print a message, return a TV value
 (define (tv-print-msg)
-	(display "Hello, I've been triggered!\n") (stv 1 1))
+	(display "Hello, I've been triggered!\n") #t)
 
 ; Print an atom, return a TV value
 (define (tv-print-atom atom)
-	(format #t "Hello, I got this atom: ~a\n" atom) (stv 1 1))
+	(format #t "Hello, I got this atom: ~a\n" atom) #t)
 
 ; Print an Atom, return an Atom.
 (define (atom-print-atom atom)
@@ -70,23 +70,23 @@
 				(List (Variable "$x")))
 		)))
 
-(cog-evaluate! empty-sequence)
+(cog-execute! empty-sequence)
 
 ; ------------------------------------------------------
-;; This variant uses a GetLink to fetch the room-state from the
+;; This variant uses a MeetLink to fetch the room-state from the
 ;; AtomSpace, and then uses EqualLink to see if it is in the desired
 ;; state. Note that this results in *two* invocations of the pattern
-;; matcher; the GetLink being the inner one.  Note also that the
-;; GetLink returns it's results in a SetLink, so comparison must
-;; use a SetLink as well.
+;; matcher; the MeetLink being the inner one.  Note also that the
+;; MeetLink returns it's results in a UnisetValue, which is wrapped
+;; by CollectionOf to convert it to a SetLink for the equality comparison.
 ;;
-;; In this example, the variable $x is bound by the GetLink, and
-;; is thus not available outside of the GetLink.  Thus, the grounding
+;; In this example, the variable $x is bound by the MeetLink, and
+;; is thus not available outside of the MeetLink.  Thus, the grounding
 ;; for that variable cannot be given to the print-message routine.
 ;;
 ;; Unlike the previous example, this one will explicitly fail if there
 ;; are other atoms linked to the Anchor.  That is, the equality
-;; check is making sure that the SetLink has one and only one element
+;; check is making sure that the UnisetValue has one and only one element
 ;; in it, which effectively blocks other anchored atoms.  This may be
 ;; an advantage, or a disadvantage, depending on the situation.
 
@@ -98,7 +98,7 @@
 			(Equal
 				(Set room-empty)
 				;; Retrieve the room state; place it into a SetLink
-				(Get (List room-state (Variable "$x"))))
+				(CollectionOf (Meet (List room-state (Variable "$x")))))
 
 			;; If the EqualLink evaluated to TRUE, then print the message.
 			(Evaluation
@@ -106,14 +106,14 @@
 				(List))  ; zero arguments passed to function
 		)))
 
-(cog-evaluate! get-empty-seq)
+(cog-execute! get-empty-seq)
 
 ; ------------------------------------------------------
-;; This variant uses the traditional BindLink format to trigger
+;; This variant uses the traditional QueryLink format to trigger
 ;; the execution of a schema.  It is similar to the first example,
 ;; except for these notable differences:
 ;;
-;; -- The BindLink does not use SequentialAnd, and thus any embedded
+;; -- The QueryLink does not use SequentialAnd, and thus any embedded
 ;;    GPN may or may not run after the EqualLink; there is no guarantee
 ;;    of ordered execution.
 ;; -- The action to be performed must be in the form of a GSN, and thus
@@ -122,7 +122,7 @@
 ;;    suitable for creating a behavior tree.
 
 (define bind-empty
-	(Bind
+	(Query
 		;; Perform operations in sequential order.
 		(And
 			;; Assign the room-state to variable $x
@@ -137,28 +137,5 @@
 		))
 
 (cog-execute! bind-empty)
-
-; ------------------------------------------------------
-;; This variant uses a PutLink-GetLink combination. It is functionally
-;; identical to the BindLink; merely, the order in which the action
-;; is done is reversed w.r.t. the test.
-;;
-(define put-empty-atom
-	(Put
-		;; Replace the value of $x by whatever the GetLink returns.
-		(ExecutionOutput
-				(GroundedSchema "scm: atom-print-atom")
-				(List (Variable "$x")))
-		(Get
-			;; The variable $y is automatically bound by the GetLink;
-			;; it does not escape the scope of the GetLink.
-			(And
-				;; Search for presence
-				(List room-state (Variable "$y"))
-				;; Check for equality ...
-				(Equal (Variable "$y") room-empty)))
-		))
-
-(cog-execute! put-empty-atom)
 
 ; ------------------------------------------------------

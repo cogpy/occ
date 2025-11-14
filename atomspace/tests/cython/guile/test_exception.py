@@ -1,9 +1,7 @@
 import unittest
 
-from opencog.utilities import set_default_atomspace, finalize_opencog
 from opencog.atomspace import AtomSpace
 from opencog.type_constructors import *
-from opencog.execute import evaluate_atom
 from opencog.scheme import scheme_eval
 
 import __main__
@@ -13,15 +11,13 @@ import __main__
 class TestExceptions(unittest.TestCase):
     def setUp(self):
         self.space = AtomSpace()
-        set_default_atomspace(self.space)
 
     def tearDown(self):
-        finalize_opencog()
         del self.space
 
     def test_bogus_scheme(self):
         try:
-            code = """(Get (Concept "a") (Concept "a") (Concept "a"))"""
+            code = """(Meet (Concept "a") (Concept "a") (Concept "a"))"""
             scheme_eval(self.space, code)
             self.assertFalse("call should fail")
         except RuntimeError as e:
