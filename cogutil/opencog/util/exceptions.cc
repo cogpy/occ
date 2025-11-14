@@ -137,13 +137,13 @@ RuntimeException::RuntimeException(const char *trace, const char* fmt, ...)
 {
     va_list  ap;
     va_start(ap, fmt);
-    parse_error_message(trace, fmt, ap);
+    parse_error_message(trace, fmt, ap, false);
     va_end(ap);
 }
 
 RuntimeException::RuntimeException(const char *trace, const char* fmt, va_list ap)
 {
-    parse_error_message(trace, fmt, ap);
+    parse_error_message(trace, fmt, ap, false);
 }
 
 RuntimeException::RuntimeException()
@@ -159,13 +159,13 @@ SyntaxException::SyntaxException(const char * trace, const char * fmt, ...)
 {
     va_list  ap;
     va_start(ap, fmt);
-    parse_error_message(trace, fmt, ap);
+    parse_error_message(trace, fmt, ap, false);
     va_end(ap);
 }
 
 SyntaxException::SyntaxException(const char * trace, const char * fmt, va_list ap)
 {
-    parse_error_message(trace, fmt, ap);
+    parse_error_message(trace, fmt, ap, false);
 }
 
 /*
@@ -182,24 +182,6 @@ IOException::IOException(const char * trace, const char * fmt, ...)
 }
 
 IOException::IOException(const char * trace, const char * fmt, va_list ap)
-{
-    parse_error_message(trace, fmt, ap);
-}
-
-/*
- * ----------------------------------------------------------------------
- * ComboException class
- * ----------------------------------------------------------------------
- */
-ComboException::ComboException(const char * trace, const char * fmt, ...)
-{
-    va_list  ap;
-    va_start(ap, fmt);
-    parse_error_message(trace, fmt, ap);
-    va_end(ap);
-}
-
-ComboException::ComboException(const char* trace, const char* fmt, va_list ap)
 {
     parse_error_message(trace, fmt, ap);
 }
@@ -242,24 +224,6 @@ InvalidParamException::InvalidParamException(const char* trace, const char* fmt,
 
 /*
  * ----------------------------------------------------------------------
- * InconsistenceException class
- * ----------------------------------------------------------------------
- */
-InconsistenceException::InconsistenceException(const char * trace, const char * fmt, ...)
-{
-    va_list  ap;
-    va_start(ap, fmt);
-    parse_error_message(trace, fmt, ap);
-    va_end(ap);
-}
-
-InconsistenceException::InconsistenceException(const char* trace, const char* fmt, va_list ap)
-{
-    parse_error_message(trace, fmt, ap);
-}
-
-/*
- * ----------------------------------------------------------------------
  * FatalErrorException class
  * ----------------------------------------------------------------------
  */
@@ -267,21 +231,24 @@ FatalErrorException::FatalErrorException(const char * trace, const char * fmt, .
 {
     va_list  ap;
     va_start(ap, fmt);
-    parse_error_message(trace, fmt, ap);
+    parse_error_message(trace, fmt, ap, true);
     va_end(ap);
 }
 
 FatalErrorException::FatalErrorException(const char* trace, const char* fmt, va_list ap)
 {
-    parse_error_message(trace, fmt, ap);
+    parse_error_message(trace, fmt, ap, true);
 }
 
 /*
  * ----------------------------------------------------------------------
- * NetworkException class
+ * PythonException class
  * ----------------------------------------------------------------------
  */
-NetworkException::NetworkException(const char * trace, const char * fmt, ...)
+PythonException::PythonException(const std::string& pythonExcType,
+                                 const char * trace,
+                                 const char * fmt, ...)
+    : _python_exception_type(pythonExcType)
 {
     va_list  ap;
     va_start(ap, fmt);
@@ -289,7 +256,11 @@ NetworkException::NetworkException(const char * trace, const char * fmt, ...)
     va_end(ap);
 }
 
-NetworkException::NetworkException(const char* trace, const char* fmt, va_list ap)
+PythonException::PythonException(const std::string& pythonExcType,
+                                 const char* trace,
+                                 const char* fmt,
+                                 va_list ap)
+    : _python_exception_type(pythonExcType)
 {
     parse_error_message(trace, fmt, ap);
 }
