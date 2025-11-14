@@ -1,10 +1,18 @@
 from libcpp cimport bool
 from libcpp.set cimport set as cpp_set
 from libcpp.vector cimport vector
+from libcpp.memory cimport static_pointer_cast
+from libcpp.string cimport string as cpp_string
 from cython.operator cimport dereference as deref, preincrement as inc
+from opencog.utilities cimport cPythonException
 
 # from atomspace cimport *
 
+# tvkey holds a pointer to (PredicateNode "*-TruthValueKey-*").
+# This is technically obsolete, but is heavily used in the unit tests.
+# So, for now, leave it as a weirdo backwards compatibility hack,
+# XXX FIXME -- remove this someday.
+tvkey = create_python_value_from_c_value(<cValuePtr>(truth_key()))
 
 # @todo use the guide here to separate out into a hierarchy
 # http://wiki.cython.org/PackageHierarchy
@@ -43,8 +51,36 @@ cdef AtomSpace_factoid(cValuePtr to_wrap):
     cdef AtomSpace instance = AtomSpace.__new__(AtomSpace)
     instance.asp = to_wrap
     instance.atomspace = <cAtomSpace*> to_wrap.get()
+    instance.ptr_holder = PtrHolder.create(<shared_ptr[cValue]&>to_wrap)
+    instance.parent_atomspace = None
     # print("Debug: atomspace factory={0:x}".format(<long unsigned int>to_wrap.get()))
     return instance
+
+
+cdef object raise_python_exception_from_cpp(const cPythonException& exc):
+    """Convert C++ PythonException back to native Python exception"""
+    cdef cpp_string exc_type_cpp = exc.get_python_exception_type()
+    cdef const char* exc_msg_c = exc.get_message()
+
+    exc_type_name = exc_type_cpp.decode('utf-8')
+    exc_message = exc_msg_c.decode('utf-8') if exc_msg_c else ""
+
+    # Map to Python exception type
+    exception_map = {
+        'TypeError': TypeError,
+        'ValueError': ValueError,
+        'ZeroDivisionError': ZeroDivisionError,
+        'AttributeError': AttributeError,
+        'ImportError': ImportError,
+        'ModuleNotFoundError': ModuleNotFoundError,
+        'KeyError': KeyError,
+        'IndexError': IndexError,
+        'NameError': NameError,
+        'RuntimeError': RuntimeError,
+    }
+
+    exc_class = exception_map.get(exc_type_name, RuntimeError)
+    raise exc_class(exc_message)
 
 
 cdef class AtomSpace(Value):
@@ -65,6 +101,10 @@ cdef class AtomSpace(Value):
         self.parent_atomspace = parent
         self.ptr_holder = PtrHolder.create(<shared_ptr[cValue]&>self.asp);
 
+    cdef cAtomSpacePtr get_atomspace_ptr(self):
+        # Cast the ValuePtr to AtomSpacePtr
+        return static_pointer_cast[cAtomSpace, cValue](self.asp)
+
     def __richcmp__(as_1, as_2, int op):
         if not isinstance(as_1, AtomSpace) or not isinstance(as_2, AtomSpace):
             return NotImplemented
@@ -82,14 +122,14 @@ cdef class AtomSpace(Value):
         elif op == 3: # !=
             return not is_equal
 
-    def add(self, Type t, name=None, out=None, TruthValue tv=None):
+    def add(self, Type t, name=None, out=None):
         """ add method that determines exact method to call from type """
         if is_a(t, types.Node):
             assert out is None, "Nodes can't have outgoing sets"
-            atom = self.add_node(t, name, tv)
+            atom = self.add_node(t, name)
         else:
             assert name is None, "Links can't have names"
-            atom = self.add_link(t, out, tv)
+            atom = self.add_link(t, out)
         return atom
 
     def add_atom(self, Atom atom):
@@ -98,9 +138,8 @@ cdef class AtomSpace(Value):
             return None
         return create_python_value_from_c_value(<cValuePtr&>(result, result.get()))
 
-    def add_node(self, Type t, atom_name, TruthValue tv=None):
+    def add_node(self, Type t, atom_name):
         """ Add Node to AtomSpace
-        @todo support [0.5,0.5] format for TruthValue.
         @todo support type name for type.
         @returns the newly created Atom
         """
@@ -113,14 +152,10 @@ cdef class AtomSpace(Value):
         cdef cHandle result = self.atomspace.xadd_node(t, name)
 
         if result == result.UNDEFINED: return None
-        atom = Atom.createAtom(result);
-        if tv :
-            atom.tv = tv
-        return atom
+        return Atom.createAtom(result);
 
-    def add_link(self, Type t, outgoing, TruthValue tv=None):
+    def add_link(self, Type t, outgoing):
         """ Add Link to AtomSpace
-        @todo support [0.5,0.5] format for TruthValue.
         @todo support type name for type.
         @returns handle referencing the newly created Atom
         """
@@ -131,10 +166,7 @@ cdef class AtomSpace(Value):
         cdef cHandle result
         result = self.atomspace.xadd_link(t, handle_vector)
         if result == result.UNDEFINED: return None
-        atom = Atom.createAtom(result);
-        if tv :
-            atom.tv = tv
-        return atom
+        return Atom.createAtom(result);
 
     def is_valid(self, atom):
         """ Check whether the passed handle refers to an actual atom
@@ -178,13 +210,6 @@ cdef class AtomSpace(Value):
             raise RuntimeError("Null AtomSpace!")
         self.atomspace.set_value(deref(atom.handle), deref(key.handle),
                                  value.get_c_value_ptr())
-
-    def set_truthvalue(self, Atom atom, TruthValue tv):
-        """ Set the truth value on atom
-        """
-        if self.atomspace == NULL:
-            raise RuntimeError("Null AtomSpace!")
-        self.atomspace.set_truthvalue(deref(atom.handle), deref(tv._tvptr()))
 
     # Methods to make the atomspace act more like a standard Python container
     def __contains__(self, atom):
@@ -239,9 +264,38 @@ cdef class AtomSpace(Value):
     def execute(self, Atom atom):
         if atom is None:
             raise ValueError("No atom provided!")
-        cdef cValuePtr c_value_ptr = c_do_execute_atom(
-            self.atomspace, deref(atom.handle))
-        return create_python_value_from_c_value(c_value_ptr)
+        cdef cValuePtr c_value_ptr
+        try:
+            c_value_ptr = c_do_execute_atom(self.atomspace, deref(atom.handle))
+            return create_python_value_from_c_value(c_value_ptr)
+        except RuntimeError as e:
+            # Check if this is actually a PythonException by examining the message
+            # PythonException messages contain "Python error in <func>:" prefix
+            error_msg = str(e)
+
+            # Try to extract Python exception type from message
+            # Format: "Python error in helper_module.function:\n\nTraceback...\nTypeError: ..."
+            for exc_type_name in ['TypeError', 'ValueError', 'ZeroDivisionError',
+                                   'AttributeError', 'ImportError', 'ModuleNotFoundError',
+                                   'KeyError', 'IndexError', 'NameError']:
+                if exc_type_name + ':' in error_msg:
+                    # Get the Python exception type and re-raise
+                    exception_map = {
+                        'TypeError': TypeError,
+                        'ValueError': ValueError,
+                        'ZeroDivisionError': ZeroDivisionError,
+                        'AttributeError': AttributeError,
+                        'ImportError': ImportError,
+                        'ModuleNotFoundError': ModuleNotFoundError,
+                        'KeyError': KeyError,
+                        'IndexError': IndexError,
+                        'NameError': NameError,
+                    }
+                    exc_class = exception_map[exc_type_name]
+                    raise exc_class(error_msg)
+
+            # If we can't identify the type, just re-raise as-is (RuntimeError)
+            raise
 
 cdef api object py_atomspace(cValuePtr c_atomspace) with gil:
     cdef AtomSpace atomspace = AtomSpace_factoid(c_atomspace)

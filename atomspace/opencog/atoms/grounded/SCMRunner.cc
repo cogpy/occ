@@ -70,14 +70,16 @@ ValuePtr SCMRunner::execute(AtomSpace* as,
 	}
 
 	SchemeEval* applier = get_evaluator_for_scheme(as);
-	AtomSpacePtr saved_as = applier->get_scheme_as();
+	AtomSpacePtr saved_as = applier->get_atomspace();
 	ValuePtr vp = applier->apply_v(_fname, asargs);
-	if (saved_as)
-		applier->set_scheme_as(saved_as);
 
-	// In general, we expect the scheme fuction to return some Value,
-	// maybe a TruthValue for predicates, or Atoms for Schemas. But
-	// user-written functions can return anything, e.g. scheme
+	// Recursive lollapalooza means someone might have messed
+	// with our atomspace and not set it back. So we reset.
+	// Explicitly tested in MultiAtomSpaceUTest
+	applier->set_atomspace(saved_as);
+
+	// In general, we expect the scheme fuction to return some Value.
+	// But user-written functions can return anything, e.g. scheme
 	// expressions. These are converted by scm_to_protom() into
 	// null pointers. Here, we convert them to VoidValue.
 	if (nullptr == vp) return createVoidValue();

@@ -51,7 +51,7 @@ Handle Replacement::replace_nocheck(const Handle& term,
 /* ================================================================= */
 
 /// Perform beta-reduction on the term.  This is more-or-less a purely
-/// syntactic beta-reduction, except for two semantic parts:
+/// syntactic beta-reduction, except for three semantic parts:
 ///
 /// 1. The semantics of QuoteLink, UnquoteLink is honoured, so that
 ///    quoted variables are not reduced.
@@ -60,6 +60,15 @@ Handle Replacement::replace_nocheck(const Handle& term,
 ///    any scoped variables with the same name as the free variables
 ///    are alpha-hidden, possibly alpha-converted if the substituting
 ///    values are variables of the same name.
+///
+/// 3. Executable intermediates are executed. This is an important,
+///    even central part of implementing flowing streams. However, it
+///    might also be a design flaw that should be solved in some other
+///    way. One key weirdness is that the intermediate results might
+///    be executable atoms with wrapped Values (in ValueShimeLink).
+///    These cannot be placed in any AtomSpace, and so have to be
+///    executed "bare". This works, but... Hrmmmpf.
+//
 Handle Replacement::substitute_scoped(Handle term,
                                       const HandleSeq& args,
                                       const IndexMap& index_map,
@@ -153,8 +162,8 @@ Handle Replacement::substitute_scoped(Handle term,
 				// non-executable Atom, and nothing more.
 				//
 				// Well, sort-of. Execution could return something that
-				// is not an Atom. In that case, we redord the original
-				// form. This original form might be executted again,
+				// is not an Atom. In that case, we record the original
+				// form. This original form might be executed again,
 				// later on, and if this execution has side-effects,
 				// then, well, things get ugly.  But there's no obvious
 				// way of avoiding this; we'd need some method that
@@ -164,6 +173,21 @@ Handle Replacement::substitute_scoped(Handle term,
 				    not term->is_executable() and
 				    sub->is_executable())
 				{
+#if 0
+					// OK, there's a bit of strangeness, here.
+					// Usually, execution MUST happen in some AtomSpace.
+					// However, when running FilterLink streams, the
+					// structure to execute might contain ValueShims,
+					// which cannot be placed in an AtomSpace. So, in
+					// this case, we execute the free-floating Atom
+					// that got created. The final result will be clean
+					// but the intermediate case is not.
+					if (nullptr == sub->getAtomSpace())
+					{
+						AtomSpace* as = term->getAtomSpace();
+						sub = as->add_atom(sub);
+					}
+#endif
 					ValuePtr evp = sub->execute();
 					if (evp->is_atom())
 						sub = HandleCast(evp);
