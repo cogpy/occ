@@ -154,26 +154,8 @@ public:
 }; // IOException
 
 /**
- * Exception to be thrown when a Combo operation (parsing, executing)
- * fails.
- */
-class ComboException : public RuntimeException
-{
-public:
-    /**
-     * Constructor
-     *
-     * @param Trace information (filename:line-number). Use TRACE_INFO
-     * macro.
-     * @param Exception message in printf standard format.
-     */
-    ComboException(const char*, const char*, ...);
-    ComboException(const char*, const char*, va_list);
-
-}; // ComboException
-
-/**
  * Exception to be thrown when an out of range index is used.
+ * Primary user is the ValueFactory
  */
 class IndexErrorException : public RuntimeException
 {
@@ -214,25 +196,6 @@ public:
 }; // InvalidParamException
 
 /**
- * Exception to be thrown when a consistency check (equal to, different,
- * etc.) fails.
- */
-class InconsistenceException : public RuntimeException
-{
-public:
-    /**
-     * Constructor
-     *
-     * @param Trace information (filename:line-number). Use TRACE_INFO
-     * macro.
-     * @param Exception message in printf standard format.
-     */
-    InconsistenceException(const char*, const char*, ...);
-    InconsistenceException(const char*, const char*, va_list);
-
-}; // InconsistenceException
-
-/**
  * Exception to be called when an unrecoverable error has occurred.
  * When this exception is caught, a stack trace must be generated
  * and provided to the user (e.g. saved to a log file).
@@ -253,25 +216,39 @@ public:
 }; // FatalErrorException
 
 /**
- * Exception to be called when a network error  has occurred.
- * When this exception is caught, a stack trace must be generated
- * and provided to the user (e.g. saved to a log file).
+ * Exception to be called when a Python error occurs in user code.
+ * Stores the Python exception type name so it can be re-raised correctly
+ * at the Python/C++ boundary.
  */
-class NetworkException : public StandardException
+class PythonException : public RuntimeException
 {
+private:
+    std::string _python_exception_type;
+
 public:
     /**
      * Constructor
      *
-     * @param Trace information (filename:line-number). Use TRACE_INFO
-     * macro.
+     * @param pythonExcType The Python exception type name (e.g., "TypeError")
+     * @param Trace information (filename:line-number). Use TRACE_INFO macro.
      * @param Exception message in printf standard format.
      */
-    NetworkException(const char*, const char*, ...);
-    NetworkException(const char*, const char*, va_list);
+    PythonException(const std::string& pythonExcType,
+                    const char* trace,
+                    const char* fmt, ...);
+    PythonException(const std::string& pythonExcType,
+                    const char* trace,
+                    const char* fmt,
+                    va_list ap);
 
-}; // NetworkException
+    /**
+     * Get the Python exception type name
+     */
+    const std::string& get_python_exception_type() const {
+        return _python_exception_type;
+    }
 
+}; // PythonException
 
 /**
  * Exception to be called when an assertion fails.

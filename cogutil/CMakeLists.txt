@@ -46,13 +46,13 @@ ADD_DEFINITIONS(-DPROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 	            -DPROJECT_BINARY_DIR="${CMAKE_BINARY_DIR}")
 
 # Add the 'cmake' dir to cmake's module search path.
-SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
 # Get cogutil version.
 # NOTE: This is the official semantic-version, as it is derived from
 # a version-control independent means of declaring versioning.
 #
-FILE(READ "${CMAKE_CURRENT_SOURCE_DIR}/opencog/util/cogutil.h" _CU_H_CONTENTS)
+FILE(READ "${CMAKE_SOURCE_DIR}/opencog/util/cogutil.h" _CU_H_CONTENTS)
 STRING(REGEX MATCH
 	"#define COGUTIL_VERSION_STRING \"([0-9]+[.0-9]+[.0-9]+)\""
 	_ "${_CU_H_CONTENTS}")
@@ -244,11 +244,11 @@ IF (CXXTEST_FOUND)
 	ENDIF (CMAKE_BUILD_TYPE STREQUAL "Coverage")
 ENDIF (CXXTEST_FOUND)
 
-ADD_CUSTOM_TARGET(cscope-cogutil
-	COMMAND find opencog examples tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' -o -name '*.scm' > ${CMAKE_CURRENT_SOURCE_DIR}/cscope.files
+ADD_CUSTOM_TARGET(cscope
+	COMMAND find opencog examples tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' -o -name '*.scm' > ${CMAKE_SOURCE_DIR}/cscope.files
 	COMMAND cscope -b
-	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-	COMMENT "Generating CScope database for CogUtil"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	COMMENT "Generating CScope database"
 )
 
 # ===================================================================
