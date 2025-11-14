@@ -92,8 +92,8 @@
 ; fetched with the 'left-count and 'right-count methods on the
 ; support-api object.  The value for N(*,*) can be gotten with the
 ; 'wild-wild-count method. More correctly, there are two of these
-; totals, which should differ only by rounding errors: they differ in
-; the order in which the sums are performed.
+; totals, which should not differ, or differ only by rounding errors:
+; these two differ in the order in which the sums are performed.
 ;
 ; The fractional mutual information for the pair (x,y) is defined with
 ; a plus sign, as in Deniz Yuret's thesis (1998, page 40):
