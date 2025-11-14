@@ -1,6 +1,10 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 SET(CMAKE_INSTALL_MESSAGE LAZY)
 
+IF(CMAKE_VERSION VERSION_GREATER 3.31)
+	CMAKE_POLICY(SET CMP0177 NEW)
+ENDIF(CMAKE_VERSION VERSION_GREATER 3.31)
+
 PROJECT(learn)
 
 # Cogutil
@@ -53,9 +57,11 @@ INCLUDE(OpenCogGuile)
 INCLUDE(OpenCogCython)
 
 # ----------------------------------------------------------
-ADD_SUBDIRECTORY (fake)
+# fake and common are in directory version-one and were not
+# going to build them any more, unless there's some crisis...
+# ADD_SUBDIRECTORY (fake)
+# ADD_SUBDIRECTORY (run-common)
 ADD_SUBDIRECTORY (scm)
-ADD_SUBDIRECTORY (run-common)
 
 # Unit tests
 ADD_CUSTOM_TARGET(tests)
