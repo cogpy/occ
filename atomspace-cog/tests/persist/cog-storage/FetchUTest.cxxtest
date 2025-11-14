@@ -33,7 +33,7 @@
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/guile/SchemeEval.h>
 #include <opencog/persist/cog-storage/CogStorage.h>
-#include <opencog/atoms/truthvalue/SimpleTruthValue.h>
+#include <opencog/atoms/value/FloatValue.h>
 #include <opencog/cogserver/server/CogServer.h>
 
 #include <opencog/util/Logger.h>
@@ -72,7 +72,7 @@ class FetchUTest :  public CxxTest::TestSuite
 		void setUp(void);
 		void tearDown(void);
 
-		void atomCompare(AtomPtr, AtomPtr, std::string);
+		void atomCompare(Handle, AtomPtr, std::string);
 		void test_stuff(void);
 		void xxxtest_readonly(void);
 };
@@ -103,17 +103,17 @@ FetchUTest::FetchUTest(void)
 void FetchUTest::setUp(void)
 {
 	_as = createAtomSpace();
-	eval = SchemeEval::get_evaluator(_as);
-	eval->set_scheme_as(_as);
+	eval = SchemeEval::get_scheme_evaluator(_as);
 }
 
 void FetchUTest::tearDown(void)
 {
+	_as = nullptr;
 }
 
 // ============================================================
 
-void FetchUTest::atomCompare(AtomPtr a, AtomPtr b, std::string where)
+void FetchUTest::atomCompare(Handle a, AtomPtr b, std::string where)
 {
 	printf("Check %s expect %s\n", where.c_str(), a->to_string().c_str());
 	TSM_ASSERT("No atom found", b != nullptr);
@@ -142,8 +142,8 @@ void FetchUTest::atomCompare(AtomPtr a, AtomPtr b, std::string where)
 		}
 	}
 
-	TruthValuePtr ta = a->getTruthValue();
-	TruthValuePtr tb = b->getTruthValue();
+	FloatValuePtr ta = FloatValueCast(a->getValue(truth_key()));
+	FloatValuePtr tb = FloatValueCast(b->getValue(truth_key()));
 	if (ta or tb)
 	{
 		TSM_ASSERT("Missing truth value", ta);
@@ -156,7 +156,7 @@ void FetchUTest::atomCompare(AtomPtr a, AtomPtr b, std::string where)
 			{
 				fprintf(stderr, "Error, truth value miscompare, "
 					"ma=%f mb=%f ca=%f cb=%f\n",
-					ta->get_mean(), tb->get_mean(), ta->get_count(), tb->get_count());
+					ta->value()[0], tb->value()[0], ta->value()[1], tb->value()[1]);
 			}
 		}
 	}
@@ -172,36 +172,34 @@ void FetchUTest::test_stuff(void)
 	eval->eval("(use-modules (opencog persist) (opencog persist-cog))");
 	std::string rc = eval->eval(srv_open);
 	if (0 < rc.size()) printf("Storage open rc=%s\n", rc.c_str());
-	eval->eval(R"((cog-set-tv! (Concept "AAA") (stv 0.1 0.11)))");
-	eval->eval(R"((cog-set-tv! (Concept "BBB") (stv 0.2 0.22)))");
+	eval->eval(R"((define tvkey (Predicate "*-TruthValueKey-*")))");
+	eval->eval(R"((cog-set-value! (Concept "AAA") tvkey (FloatValue 0.1 0.11)))");
+	eval->eval(R"((cog-set-value! (Concept "BBB") tvkey (FloatValue 0.2 0.22)))");
 	eval->eval("(store-atomspace)");
 	eval->eval("(cog-close)");
 
 	_as = createAtomSpace();
-	eval = SchemeEval::get_evaluator(_as);
-	eval->set_scheme_as(_as);
+	eval = SchemeEval::get_scheme_evaluator(_as);
 	eval->eval(srv_open);
 	eval->eval(R"((fetch-atom (List (Concept "AAA") (Concept "BBB"))))");
 	eval->eval("(barrier)");
 
 	// The above should NOT update the TV of (Concept "AAA")
-	TruthValuePtr tv = eval->eval_tv(R"((cog-tv (Concept "AAA")))");
-	printf("Expecting default, got %s\n", tv->to_string().c_str());
-	TruthValuePtr dtv = TruthValue::DEFAULT_TV();
-	TS_ASSERT((*tv) == (*dtv));
+	ValuePtr tv = eval->eval_v(R"((cog-value (Concept "AAA") tvkey))");
+	TS_ASSERT(tv == nullptr);
 
 	// If we fetch the TV explicitly, then we should get the
 	// value from the database.
 	eval->eval(R"((fetch-atom (Concept "AAA")))");
 	eval->eval("(barrier)");
-	tv = eval->eval_tv(R"((cog-tv (Concept "AAA")))");
-	TruthValuePtr etv = createSimpleTruthValue(0.1, 0.11);
+	tv = eval->eval_v(R"((cog-value (Concept "AAA") tvkey))");
+	ValuePtr etv = createFloatValue(std::vector<double>{0.1, 0.11});
 	TS_ASSERT((*tv) == (*etv));
 	printf("Expecting %s\n", etv->to_string().c_str());
 	printf("Got %s\n", tv->to_string().c_str());
 
 	// Update A.
-	eval->eval(R"((cog-set-tv! (Concept "AAA") (stv 0.3 0.33)))");
+	eval->eval(R"((cog-set-value! (Concept "AAA") tvkey (FloatValue 0.3 0.33)))");
 
 	// Saving everything should not crash.  It should, however,
 	// change the TV on (Concept "BBB") back to DEFAULT_TV.
@@ -209,15 +207,14 @@ void FetchUTest::test_stuff(void)
 	eval->eval("(cog-close)");
 
 	_as = createAtomSpace();
-	eval = SchemeEval::get_evaluator(_as);
-	eval->set_scheme_as(_as);
+	eval = SchemeEval::get_scheme_evaluator(_as);
 	eval->eval(srv_open);
 
 	// AAA should have been updated, as above.
 	eval->eval(R"((fetch-atom (Concept "AAA")))");
 	eval->eval("(barrier)");
-	tv = eval->eval_tv(R"((cog-tv (Concept "AAA")))");
-	etv = createSimpleTruthValue(0.3, 0.33);
+	tv = eval->eval_v(R"((cog-value (Concept "AAA") tvkey))");
+	etv = createFloatValue(std::vector<double>{0.3, 0.33});
 	TS_ASSERT((*tv) == (*etv));
 	printf("Expecting %s\n", etv->to_string().c_str());
 	printf("Got %s\n", tv->to_string().c_str());
@@ -225,11 +222,10 @@ void FetchUTest::test_stuff(void)
 	// BBB should have been clobbered.
 	eval->eval(R"((fetch-atom (Concept "BBB")))");
 	eval->eval("(barrier)");
-	tv = eval->eval_tv(R"((cog-tv (Concept "BBB")))");
-	TS_ASSERT((*tv) == (*dtv));
-	printf("Expecting %s\n", dtv->to_string().c_str());
-	printf("Got %s\n", tv->to_string().c_str());
+	tv = eval->eval_v(R"((cog-value (Concept "BBB") tvkey))");
+	TS_ASSERT(tv == nullptr);
 
+	eval->eval("(barrier)");
 	eval->eval("(cog-close)");
 	logger().debug("END TEST: %s", __FUNCTION__);
 }
@@ -256,15 +252,16 @@ void FetchUTest::xxxtest_readonly(void)
 	// First, initialize the database
 	eval->eval("(use-modules (opencog persist) (opencog persist-cog))");
 	eval->eval(srv_open);
-	eval->eval(R"((cog-set-tv! (Concept "AAA") (stv 0.1 0.11)))");
-	eval->eval(R"((cog-set-tv! (Concept "BBB") (stv 0.2 0.22)))");
+	eval->eval(R"((define tvkey (Predicate "*-TruthValueKey-*")))");
+	eval->eval(R"((cog-set-value! (Concept "AAA") tvkey (FloatValue 0.1 0.11)))");
+	eval->eval(R"((cog-set-value! (Concept "BBB") tvkey (FloatValue 0.2 0.22)))");
 	eval->eval(R"((List (Concept "AAA") (Concept "BBB")))");
+
 	eval->eval("(store-atomspace)");
 	eval->eval("(cog-close)");
 
 	_as = createAtomSpace();
-	eval = SchemeEval::get_evaluator(_as);
-	eval->set_scheme_as(_as);
+	eval = SchemeEval::get_scheme_evaluator(_as);
 	eval->eval(srv_open);
 	_as->set_read_only();
 
@@ -277,8 +274,8 @@ void FetchUTest::xxxtest_readonly(void)
 	Handle a = eval->eval_h(R"((Concept "AAA"))");
 	TS_ASSERT(nullptr != a);
 
-	TruthValuePtr tv = eval->eval_tv(R"((cog-tv (Concept "AAA")))");
-	TruthValuePtr etv = createSimpleTruthValue(0.1, 0.11);
+	ValuePtr tv = eval->eval_v(R"((cog-value (Concept "AAA") tvkey))");
+	ValuePtr etv = createFloatValue(std::vector<double>{0.1, 0.11});
 	TS_ASSERT((*tv) == (*etv));
 	printf("Expecting %s\n", etv->to_string().c_str());
 	printf("Got %s\n", tv->to_string().c_str());
@@ -293,10 +290,10 @@ void FetchUTest::xxxtest_readonly(void)
 	// The assert is turned into an evaluator error.
 	TS_ASSERT(false == eval->eval_error());
 	eval->clear_pending();
-	eval->eval(R"((cog-set-tv! (Concept "AAA") (stv 0.3 0.33)))");
+	eval->eval(R"((cog-set-value! (Concept "AAA") tvkey (FloatValue 0.3 0.33)))");
 	TS_ASSERT(eval->eval_error());
 	eval->clear_pending();
-	tv = eval->eval_tv(R"((cog-tv (Concept "AAA")))");
+	tv = eval->eval_v(R"((cog-value (Concept "AAA") tvkey))");
 	TS_ASSERT((*tv) == (*etv));
 
 	// Should be possible to extract, even though its read-only
