@@ -67,7 +67,7 @@ public:
 	HandleSeq joints(const Handle&) const;
 
 	void add_to_lexis(const Handle&);
-	void add_to_lexis(const HandleSet& lex) {
+	void add_to_lexis(const UnorderedHandleSet& lex) {
 		for (const Handle& h: lex) add_to_lexis(h);
 	}
 	// void sort_lexis(const Handle&);
