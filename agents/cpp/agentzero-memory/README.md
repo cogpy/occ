@@ -27,9 +27,19 @@ Manages temporal sequences and experiences. Implementation planned for future ta
 
 Active context and short-term memory. Implementation planned for future task.
 
-### ContextManager (AZ-CONTEXT-001) - Placeholder
+### ContextManager (AZ-CONTEXT-001) ✅ IMPLEMENTED
 
-Maintains relevant contextual information. Implementation planned for future task.
+Maintains relevant contextual information for situational awareness with the following features:
+
+- **Multi-Context Tracking**: Manage multiple concurrent contexts with importance-based prioritization
+- **Context Switching**: Seamless switching between different operational contexts
+- **AtomSpace Integration**: Create semantic representations of contexts in AtomSpace
+- **Cross-Context Atom Tracking**: Track which atoms are relevant to which contexts
+- **Dynamic Importance**: Automatic importance calculation based on access patterns and content
+- **Context History**: Maintain history of context switches for analysis
+- **Metadata Management**: Flexible key-value metadata for each context
+- **Context Merging**: Combine related contexts when needed
+- **Thread-Safe**: All operations protected by recursive mutex for concurrent access
 
 ## Dependencies
 
@@ -99,6 +109,55 @@ Memories can be associated with different context types for efficient retrieval:
 - **EMOTIONAL**: Emotional state context
 - **ENVIRONMENTAL**: Environmental conditions
 - **COGNITIVE**: Cognitive state and processes
+
+### ContextManager Usage
+
+```cpp
+#include <opencog/atomspace/AtomSpace.h>
+#include <opencog/agentzero/memory/ContextManager.h>
+
+// Create AtomSpace and ContextManager
+auto atomspace = std::make_shared<AtomSpace>();
+auto context_manager = std::make_unique<ContextManager>(
+    atomspace,
+    50,    // max contexts
+    0.1,   // min importance
+    std::chrono::hours(1)  // decay time
+);
+
+context_manager->initialize();
+
+// Create contexts
+context_manager->createContext("planning_task", ContextType::TASK, {
+    {"goal", "navigate_to_kitchen"},
+    {"priority", "high"}
+}, 0.8);
+
+context_manager->createContext("user_interaction", ContextType::SOCIAL, {
+    {"user", "Alice"}
+}, 0.7);
+
+// Add atoms to contexts
+Handle goal = atomspace->add_node(CONCEPT_NODE, "NavigateToKitchen");
+context_manager->addAtomToContext("planning_task", goal);
+
+// Switch contexts
+context_manager->setActiveContext("planning_task");
+std::cout << "Active: " << context_manager->getActiveContext() << std::endl;
+
+// Query contexts
+auto task_contexts = context_manager->getContextsByType(ContextType::TASK);
+auto important = context_manager->getMostImportantContexts(5);
+
+// Track atoms across contexts
+auto contexts_for_atom = context_manager->getContextsForAtom(goal);
+
+// Get statistics
+auto stats = context_manager->getStatistics();
+std::cout << "Total contexts: " << stats.total_contexts << std::endl;
+
+context_manager->shutdown();
+```
 
 ## Building
 
@@ -397,8 +456,8 @@ Planned enhancements:
 
 1. **EpisodicMemory Implementation** (AZ-MEM-001)
 2. **WorkingMemory Implementation** (AZ-MEM-002)  
-3. **ContextManager Implementation** (AZ-CONTEXT-001)
-4. **PLN Integration**: Use PLN reasoning for memory consolidation
+3. **PLN Integration**: Use PLN reasoning for memory consolidation and context inference
+4. **Advanced Context Analysis**: Pattern recognition across context switches
 5. **Distributed Memory**: Support for distributed memory across multiple nodes
 6. **Advanced Indexing**: More sophisticated indexing for faster retrieval
 
@@ -407,29 +466,40 @@ Planned enhancements:
 - ✅ **AZ-MEM-003**: LongTermMemory with persistence - COMPLETED
 - ⏳ **AZ-MEM-001**: EpisodicMemory - Placeholder created
 - ⏳ **AZ-MEM-002**: WorkingMemory - Placeholder created  
-- ⏳ **AZ-CONTEXT-001**: ContextManager - Placeholder created
+- ✅ **AZ-CONTEXT-001**: ContextManager - COMPLETED
 
 ## Testing
 
 Unit tests cover:
-- Basic storage and retrieval operations
-- Importance-based memory management
-- Context-based organization
-- Persistence across sessions
-- Configuration management
-- Statistics collection
-- Error handling
+- **ContextManager**: 40+ test cases covering all functionality
+  - Context lifecycle (creation, deletion, activation)
+  - Atom management across contexts
+  - Context queries and filtering by type/importance
+  - Metadata management
+  - Context history and statistics
+  - Context merging and edge cases
+- **LongTermMemory**:
+  - Basic storage and retrieval operations
+  - Importance-based memory management
+  - Context-based organization
+  - Persistence across sessions
+  - Configuration management
+  - Statistics collection
+  - Error handling
 
 Run tests with:
 ```bash
+ctest -R ContextManagerUTest
 ctest -R LongTermMemoryUTest
 ```
-See `examples/WorkingMemoryExample.cpp` for a comprehensive usage example demonstrating:
-- Basic memory operations
-- Context management
-- Importance-based retrieval
-- Performance monitoring
-- Memory cleanup
+
+See `examples/ContextManagerExample.cpp` for a comprehensive usage example demonstrating:
+- Context creation and lifecycle management
+- Context switching and history
+- Atom tracking across multiple contexts
+- Metadata and importance management
+- Context merging and snapshots
+- Statistics gathering and monitoring
 
 ## Testing
 
