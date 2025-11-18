@@ -48,6 +48,7 @@ if(CXXTEST_FOUND)
     # Test sources
     set(TEST_SOURCES
         WorkingMemoryTest.cxxtest
+        ContextManagerUTest.cxxtest
     )
     
     # Generate test executable

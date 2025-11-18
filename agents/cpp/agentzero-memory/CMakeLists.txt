@@ -1,12 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
-# Project metadata
-project(agentzero-memory 
-    VERSION 0.1.0 
 # Agent-Zero Memory Module CMakeLists.txt
-# AZ-MEM-002: WorkingMemory management implementation
-
-cmake_minimum_required(VERSION 3.16)
+# AZ-CONTEXT-001: ContextManager implementation
 
 project(AgentZeroMemory
     VERSION 0.1.0
@@ -19,25 +14,6 @@ message(STATUS "Configuring Agent-Zero Memory & Context module...")
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Find required OpenCog packages
-find_package(PkgConfig REQUIRED)
-
-# Core OpenCog dependencies (required)
-pkg_check_modules(COGUTIL REQUIRED cogutil)
-pkg_check_modules(ATOMSPACE REQUIRED atomspace)
-
-# Memory-specific dependencies (required for persistence)
-pkg_check_modules(ATOMSPACE_ROCKS REQUIRED atomspace-rocks)
-pkg_check_modules(ATTENTION REQUIRED attention)
-
-# Report found dependencies
-message(STATUS "Agent-Zero Memory Dependencies:")
-message(STATUS "  cogutil: ${COGUTIL_VERSION}")
-message(STATUS "  atomspace: ${ATOMSPACE_VERSION}")
-message(STATUS "  atomspace-rocks: ${ATOMSPACE_ROCKS_VERSION}")
-message(STATUS "  attention: ${ATTENTION_VERSION}")
-message(STATUS "Configuring Agent-Zero Memory & Context Management module...")
 
 # Find required OpenCog packages
 find_package(PkgConfig REQUIRED)
@@ -165,9 +141,34 @@ set_target_properties(agentzero-memory PROPERTIES
 target_link_libraries(agentzero-memory
     ${COGUTIL_LIBRARIES}
     ${ATOMSPACE_LIBRARIES}
-    ${ATOMSPACE_ROCKS_LIBRARIES}
-    ${ATTENTION_LIBRARIES}
 )
+
+# Link atomspace-rocks libraries if available
+if(ATOMSPACE_ROCKS_FOUND AND ATOMSPACE_ROCKS_LIBRARIES)
+    target_link_libraries(agentzero-memory ${ATOMSPACE_ROCKS_LIBRARIES})
+    target_compile_definitions(agentzero-memory PRIVATE HAVE_ATOMSPACE_ROCKS=1)
+    message(STATUS "Linking atomspace-rocks libraries: ${ATOMSPACE_ROCKS_LIBRARIES}")
+elseif(ATOMSPACE_ROCKS_FOUND)
+    target_compile_definitions(agentzero-memory PRIVATE HAVE_ATOMSPACE_ROCKS=1)
+    message(STATUS "atomspace-rocks headers found, compiling with rocks support")
+endif()
+
+# Link attention libraries if available
+if(ATTENTION_FOUND AND ATTENTION_LIBRARIES)
+    target_link_libraries(agentzero-memory ${ATTENTION_LIBRARIES})
+    target_compile_definitions(agentzero-memory PRIVATE HAVE_ATTENTION_BANK=1)
+    message(STATUS "Linking attention libraries: ${ATTENTION_LIBRARIES}")
+elseif(ATTENTION_FOUND)
+    target_compile_definitions(agentzero-memory PRIVATE HAVE_ATTENTION_BANK=1)
+    message(STATUS "Attention headers found, compiling with attention support")
+endif()
+
+# Link cogserver libraries if available
+if(COGSERVER_FOUND AND COGSERVER_LIBRARIES)
+    target_link_libraries(agentzero-memory ${COGSERVER_LIBRARIES})
+    target_compile_definitions(agentzero-memory PRIVATE HAVE_COGSERVER=1)
+    message(STATUS "Linking cogserver libraries: ${COGSERVER_LIBRARIES}")
+endif()
 
 # Set include directories for target
 target_include_directories(agentzero-memory PUBLIC
@@ -207,88 +208,12 @@ install(EXPORT AgentZeroMemoryTargets
 )
 
 # Tests
-    src/WorkingMemory.cpp
-    src/EpisodicMemory.cpp
-    src/LongTermMemory.cpp
-    src/ContextManager.cpp
-)
-
-# Header files
-set(AGENTZERO_MEMORY_HEADERS
-    include/opencog/agentzero/WorkingMemory.h
-    include/opencog/agentzero/EpisodicMemory.h
-    include/opencog/agentzero/LongTermMemory.h
-    include/opencog/agentzero/ContextManager.h
-)
-
-# Create library (when source files exist)
-if(AGENTZERO_MEMORY_SOURCES)
-    add_library(agentzero-memory SHARED
-        ${AGENTZERO_MEMORY_SOURCES}
-        ${AGENTZERO_MEMORY_HEADERS}
-    )
-
-    target_link_libraries(agentzero-memory
-        ${COGUTIL_LIBRARIES}
-        ${ATOMSPACE_LIBRARIES}
-        ${Boost_LIBRARIES}
-    )
-    
-    # Link atomspace-rocks libraries if available
-    if(ATOMSPACE_ROCKS_FOUND AND ATOMSPACE_ROCKS_LIBRARIES)
-        target_link_libraries(agentzero-memory ${ATOMSPACE_ROCKS_LIBRARIES})
-        target_compile_definitions(agentzero-memory PRIVATE HAVE_ATOMSPACE_ROCKS=1)
-        message(STATUS "Linking atomspace-rocks libraries: ${ATOMSPACE_ROCKS_LIBRARIES}")
-    elseif(ATOMSPACE_ROCKS_FOUND)
-        target_compile_definitions(agentzero-memory PRIVATE HAVE_ATOMSPACE_ROCKS=1)
-        message(STATUS "atomspace-rocks headers found, compiling with rocks support")
-    endif()
-    
-    # Link attention libraries if available
-    if(ATTENTION_FOUND AND ATTENTION_LIBRARIES)
-        target_link_libraries(agentzero-memory ${ATTENTION_LIBRARIES})
-        target_compile_definitions(agentzero-memory PRIVATE HAVE_ATTENTION_BANK=1)
-        message(STATUS "Linking attention libraries: ${ATTENTION_LIBRARIES}")
-    elseif(ATTENTION_FOUND)
-        target_compile_definitions(agentzero-memory PRIVATE HAVE_ATTENTION_BANK=1)
-        message(STATUS "Attention headers found, compiling with attention support")
-    endif()
-    
-    # Link cogserver libraries if available
-    if(COGSERVER_FOUND AND COGSERVER_LIBRARIES)
-        target_link_libraries(agentzero-memory ${COGSERVER_LIBRARIES})
-        target_compile_definitions(agentzero-memory PRIVATE HAVE_COGSERVER=1)
-        message(STATUS "Linking cogserver libraries: ${COGSERVER_LIBRARIES}")
-    endif()
-
-    target_include_directories(agentzero-memory PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-    )
-
-    # Installation
-    install(TARGETS agentzero-memory
-        EXPORT AgentZeroCppTargets
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include
-    )
-
-    install(DIRECTORY include/
-        DESTINATION include
-        FILES_MATCHING PATTERN "*.h"
-    )
-endif()
-
-# Tests (when implemented)
 if(BUILD_TESTING)
     enable_testing()
     add_subdirectory(tests)
 endif()
 
 # Examples
-# Examples (when implemented)
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
@@ -306,15 +231,11 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/agentzero-memory.pc
 
 # Status summary
 message(STATUS "Agent-Zero Memory module configuration complete")
-message(STATUS "  - Persistence support: YES (atomspace-rocks)")
-message(STATUS "  - Attention integration: YES")
-message(STATUS "  - Build examples: ${BUILD_EXAMPLES}")
-message(STATUS "  - Build tests: ${BUILD_TESTING}")
-# Status message
-message(STATUS "Agent-Zero Memory module configuration complete")
 message(STATUS "Dependencies:")
 message(STATUS "  cogutil: ${COGUTIL_VERSION}")
 message(STATUS "  atomspace: ${ATOMSPACE_VERSION}")
 message(STATUS "  atomspace-rocks: ${ATOMSPACE_ROCKS_FOUND}")
 message(STATUS "  attention: ${ATTENTION_FOUND}")
 message(STATUS "  cogserver: ${COGSERVER_FOUND}")
+message(STATUS "  - Build examples: ${BUILD_EXAMPLES}")
+message(STATUS "  - Build tests: ${BUILD_TESTING}")
