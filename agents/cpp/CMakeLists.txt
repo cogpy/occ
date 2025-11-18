@@ -173,6 +173,13 @@ endif()
 # Phase 6: Communication & NLP (depends on core)
 # Communication module doesn't require lg-atomese - it uses core dependencies only
 add_subdirectory(agentzero-communication)
+# Communication module can work with or without lg-atomese
+add_subdirectory(agentzero-communication)
+# Note: HumanInterface (AZ-HUMAN-001) has basic functionality without lg-atomese
+add_subdirectory(agentzero-communication)
+if(NOT LG_ATOMESE_FOUND)
+    message(STATUS "agentzero-communication: lg-atomese not found - NLP features will be basic")
+endif()
 
 # Phase 7: Memory & Context (depends on core)
 if(ATTENTION_FOUND)
