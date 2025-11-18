@@ -32,6 +32,8 @@ if (COGUTIL_FOUND)
     link_directories(${COGUTIL_LIBRARY_DIRS})
 endif()
 
+# Find atomspace  
+pkg_check_modules(ATOMSPACE REQUIRED atomspace)
 pkg_check_modules(ATOMSPACE REQUIRED atomspace)
 # Find atomspace  
 pkg_check_modules(ATOMSPACE atomspace)
@@ -41,6 +43,7 @@ if (ATOMSPACE_FOUND)
     link_directories(${ATOMSPACE_LIBRARY_DIRS})
 endif()
 
+# Find lg-atomese for language processing
 # Optional OpenCog dependencies for enhanced communication
 pkg_check_modules(COGSERVER cogserver)
 if (COGSERVER_FOUND)
@@ -79,6 +82,10 @@ if (LG_ATOMESE_FOUND)
     message(STATUS "Found lg-atomese version ${LG_ATOMESE_VERSION}")
     include_directories(${LG_ATOMESE_INCLUDE_DIRS})
     link_directories(${LG_ATOMESE_LIBRARY_DIRS})
+else()
+    message(STATUS "lg-atomese not found via pkg-config, looking for system includes")
+    find_path(LG_ATOMESE_INCLUDE_PATH
+        NAMES opencog/lg-atomese/LGAtomese.h
     add_definitions(-DHAVE_LG_ATOMESE)
 else()
     message(STATUS "lg-atomese not found - NLP features will be basic")
@@ -110,6 +117,18 @@ else()
     endif()
 endif()
 
+# Find link-grammar for parsing
+pkg_check_modules(LINK_GRAMMAR link-grammar)
+if (LINK_GRAMMAR_FOUND)
+    message(STATUS "Found link-grammar version ${LINK_GRAMMAR_VERSION}")
+    include_directories(${LINK_GRAMMAR_INCLUDE_DIRS})
+    link_directories(${LINK_GRAMMAR_LIBRARY_DIRS})
+else()
+    message(STATUS "link-grammar not found - some NLP features will be limited")
+    set(LINK_GRAMMAR_FOUND FALSE)
+endif()
+
+# Find opencog main module
 # Find link-grammar
 find_path(LINK_GRAMMAR_INCLUDE_DIR
     NAMES link-grammar/link-includes.h
@@ -136,6 +155,7 @@ if (OPENCOG_FOUND)
     include_directories(${OPENCOG_INCLUDE_DIRS})
     link_directories(${OPENCOG_LIBRARY_DIRS})
 else()
+    message(STATUS "OpenCog main module not found - using core AtomSpace functionality only")
     message(STATUS "OpenCog main package not found - basic functionality available")
     set(OPENCOG_FOUND FALSE)
 endif()
@@ -196,6 +216,10 @@ endif()
 
 # Source files
 set(AGENTZERO_COMMUNICATION_SOURCES
+    src/DialogueManager.cpp
+    src/ConversationState.cpp
+    src/LanguageProcessor.cpp
+    src/MessageHandler.cpp
     src/LanguageProcessor.cpp
     src/DialogueManager.cpp
     src/AgentComms.cpp
@@ -204,6 +228,10 @@ set(AGENTZERO_COMMUNICATION_SOURCES
 
 # Header files
 set(AGENTZERO_COMMUNICATION_HEADERS
+    include/opencog/agentzero/DialogueManager.h
+    include/opencog/agentzero/ConversationState.h
+    include/opencog/agentzero/LanguageProcessor.h
+    include/opencog/agentzero/MessageHandler.h
     include/agentzero/communication/LanguageProcessor.h
     include/agentzero/communication/DialogueManager.h
     include/agentzero/communication/AgentComms.h
@@ -219,6 +247,9 @@ add_library(agentzero-communication SHARED
 target_link_libraries(agentzero-communication
     ${COGUTIL_LIBRARIES}
     ${ATOMSPACE_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
+
     ${LINK_GRAMMAR_LIBRARY}
 )
 
@@ -258,6 +289,16 @@ if(LG_ATOMESE_FOUND AND LG_ATOMESE_LIBRARIES)
     target_link_libraries(agentzero-communication ${LG_ATOMESE_LIBRARIES})
     target_compile_definitions(agentzero-communication PRIVATE HAVE_LG_ATOMESE=1)
     message(STATUS "Linking lg-atomese libraries: ${LG_ATOMESE_LIBRARIES}")
+elseif(LG_ATOMESE_FOUND)
+    target_compile_definitions(agentzero-communication PRIVATE HAVE_LG_ATOMESE=1)
+    message(STATUS "lg-atomese headers found, compiling with lg-atomese support")
+endif()
+
+# Link link-grammar libraries if available
+if(LINK_GRAMMAR_FOUND AND LINK_GRAMMAR_LIBRARIES)
+    target_link_libraries(agentzero-communication ${LINK_GRAMMAR_LIBRARIES})
+    target_compile_definitions(agentzero-communication PRIVATE HAVE_LINK_GRAMMAR=1)
+    message(STATUS "Linking link-grammar libraries: ${LINK_GRAMMAR_LIBRARIES}")
 endif()
 
 # Compiler flags
@@ -349,6 +390,27 @@ if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
+# Examples
+add_subdirectory(examples)
+
+# Status message
+message(STATUS "Agent-Zero Communication module configuration complete")
+message(STATUS "Available features:")
+if(LG_ATOMESE_FOUND)
+    message(STATUS "  - lg-atomese integration: YES")
+else()
+    message(STATUS "  - lg-atomese integration: NO")
+endif()
+if(LINK_GRAMMAR_FOUND)
+    message(STATUS "  - Link Grammar parsing: YES")
+else()
+    message(STATUS "  - Link Grammar parsing: NO")
+endif()
+if(OPENCOG_FOUND)
+    message(STATUS "  - OpenCog NLP integration: YES")
+else()
+    message(STATUS "  - OpenCog NLP integration: NO")
+endif()
 # Report configuration
 message(STATUS "Agent-Zero Communication Dependencies:")
 message(STATUS "  cogutil: ${COGUTIL_VERSION}")
