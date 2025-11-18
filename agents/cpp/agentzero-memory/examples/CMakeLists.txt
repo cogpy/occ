@@ -56,7 +56,17 @@ target_link_libraries(working-memory-example
     ${Boost_LIBRARIES}
 )
 
+# ContextManager example
+add_executable(context-manager-example ContextManagerExample.cpp)
+
+target_link_libraries(context-manager-example
+    agentzero-memory
+    ${COGUTIL_LIBRARIES}
+    ${ATOMSPACE_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
+
 # Installation
-install(TARGETS working-memory-example
+install(TARGETS working-memory-example context-manager-example
     RUNTIME DESTINATION bin
 )
