@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(AgentZeroCommunication
     VERSION 0.1.0
+    DESCRIPTION "Agent-Zero Communication Protocols for OpenCog Integration"
     DESCRIPTION "Agent-Zero Communication & Human Interface Module for OpenCog Integration"
     DESCRIPTION "Agent-Zero Communication & NLP Module for OpenCog Integration"
     LANGUAGES CXX
@@ -43,6 +44,7 @@ if (ATOMSPACE_FOUND)
     link_directories(${ATOMSPACE_LIBRARY_DIRS})
 endif()
 
+# Find cogserver (optional but recommended for communication)
 # Find lg-atomese for language processing
 # Optional OpenCog dependencies for enhanced communication
 pkg_check_modules(COGSERVER cogserver)
@@ -50,6 +52,9 @@ if (COGSERVER_FOUND)
     message(STATUS "Found cogserver version ${COGSERVER_VERSION}")
     include_directories(${COGSERVER_INCLUDE_DIRS})
     link_directories(${COGSERVER_LIBRARY_DIRS})
+else()
+    message(STATUS "CogServer not found - network communication features will be disabled")
+    set(COGSERVER_FOUND FALSE)
     add_definitions(-DHAVE_COGSERVER)
 else()
     message(STATUS "CogServer not found - some features will be disabled")
@@ -216,6 +221,10 @@ endif()
 
 # Source files
 set(AGENTZERO_COMMUNICATION_SOURCES
+    src/AgentComms.cpp
+    src/MessageRouter.cpp
+    src/ProtocolManager.cpp
+    src/MessageSerializer.cpp
     src/DialogueManager.cpp
     src/ConversationState.cpp
     src/LanguageProcessor.cpp
@@ -228,6 +237,11 @@ set(AGENTZERO_COMMUNICATION_SOURCES
 
 # Header files
 set(AGENTZERO_COMMUNICATION_HEADERS
+    include/opencog/agentzero/communication/AgentComms.h
+    include/opencog/agentzero/communication/MessageRouter.h
+    include/opencog/agentzero/communication/ProtocolManager.h
+    include/opencog/agentzero/communication/MessageSerializer.h
+    include/opencog/agentzero/communication/CommTypes.h
     include/opencog/agentzero/DialogueManager.h
     include/opencog/agentzero/ConversationState.h
     include/opencog/agentzero/LanguageProcessor.h
@@ -250,6 +264,11 @@ target_link_libraries(agentzero-communication
     ${Boost_LIBRARIES}
 )
 
+# Link cogserver libraries if available
+if(COGSERVER_FOUND AND COGSERVER_LIBRARIES)
+    target_link_libraries(agentzero-communication ${COGSERVER_LIBRARIES})
+    target_compile_definitions(agentzero-communication PRIVATE HAVE_COGSERVER=1)
+    message(STATUS "Linking cogserver libraries: ${COGSERVER_LIBRARIES}")
     ${LINK_GRAMMAR_LIBRARY}
 )
 
@@ -435,4 +454,5 @@ endif()
 
 # Status message
 message(STATUS "Agent-Zero Communication module configuration complete")
+message(STATUS "Ready for build and testing with OpenCog integration")
 message(STATUS "Dependencies found: cogutil=${COGUTIL_FOUND}, atomspace=${ATOMSPACE_FOUND}, link-grammar=${LINK_GRAMMAR_FOUND}, lg-atomese=${LG_ATOMESE_FOUND}")
