@@ -167,8 +167,6 @@ private:
     
     // Composition planning algorithms
     CompositionPlan planComposition(const TaskRequirements& requirements);
-    std::vector<std::string> findCapabilityPath(const std::string& from_capability,
-                                                const std::string& to_capability);
     bool validateComposition(const CompositionPlan& plan);
     double estimatePlanSuccess(const CompositionPlan& plan);
     double estimatePlanExecutionTime(const CompositionPlan& plan);
