@@ -17,6 +17,7 @@
 #include <opencog/atoms/base/Node.h>
 #include <opencog/atoms/base/Link.h>
 #include <opencog/atoms/truthvalue/SimpleTruthValue.h>
+#include <opencog/util/Logger.h>
 
 #include "opencog/agentzero/ToolRegistry.h"
 
@@ -58,15 +59,15 @@ void ToolRegistry::initializeToolRegistry()
     _available_tools_context = _atomspace->add_node(CONCEPT_NODE, "AvailableTools");
     
     // Link contexts to registry root
-    HandleSeq root_links;
-    root_links.push_back(_tool_registry_root);
-    root_links.push_back(_external_tools_context);
-    _atomspace->add_link(MEMBER_LINK, std::move(root_links));
+    HandleSeq external_links;
+    external_links.push_back(_tool_registry_root);
+    external_links.push_back(_external_tools_context);
+    _atomspace->add_link(MEMBER_LINK, std::move(external_links));
     
-    root_links.clear();
-    root_links.push_back(_tool_registry_root);
-    root_links.push_back(_ros_tools_context);
-    _atomspace->add_link(MEMBER_LINK, std::move(root_links));
+    HandleSeq ros_links;
+    ros_links.push_back(_tool_registry_root);
+    ros_links.push_back(_ros_tools_context);
+    _atomspace->add_link(MEMBER_LINK, std::move(ros_links));
     
     logger().info() << "[ToolRegistry] Tool registry structures initialized";
 }
@@ -166,8 +167,9 @@ Handle ToolRegistry::createToolAtom(const ToolMetadata& metadata)
     // Create tool node
     Handle tool_node = _atomspace->add_node(CONCEPT_NODE, "Tool:" + metadata.name);
     
-    // Add description
-    Handle desc_node = _atomspace->add_node(CONCEPT_NODE, std::string(metadata.description));
+    // Add description (need to copy since metadata.description is const)
+    std::string desc_copy = metadata.description;
+    Handle desc_node = _atomspace->add_node(CONCEPT_NODE, std::move(desc_copy));
     HandleSeq desc_link;
     desc_link.push_back(tool_node);
     desc_link.push_back(desc_node);

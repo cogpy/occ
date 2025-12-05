@@ -5,6 +5,9 @@ cmake_minimum_required(VERSION 3.16)
 find_package(GTest QUIET)
 find_package(Threads REQUIRED)
 
+# Find PkgConfig
+find_package(PkgConfig REQUIRED)
+
 # Find OpenCog packages for tests
 pkg_check_modules(COGUTIL cogutil)
 if (NOT COGUTIL_FOUND)
