@@ -20,7 +20,7 @@
 #include <opencog/atoms/base/Link.h>
 #include <opencog/atoms/truthvalue/SimpleTruthValue.h>
 
-#include "opencog/agentzero/tools/ToolWrapper.h"
+#include <opencog/agentzero/tools/ToolWrapper.h>
 
 using namespace opencog;
 using namespace opencog::agentzero::tools;

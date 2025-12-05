@@ -303,7 +303,7 @@ int main(int argc, char* argv[])
         example_tool_statistics();
         example_agentzero_integration();
         
-        std::cout << "\n========================================" << std::endl;
+        std::cout << "========================================" << std::endl;
         std::cout << "All examples completed successfully!" << std::endl;
         std::cout << "========================================" << std::endl;
         

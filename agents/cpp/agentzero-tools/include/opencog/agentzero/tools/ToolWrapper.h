@@ -258,6 +258,7 @@ public:
      * @param context Execution context
      * @param callback Callback function called when execution completes
      * @return Tool execution ID for tracking
+     * @note This method is not yet fully implemented and will be completed in a future update
      */
     std::string executeAsync(const ToolExecutionContext& context,
                             std::function<void(const ToolResult&)> callback = nullptr);
