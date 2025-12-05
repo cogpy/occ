@@ -6,8 +6,19 @@ find_package(GTest QUIET)
 find_package(Threads REQUIRED)
 
 # Find OpenCog packages for tests
-pkg_check_modules(COGUTIL REQUIRED cogutil)
-pkg_check_modules(ATOMSPACE REQUIRED atomspace)
+pkg_check_modules(COGUTIL cogutil)
+if (NOT COGUTIL_FOUND)
+    find_package(CogUtil REQUIRED)
+    set(COGUTIL_INCLUDE_DIRS ${COGUTIL_INCLUDE_DIR})
+    set(COGUTIL_LIBRARIES ${COGUTIL_LIBRARY})
+endif()
+
+pkg_check_modules(ATOMSPACE atomspace)
+if (NOT ATOMSPACE_FOUND)
+    find_package(AtomSpace REQUIRED)
+    set(ATOMSPACE_INCLUDE_DIRS ${ATOMSPACE_INCLUDE_DIR})
+    set(ATOMSPACE_LIBRARIES ${ATOMSPACE_LIBRARY})
+endif()
 
 if(GTEST_FOUND)
     enable_testing()

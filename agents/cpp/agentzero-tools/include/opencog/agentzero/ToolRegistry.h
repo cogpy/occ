@@ -131,7 +131,7 @@ private:
     Handle createToolAtom(const ToolMetadata& metadata);
     void updateToolStatus(const std::string& tool_name, ToolStatus status);
     bool checkToolDependencies(const std::string& tool_name);
-    std::vector<std::string> findToolsByCapability(const std::vector<ToolCapability>& required_capabilities);
+    std::vector<std::string> findToolsByCapability(const std::vector<ToolCapability>& required_capabilities) const;
     double calculateToolReliability(const std::string& tool_name);
     void updateToolUsageStatistics(const std::string& tool_name);
     

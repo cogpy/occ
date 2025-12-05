@@ -15,18 +15,32 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Find required OpenCog packages
 find_package(PkgConfig REQUIRED)
 
-# Find cogutil
-pkg_check_modules(COGUTIL REQUIRED cogutil)
-if (COGUTIL_FOUND)
-    message(STATUS "Found cogutil version ${COGUTIL_VERSION}")
+# Try to find cogutil
+pkg_check_modules(COGUTIL cogutil)
+if (NOT COGUTIL_FOUND)
+    # Try CMake find_package as fallback
+    find_package(CogUtil REQUIRED)
+    set(COGUTIL_INCLUDE_DIRS ${COGUTIL_INCLUDE_DIR})
+    set(COGUTIL_LIBRARIES ${COGUTIL_LIBRARY})
+endif()
+
+if (COGUTIL_FOUND OR CogUtil_FOUND)
+    message(STATUS "Found cogutil")
     include_directories(${COGUTIL_INCLUDE_DIRS})
     link_directories(${COGUTIL_LIBRARY_DIRS})
 endif()
 
-# Find atomspace  
-pkg_check_modules(ATOMSPACE REQUIRED atomspace)
-if (ATOMSPACE_FOUND)
-    message(STATUS "Found atomspace version ${ATOMSPACE_VERSION}")
+# Try to find atomspace  
+pkg_check_modules(ATOMSPACE atomspace)
+if (NOT ATOMSPACE_FOUND)
+    # Try CMake find_package as fallback
+    find_package(AtomSpace REQUIRED)
+    set(ATOMSPACE_INCLUDE_DIRS ${ATOMSPACE_INCLUDE_DIR})
+    set(ATOMSPACE_LIBRARIES ${ATOMSPACE_LIBRARY})
+endif()
+
+if (ATOMSPACE_FOUND OR AtomSpace_FOUND)
+    message(STATUS "Found atomspace")
     include_directories(${ATOMSPACE_INCLUDE_DIRS})
     link_directories(${ATOMSPACE_LIBRARY_DIRS})
 endif()

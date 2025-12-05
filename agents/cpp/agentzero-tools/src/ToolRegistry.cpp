@@ -167,7 +167,7 @@ Handle ToolRegistry::createToolAtom(const ToolMetadata& metadata)
     Handle tool_node = _atomspace->add_node(CONCEPT_NODE, "Tool:" + metadata.name);
     
     // Add description
-    Handle desc_node = _atomspace->add_node(CONCEPT_NODE, metadata.description);
+    Handle desc_node = _atomspace->add_node(CONCEPT_NODE, std::string(metadata.description));
     HandleSeq desc_link;
     desc_link.push_back(tool_node);
     desc_link.push_back(desc_node);
