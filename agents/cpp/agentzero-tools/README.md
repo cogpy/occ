@@ -237,7 +237,145 @@ composer->setMaxCompositionDepth(10);          // Max dependency depth
 - AGENT-ZERO-GENESIS.md - Overall project architecture
 - AZ-TOOL-001: ToolRegistry (companion task)
 - AZ-TOOL-002: ToolWrapper (companion task)
-- AZ-RESOURCE-001: ResourceManager (companion task)
+- AZ-TOOL-003: CapabilityComposer (companion task)
+- AZ-RESOURCE-001: ResourceManager (implemented)
+
+## ResourceManager - AZ-RESOURCE-001
+
+### Overview
+
+The ResourceManager component provides comprehensive resource optimization and management for Agent-Zero. It manages computational and physical resources including CPU, memory, disk, network, GPU, AtomSpace capacity, and tool instances.
+
+### Key Features
+
+- **Multi-Resource Management**: CPU, memory, disk, network, GPU, AtomSpace, and custom resources
+- **Resource Pooling**: Create and manage multiple pools per resource type
+- **Allocation Strategies**: Multiple optimization strategies (First-Fit, Best-Fit, Worst-Fit, Balanced, Priority-Based, Adaptive)
+- **Time-Based Allocation**: Support for temporary allocations with automatic expiration
+- **Resource Tracking**: Comprehensive statistics and usage monitoring
+- **AtomSpace Integration**: Full integration with OpenCog's knowledge representation
+- **Thread-Safe**: Safe for concurrent access from multiple threads
+- **Auto-Cleanup**: Automatic cleanup of expired allocations
+
+### Usage Example
+
+```cpp
+#include <opencog/agentzero/tools/ResourceManager.h>
+
+// Create ResourceManager with AtomSpace
+auto atomspace = std::make_shared<AtomSpace>();
+auto manager = std::make_unique<ResourceManager>(atomspace);
+
+// Create resource pools
+manager->createResourcePool(ResourceType::CPU, "CPU_Pool", 100.0);
+manager->createResourcePool(ResourceType::MEMORY, "Memory_Pool", 16384.0);
+
+// Allocate resources
+auto cpu_alloc = manager->allocateResource("task_1", ResourceType::CPU, 25.0, 60.0);
+auto mem_alloc = manager->allocateResource("task_1", ResourceType::MEMORY, 2048.0);
+
+// Check resource availability
+bool has_cpu = manager->hasAvailableResources(ResourceType::CPU, 50.0);
+double cpu_usage = manager->getResourceUsage(ResourceType::CPU);
+
+// Deallocate when done
+manager->deallocateResource(cpu_alloc->getAllocationId());
+manager->deallocateResourcesForRequester("task_1");
+
+// Get statistics
+std::string stats = manager->getStatistics();
+std::cout << stats << std::endl;
+```
+
+### Resource Types
+
+- **CPU**: CPU processing units
+- **MEMORY**: RAM in megabytes
+- **DISK**: Disk storage in megabytes
+- **NETWORK**: Network bandwidth in Mbps
+- **GPU**: GPU processing units
+- **ATOMSPACE**: AtomSpace node/link capacity
+- **TOOL_INSTANCE**: Tool execution instance slots
+- **CUSTOM**: Custom resource types
+
+### Optimization Strategies
+
+1. **FIRST_FIT**: Allocate from first pool with sufficient capacity (fastest)
+2. **BEST_FIT**: Allocate from pool with least waste (most efficient)
+3. **WORST_FIT**: Allocate from pool with most space (best for large allocations)
+4. **BALANCED**: Balance allocation across all pools (default, most fair)
+5. **PRIORITY_BASED**: Allocate based on requester priority (extensible)
+6. **ADAPTIVE**: Adaptive strategy based on usage patterns (learning-based)
+
+### Building
+
+ResourceManager is built as part of the agentzero-tools library:
+
+```bash
+cd /home/runner/work/pycog0/pycog0
+mkdir -p build && cd build
+cmake ..
+make agentzero-tools
+```
+
+### Testing
+
+Run the ResourceManager tests:
+
+```bash
+cd build
+make test
+# Or run specific test:
+./agents/cpp/agentzero-tools/tests/ResourceManagerSimpleTest
+```
+
+### Examples
+
+Run the ResourceManager demonstration:
+
+```bash
+cd build
+./agents/cpp/agentzero-tools/examples/ResourceManagerDemo
+```
+
+This demonstrates:
+- Basic resource management
+- Multiple optimization strategies
+- Time-based allocation with expiration
+- AtomSpace integration
+- Complex multi-task scenarios
+
+### Performance Characteristics
+
+- **Pool Creation**: O(1)
+- **Allocation**: O(n) where n = number of pools for resource type
+- **Deallocation**: O(m) where m = active allocations in pool
+- **Resource Query**: O(n) where n = pools for resource type
+- **Cleanup**: O(m) where m = total active allocations
+
+### Configuration
+
+```cpp
+// Set optimization strategy
+manager->setOptimizationStrategy(OptimizationStrategy::BALANCED);
+
+// Configure auto-cleanup
+manager->setAutoCleanupEnabled(true);
+manager->setCleanupInterval(60.0);  // seconds
+
+// Set pool thresholds
+auto pool = manager->getResourcePool("CPU_Pool");
+pool->setThresholds(0.75, 0.90);  // warning at 75%, critical at 90%
+```
+
+### Integration with OpenCog
+
+ResourceManager integrates seamlessly with OpenCog components:
+
+- **AtomSpace**: Resource pools and allocations represented as atoms
+- **CogServer**: Can be exposed via CogServer commands
+- **PLN**: Resource allocation can be reasoned about
+- **URE**: Rules can be created for dynamic resource optimization
 
 ## License
 

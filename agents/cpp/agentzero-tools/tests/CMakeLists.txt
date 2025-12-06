@@ -21,6 +21,18 @@ target_link_libraries(CapabilityComposerSimpleTest
 # Add test to CTest
 add_test(NAME CapabilityComposerSimpleTest COMMAND CapabilityComposerSimpleTest)
 
+# Simple test executable for ResourceManager
+add_executable(ResourceManagerSimpleTest ResourceManagerSimpleTest.cpp)
+
+target_link_libraries(ResourceManagerSimpleTest
+    agentzero-tools
+    ${COGUTIL_LIBRARY}
+    ${ATOMSPACE_LIBRARY}
+)
+
+# Add test to CTest
+add_test(NAME ResourceManagerSimpleTest COMMAND ResourceManagerSimpleTest)
+
 message(STATUS "Agent-Zero Tools tests configured successfully")
 # Agent-Zero Tools Tests CMakeLists.txt
 # Unit tests for AZ-TOOL-002: ToolWrapper unified interface
