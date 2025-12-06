@@ -1,13 +1,11 @@
 # Agent-Zero Communication Module CMakeLists.txt
-# Part of AZ-HUMAN-001: Create HumanInterface layer
-# Phase 6: Communication & NLP - Human-Agent Interaction
+# Part of the AGENT-ZERO-GENESIS project
+# Includes AZ-COMM-001, AZ-NLP-001, AZ-NLP-002, AZ-HUMAN-001, AZ-MULTI-001
 
 cmake_minimum_required(VERSION 3.16)
 
 project(AgentZeroCommunication
     VERSION 0.1.0
-    DESCRIPTION "Agent-Zero Communication Protocols for OpenCog Integration"
-    DESCRIPTION "Agent-Zero Communication & Human Interface Module for OpenCog Integration"
     DESCRIPTION "Agent-Zero Communication & NLP Module for OpenCog Integration"
     LANGUAGES CXX
 )
@@ -21,11 +19,7 @@ message(STATUS "Configuring Agent-Zero Communication Module...")
 # Find required dependencies
 find_package(PkgConfig REQUIRED)
 
-# Core OpenCog dependencies (required for communication module)
-# Find required OpenCog packages
-find_package(PkgConfig REQUIRED)
-
-# Find cogutil
+# Core OpenCog dependencies (required)
 pkg_check_modules(COGUTIL REQUIRED cogutil)
 if (COGUTIL_FOUND)
     message(STATUS "Found cogutil version ${COGUTIL_VERSION}")
@@ -33,34 +27,11 @@ if (COGUTIL_FOUND)
     link_directories(${COGUTIL_LIBRARY_DIRS})
 endif()
 
-# Find atomspace  
-pkg_check_modules(ATOMSPACE REQUIRED atomspace)
-pkg_check_modules(ATOMSPACE REQUIRED atomspace)
-# Find atomspace  
 pkg_check_modules(ATOMSPACE atomspace)
 if (ATOMSPACE_FOUND)
     message(STATUS "Found atomspace version ${ATOMSPACE_VERSION}")
     include_directories(${ATOMSPACE_INCLUDE_DIRS})
     link_directories(${ATOMSPACE_LIBRARY_DIRS})
-endif()
-
-# Find cogserver (optional but recommended for communication)
-# Find lg-atomese for language processing
-# Optional OpenCog dependencies for enhanced communication
-pkg_check_modules(COGSERVER cogserver)
-if (COGSERVER_FOUND)
-    message(STATUS "Found cogserver version ${COGSERVER_VERSION}")
-    include_directories(${COGSERVER_INCLUDE_DIRS})
-    link_directories(${COGSERVER_LIBRARY_DIRS})
-else()
-    message(STATUS "CogServer not found - network communication features will be disabled")
-    set(COGSERVER_FOUND FALSE)
-    add_definitions(-DHAVE_COGSERVER)
-else()
-    message(STATUS "CogServer not found - some features will be disabled")
-endif()
-
-# Link-Grammar for natural language processing (future integration)
 else()
     message(STATUS "atomspace not found via pkg-config, looking for system installation")
     find_path(ATOMSPACE_INCLUDE_DIR
@@ -81,60 +52,27 @@ else()
     endif()
 endif()
 
-# Find lg-atomese
+# Optional OpenCog dependencies
+pkg_check_modules(COGSERVER cogserver)
+if (COGSERVER_FOUND)
+    message(STATUS "Found cogserver version ${COGSERVER_VERSION}")
+    include_directories(${COGSERVER_INCLUDE_DIRS})
+    link_directories(${COGSERVER_LIBRARY_DIRS})
+    add_definitions(-DHAVE_COGSERVER)
+else()
+    message(STATUS "CogServer not found - network communication features will be disabled")
+endif()
+
 pkg_check_modules(LG_ATOMESE lg-atomese)
 if (LG_ATOMESE_FOUND)
     message(STATUS "Found lg-atomese version ${LG_ATOMESE_VERSION}")
     include_directories(${LG_ATOMESE_INCLUDE_DIRS})
     link_directories(${LG_ATOMESE_LIBRARY_DIRS})
-else()
-    message(STATUS "lg-atomese not found via pkg-config, looking for system includes")
-    find_path(LG_ATOMESE_INCLUDE_PATH
-        NAMES opencog/lg-atomese/LGAtomese.h
     add_definitions(-DHAVE_LG_ATOMESE)
 else()
     message(STATUS "lg-atomese not found - NLP features will be basic")
 endif()
 
-# Find Boost (required by OpenCog)
-find_package(Boost REQUIRED COMPONENTS
-    system
-    filesystem
-    thread
-    date_time
-)
-
-if(Boost_FOUND)
-    message(STATUS "Found Boost ${Boost_VERSION}: ${Boost_INCLUDE_DIRS}")
-    include_directories(${Boost_INCLUDE_DIRS})
-    link_directories(${Boost_LIBRARY_DIRS})
-else()
-    message(STATUS "lg-atomese not found via pkg-config, looking for system includes")
-    find_path(LG_ATOMESE_INCLUDE_PATH
-        NAMES opencog/nlp/lg-parse/LGParseLink.h
-        PATHS /usr/local/include /usr/include
-        PATH_SUFFIXES opencog
-    )
-    if(LG_ATOMESE_INCLUDE_PATH)
-        message(STATUS "Found lg-atomese headers at ${LG_ATOMESE_INCLUDE_PATH}")
-        include_directories(${LG_ATOMESE_INCLUDE_PATH})
-        set(LG_ATOMESE_FOUND TRUE)
-    endif()
-endif()
-
-# Find link-grammar for parsing
-pkg_check_modules(LINK_GRAMMAR link-grammar)
-if (LINK_GRAMMAR_FOUND)
-    message(STATUS "Found link-grammar version ${LINK_GRAMMAR_VERSION}")
-    include_directories(${LINK_GRAMMAR_INCLUDE_DIRS})
-    link_directories(${LINK_GRAMMAR_LIBRARY_DIRS})
-else()
-    message(STATUS "link-grammar not found - some NLP features will be limited")
-    set(LINK_GRAMMAR_FOUND FALSE)
-endif()
-
-# Find opencog main module
-# Find link-grammar
 find_path(LINK_GRAMMAR_INCLUDE_DIR
     NAMES link-grammar/link-includes.h
     PATHS /usr/include /usr/local/include
@@ -150,73 +88,37 @@ if(LINK_GRAMMAR_INCLUDE_DIR AND LINK_GRAMMAR_LIBRARY)
     message(STATUS "Found link-grammar at ${LINK_GRAMMAR_INCLUDE_DIR} and ${LINK_GRAMMAR_LIBRARY}")
     include_directories(${LINK_GRAMMAR_INCLUDE_DIR})
 else()
-    message(FATAL_ERROR "link-grammar not found. Please install link-grammar development package.")
+    message(STATUS "link-grammar not found - some NLP features will be limited")
 endif()
 
-# Find opencog main package (optional)
 pkg_check_modules(OPENCOG opencog)
 if (OPENCOG_FOUND)
     message(STATUS "Found opencog version ${OPENCOG_VERSION}")
     include_directories(${OPENCOG_INCLUDE_DIRS})
     link_directories(${OPENCOG_LIBRARY_DIRS})
 else()
-    message(STATUS "OpenCog main module not found - using core AtomSpace functionality only")
     message(STATUS "OpenCog main package not found - basic functionality available")
-    set(OPENCOG_FOUND FALSE)
+endif()
+
+# Find Boost (required by OpenCog)
+find_package(Boost REQUIRED COMPONENTS
+    system
+    filesystem
+    thread
+    date_time
+)
+
+if(Boost_FOUND)
+    message(STATUS "Found Boost ${Boost_VERSION}: ${Boost_INCLUDE_DIRS}")
+    include_directories(${Boost_INCLUDE_DIRS})
+    link_directories(${Boost_LIBRARY_DIRS})
 endif()
 
 # Include directories
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/../agentzero-core/include  # For AgentZero core integration
-)
-
-# Source files
-set(COMMUNICATION_SOURCES
-    src/HumanInterface.cpp
-    src/CommunicationUtils.cpp
-)
-
-# Header files (for installation)
-set(COMMUNICATION_HEADERS
-    include/agentzero/communication/HumanInterface.h
-    include/agentzero/communication/CommunicationTypes.h
-    include/agentzero/communication/CommunicationUtils.h
-)
-
-# Create the library
-add_library(agentzero-communication SHARED ${COMMUNICATION_SOURCES})
-
-# Set library properties
-set_target_properties(agentzero-communication PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    SOVERSION 0
-    PUBLIC_HEADER "${COMMUNICATION_HEADERS}"
-    POSITION_INDEPENDENT_CODE ON
-)
-
-# Include directories for the target
-target_include_directories(agentzero-communication PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-# Link required libraries
-target_link_libraries(agentzero-communication
-    ${COGUTIL_LIBRARIES}
-    ${ATOMSPACE_LIBRARIES}
-    ${Boost_LIBRARIES}
-    pthread
-)
-
-# Link optional libraries with proper feature flags
-if(COGSERVER_FOUND AND COGSERVER_LIBRARIES)
-    target_link_libraries(agentzero-communication ${COGSERVER_LIBRARIES})
-    target_compile_definitions(agentzero-communication PRIVATE HAVE_COGSERVER=1)
-    message(STATUS "Linking cogserver libraries: ${COGSERVER_LIBRARIES}")
-endif()
-
+    ${CMAKE_CURRENT_SOURCE_DIR}/../agentzero-core/include
 )
 
 # Source files
@@ -230,6 +132,7 @@ set(AGENTZERO_COMMUNICATION_SOURCES
     src/LanguageProcessor.cpp
     src/MessageHandler.cpp
     src/HumanInterface.cpp
+    src/CommunicationUtils.cpp
     src/MultiAgentCoordinator.cpp
 )
 
@@ -253,19 +156,32 @@ add_library(agentzero-communication SHARED
     ${AGENTZERO_COMMUNICATION_HEADERS}
 )
 
+# Set library properties
+set_target_properties(agentzero-communication PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION 0
+    POSITION_INDEPENDENT_CODE ON
+)
+
+target_include_directories(agentzero-communication PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+# Link required libraries
 target_link_libraries(agentzero-communication
     ${COGUTIL_LIBRARIES}
     ${ATOMSPACE_LIBRARIES}
     ${Boost_LIBRARIES}
+    pthread
 )
 
-# Link cogserver libraries if available
+# Link optional libraries with proper feature flags
 if(COGSERVER_FOUND AND COGSERVER_LIBRARIES)
     target_link_libraries(agentzero-communication ${COGSERVER_LIBRARIES})
     target_compile_definitions(agentzero-communication PRIVATE HAVE_COGSERVER=1)
     message(STATUS "Linking cogserver libraries: ${COGSERVER_LIBRARIES}")
-    ${LINK_GRAMMAR_LIBRARY}
-)
+endif()
 
 # Find additional required libraries
 find_library(ATOMBASE_LIBRARY
@@ -303,16 +219,20 @@ if(LG_ATOMESE_FOUND AND LG_ATOMESE_LIBRARIES)
     target_link_libraries(agentzero-communication ${LG_ATOMESE_LIBRARIES})
     target_compile_definitions(agentzero-communication PRIVATE HAVE_LG_ATOMESE=1)
     message(STATUS "Linking lg-atomese libraries: ${LG_ATOMESE_LIBRARIES}")
-elseif(LG_ATOMESE_FOUND)
-    target_compile_definitions(agentzero-communication PRIVATE HAVE_LG_ATOMESE=1)
-    message(STATUS "lg-atomese headers found, compiling with lg-atomese support")
 endif()
 
 # Link link-grammar libraries if available
-if(LINK_GRAMMAR_FOUND AND LINK_GRAMMAR_LIBRARIES)
-    target_link_libraries(agentzero-communication ${LINK_GRAMMAR_LIBRARIES})
+if(LINK_GRAMMAR_FOUND AND LINK_GRAMMAR_LIBRARY)
+    target_link_libraries(agentzero-communication ${LINK_GRAMMAR_LIBRARY})
     target_compile_definitions(agentzero-communication PRIVATE HAVE_LINK_GRAMMAR=1)
-    message(STATUS "Linking link-grammar libraries: ${LINK_GRAMMAR_LIBRARIES}")
+    message(STATUS "Linking link-grammar library: ${LINK_GRAMMAR_LIBRARY}")
+endif()
+
+# Link opencog libraries if available
+if(OPENCOG_FOUND AND OPENCOG_LIBRARIES)
+    target_link_libraries(agentzero-communication ${OPENCOG_LIBRARIES})
+    target_compile_definitions(agentzero-communication PRIVATE HAVE_OPENCOG=1)
+    message(STATUS "Linking opencog libraries: ${OPENCOG_LIBRARIES}")
 endif()
 
 # Compiler flags
@@ -328,12 +248,12 @@ install(TARGETS agentzero-communication
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/agentzero/communication
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 # Install all headers
-install(DIRECTORY include/agentzero/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/agentzero
+install(DIRECTORY include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     FILES_MATCHING PATTERN "*.h"
 )
 
@@ -341,18 +261,6 @@ install(DIRECTORY include/agentzero/
 install(EXPORT AgentZeroCommunicationTargets
     FILE AgentZeroCommunicationTargets.cmake
     NAMESPACE AgentZero::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AgentZeroCommunication
-)
-
-# Configure package config file
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/AgentZeroCommunicationConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/AgentZeroCommunicationConfig.cmake"
-    @ONLY
-)
-
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/AgentZeroCommunicationConfig.cmake"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AgentZeroCommunication
 )
 
@@ -367,37 +275,6 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/agentzero-communication.pc
     DESTINATION lib/pkgconfig
 )
 
-# Examples
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
-
-# Link opencog libraries if available
-if(OPENCOG_FOUND AND OPENCOG_LIBRARIES)
-    target_link_libraries(agentzero-communication ${OPENCOG_LIBRARIES})
-    target_compile_definitions(agentzero-communication PRIVATE HAVE_OPENCOG=1)
-    message(STATUS "Linking opencog libraries: ${OPENCOG_LIBRARIES}")
-endif()
-
-target_include_directories(agentzero-communication PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-# Installation
-install(TARGETS agentzero-communication
-    EXPORT AgentZeroCppTargets
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
-    INCLUDES DESTINATION include
-)
-
-install(DIRECTORY include/
-    DESTINATION include
-    FILES_MATCHING PATTERN "*.h"
-)
-
 # Tests
 if(BUILD_TESTING)
     enable_testing()
@@ -405,49 +282,15 @@ if(BUILD_TESTING)
 endif()
 
 # Examples
-add_subdirectory(examples)
-
-# Status message
-message(STATUS "Agent-Zero Communication module configuration complete")
-message(STATUS "Available features:")
-if(LG_ATOMESE_FOUND)
-    message(STATUS "  - lg-atomese integration: YES")
-else()
-    message(STATUS "  - lg-atomese integration: NO")
-endif()
-if(LINK_GRAMMAR_FOUND)
-    message(STATUS "  - Link Grammar parsing: YES")
-else()
-    message(STATUS "  - Link Grammar parsing: NO")
-endif()
-if(OPENCOG_FOUND)
-    message(STATUS "  - OpenCog NLP integration: YES")
-else()
-    message(STATUS "  - OpenCog NLP integration: NO")
-endif()
-# Report configuration
-message(STATUS "Agent-Zero Communication Dependencies:")
-message(STATUS "  cogutil: ${COGUTIL_VERSION}")
-message(STATUS "  atomspace: ${ATOMSPACE_VERSION}")
-message(STATUS "  cogserver: ${COGSERVER_FOUND}")
-message(STATUS "  lg-atomese: ${LG_ATOMESE_FOUND}")
-message(STATUS "  boost: ${Boost_VERSION}")
-
-# Status summary
-message(STATUS "Agent-Zero Communication Configuration:")
-message(STATUS "  Version: ${PROJECT_VERSION}")
-message(STATUS "  CogServer integration: ${COGSERVER_FOUND}")
-message(STATUS "  NLP integration: ${LG_ATOMESE_FOUND}")
-message(STATUS "  Build examples: ${BUILD_EXAMPLES}")
-message(STATUS "  Build tests: ${BUILD_TESTING}")
-message(STATUS "")
-message(STATUS "Human Interface layer ready for build and testing")
-# Examples
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
 # Status message
 message(STATUS "Agent-Zero Communication module configuration complete")
-message(STATUS "Ready for build and testing with OpenCog integration")
-message(STATUS "Dependencies found: cogutil=${COGUTIL_FOUND}, atomspace=${ATOMSPACE_FOUND}, link-grammar=${LINK_GRAMMAR_FOUND}, lg-atomese=${LG_ATOMESE_FOUND}")
+message(STATUS "Available features:")
+message(STATUS "  - CogServer integration: ${COGSERVER_FOUND}")
+message(STATUS "  - lg-atomese integration: ${LG_ATOMESE_FOUND}")
+message(STATUS "  - Link Grammar parsing: ${LINK_GRAMMAR_FOUND}")
+message(STATUS "  - OpenCog NLP integration: ${OPENCOG_FOUND}")
+message(STATUS "Dependencies found: cogutil=${COGUTIL_FOUND}, atomspace=${ATOMSPACE_FOUND}")
