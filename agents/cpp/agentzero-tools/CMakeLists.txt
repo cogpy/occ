@@ -1,4 +1,5 @@
 # Agent-Zero Tools Module CMakeLists.txt
+# Phase 8: Tool Integration - AZ-TOOL-002
 
 cmake_minimum_required(VERSION 3.16)
 
@@ -15,6 +16,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Find required OpenCog packages
 find_package(PkgConfig REQUIRED)
 
+# Find cogutil
+pkg_check_modules(COGUTIL REQUIRED cogutil)
+if (COGUTIL_FOUND)
+    message(STATUS "Found cogutil version ${COGUTIL_VERSION}")
 # Try to find cogutil
 pkg_check_modules(COGUTIL cogutil)
 if (NOT COGUTIL_FOUND)
@@ -30,6 +35,10 @@ if (COGUTIL_FOUND OR CogUtil_FOUND)
     link_directories(${COGUTIL_LIBRARY_DIRS})
 endif()
 
+# Find atomspace  
+pkg_check_modules(ATOMSPACE REQUIRED atomspace)
+if (ATOMSPACE_FOUND)
+    message(STATUS "Found atomspace version ${ATOMSPACE_VERSION}")
 # Try to find atomspace  
 pkg_check_modules(ATOMSPACE atomspace)
 if (NOT ATOMSPACE_FOUND)
@@ -53,11 +62,45 @@ include_directories(
 
 # Source files
 set(AGENTZERO_TOOLS_SOURCES
+    src/ToolWrapper.cpp
     src/ToolRegistry.cpp
 )
 
 # Header files
 set(AGENTZERO_TOOLS_HEADERS
+    include/opencog/agentzero/tools/ToolWrapper.h
+)
+
+# Create library
+add_library(agentzero-tools SHARED
+    ${AGENTZERO_TOOLS_SOURCES}
+    ${AGENTZERO_TOOLS_HEADERS}
+)
+
+target_link_libraries(agentzero-tools
+    ${COGUTIL_LIBRARIES}
+    ${ATOMSPACE_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
+
+target_include_directories(agentzero-tools PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+# Installation
+install(TARGETS agentzero-tools
+    EXPORT AgentZeroCppTargets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+)
+
+install(DIRECTORY include/
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.h"
+)
     include/opencog/agentzero/ToolRegistry.h
 )
 
@@ -100,6 +143,14 @@ if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
+# Examples
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+
+# Status message
+message(STATUS "Agent-Zero Tools module configuration complete")
+message(STATUS "AZ-TOOL-002: ToolWrapper unified interface implemented")
 # Status message
 message(STATUS "Agent-Zero Tools module configuration complete")
 message(STATUS "ToolRegistry implementation ready for build and testing")
