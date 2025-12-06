@@ -4,7 +4,21 @@ Agent-Zero High-Level Python API
 Provides a Pythonic interface to Agent-Zero functionality.
 """
 
-from opencog.atomspace import AtomSpace, ConceptNode, PredicateNode
+try:
+    from opencog.atomspace import AtomSpace, ConceptNode, PredicateNode
+    ATOMSPACE_AVAILABLE = True
+except ImportError:
+    ATOMSPACE_AVAILABLE = False
+    # Stub implementations for when atomspace is not available
+    class AtomSpace:
+        pass
+    class ConceptNode:
+        def __init__(self, name):
+            self.name = name
+    class PredicateNode:
+        def __init__(self, name):
+            self.name = name
+
 from .agentzero_core import AgentZeroCore
 from .cognitive_loop import CognitiveLoop
 from .task_manager import TaskManager

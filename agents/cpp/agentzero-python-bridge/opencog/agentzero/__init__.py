@@ -78,10 +78,37 @@ except ImportError as e:
         def query_pattern(self, pattern):
             return []
 
-# Import high-level Python API
-from .agent_zero import AgentZero
-from .exceptions import AgentZeroError, AgentZeroRuntimeError, AgentZeroConfigError
-from .utils import create_goal, create_task, query_knowledge
+# Import high-level Python API (always available)
+try:
+    from .exceptions import AgentZeroError, AgentZeroRuntimeError, AgentZeroConfigError
+    from .utils import create_goal, create_task, query_knowledge
+    
+    # Try to import agent_zero which depends on other modules
+    try:
+        from .agent_zero import AgentZero
+    except (ImportError, ModuleNotFoundError) as e:
+        # AgentZero depends on Cython modules, provide warning
+        import warnings
+        warnings.warn(
+            f"AgentZero high-level API not available: {e}\n"
+            "This is expected if C++ libraries are not built yet.",
+            ImportWarning
+        )
+        AgentZero = None
+        
+except ImportError as e:
+    import warnings
+    warnings.warn(
+        f"Some Agent-Zero Python modules could not be imported: {e}",
+        ImportWarning
+    )
+    AgentZeroError = Exception
+    AgentZeroRuntimeError = Exception
+    AgentZeroConfigError = Exception
+    create_goal = None
+    create_task = None
+    query_knowledge = None
+    AgentZero = None
 
 __all__ = [
     'AgentZeroCore',

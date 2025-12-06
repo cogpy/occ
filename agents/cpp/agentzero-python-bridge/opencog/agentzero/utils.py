@@ -4,7 +4,20 @@ Agent-Zero Utility Functions
 Helper functions for working with Agent-Zero.
 """
 
-from opencog.atomspace import ConceptNode, PredicateNode, ListLink, ExecutionLink
+try:
+    from opencog.atomspace import ConceptNode, PredicateNode, ListLink, ExecutionLink
+except ImportError:
+    # Stubs when atomspace not available
+    class ConceptNode:
+        def __init__(self, name):
+            self.name = name
+    class PredicateNode:
+        def __init__(self, name):
+            self.name = name
+    class ListLink:
+        pass
+    class ExecutionLink:
+        pass
 
 
 def create_goal(name, description=None, priority=1.0):
