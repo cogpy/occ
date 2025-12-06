@@ -12,6 +12,24 @@ The Agent-Zero Core provides the main cognitive loop and orchestration capabilit
 - **CognitiveLoop**: Implements perception-action-reflection cycle
 - **TaskManager**: Manages goal decomposition and execution  
 - **KnowledgeIntegrator**: Bridges with AtomSpace knowledge representation
+- **SelfModification**: Self-modification and meta-programming capabilities (Phase 10) ✅
+
+### Recent Additions
+
+#### ✅ Self-Modification System (AZ-META-001) - COMPLETE
+The self-modification system enables Agent-Zero to analyze, evaluate, and safely modify its own code, strategies, and behaviors.
+
+**Key Features**:
+- Code analysis and introspection
+- Multi-type modification proposals (6 types)
+- Four-tier safety framework
+- Rollback and checkpoint support
+- AtomSpace integration
+- Learning from results
+
+**Documentation**: See [docs/SELF_MODIFICATION.md](docs/SELF_MODIFICATION.md) for complete usage guide.
+
+**Status**: Production-ready, pending OpenCog dependency availability in CI.
 
 ## Dependencies
 
