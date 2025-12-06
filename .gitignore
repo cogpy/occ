@@ -28,3 +28,10 @@ Makefile
 # Test files
 test-*.sh
 *-test.sh
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
