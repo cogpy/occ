@@ -3,6 +3,12 @@
 # AZ-INT-002: Comprehensive benchmarking suite
 
 cmake_minimum_required(VERSION 3.16)
+project(AgentZeroBenchmark)
+
+# Find required packages
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(COGUTIL REQUIRED cogutil)
+pkg_check_modules(ATOMSPACE REQUIRED atomspace)
 
 # Build Agent-Zero Benchmarking Library
 add_library(agentzero-benchmark SHARED
@@ -12,13 +18,21 @@ add_library(agentzero-benchmark SHARED
 target_link_libraries(agentzero-benchmark
     ${COGUTIL_LIBRARIES}
     ${ATOMSPACE_LIBRARIES}
-    ${Boost_LIBRARIES}
+    atombase
+    atomcore
+    atomspace
 )
 
 target_include_directories(agentzero-benchmark PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${COGUTIL_INCLUDE_DIR}
-    ${ATOMSPACE_INCLUDE_DIR}
+    ${COGUTIL_INCLUDE_DIRS}
+    ${ATOMSPACE_INCLUDE_DIRS}
+)
+
+target_link_directories(agentzero-benchmark PUBLIC
+    ${COGUTIL_LIBRARY_DIRS}
+    ${ATOMSPACE_LIBRARY_DIRS}
+    /usr/local/lib/opencog
 )
 
 # Install benchmarking library
@@ -41,7 +55,16 @@ target_link_libraries(agentzero-component-benchmarks
     agentzero-benchmark
     ${COGUTIL_LIBRARIES}
     ${ATOMSPACE_LIBRARIES}
-    ${Boost_LIBRARIES}
+    atom_types
+    atombase
+    atomcore
+    atomspace
+)
+
+target_link_directories(agentzero-component-benchmarks PUBLIC
+    ${COGUTIL_LIBRARY_DIRS}
+    ${ATOMSPACE_LIBRARY_DIRS}
+    /usr/local/lib/opencog
 )
 
 # Install benchmark executable
@@ -69,7 +92,6 @@ if(CXXTEST_FOUND)
             ${COGUTIL_LIBRARIES}
             ${ATOMSPACE_LIBRARIES}
             ${COGSERVER_LIBRARIES}
-            ${Boost_LIBRARIES}
         )
     endif()
     
@@ -84,7 +106,6 @@ if(CXXTEST_FOUND)
             ${COGUTIL_LIBRARIES}
             ${ATOMSPACE_LIBRARIES}
             ${COGSERVER_LIBRARIES}
-            ${Boost_LIBRARIES}
         )
     endif()
     

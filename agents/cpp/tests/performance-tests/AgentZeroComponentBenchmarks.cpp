@@ -56,7 +56,7 @@ void benchmark_atomspace_operations(AgentZeroBenchmark& bench)
     bench.run_benchmark("incoming_set_access", 5000, [&]() {
         static int idx = 0;
         Handle h = nodes[idx % nodes.size()];
-        bench.get_atomspace()->get_incoming_set(h);
+        h->getIncomingSet();
         idx++;
     });
 }
@@ -86,7 +86,7 @@ void benchmark_cognitive_operations(AgentZeroBenchmark& bench)
     
     bench.run_benchmark("pattern_matching_sim", 2000, [&]() {
         for (auto& node : pattern_nodes) {
-            bench.get_atomspace()->get_incoming_set(node);
+            node->getIncomingSet();
         }
     });
 }
@@ -131,8 +131,10 @@ void benchmark_memory_operations(AgentZeroBenchmark& bench)
     bench.run_benchmark("episodic_memory", 2000, [&]() {
         static int counter = 0;
         auto event = bench.get_atomspace()->add_node(CONCEPT_NODE, "Event_" + std::to_string(counter));
-        auto timestamp = bench.get_atomspace()->add_node(TIME_NODE, std::to_string(counter));
-        bench.get_atomspace()->add_link(AT_TIME_LINK, event, timestamp);
+        // Note: TIME_NODE and AT_TIME_LINK are not standard in base atomspace
+        // Using CONCEPT_NODE and LIST_LINK as alternative for demonstration
+        auto timestamp = bench.get_atomspace()->add_node(CONCEPT_NODE, "Time_" + std::to_string(counter));
+        bench.get_atomspace()->add_link(LIST_LINK, event, timestamp);
         counter++;
     });
     

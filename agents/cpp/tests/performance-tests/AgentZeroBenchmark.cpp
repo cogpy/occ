@@ -165,6 +165,10 @@ std::vector<BenchmarkResult> AgentZeroBenchmark::run_scaling_benchmark(
 
 void AgentZeroBenchmark::export_results_to_csv(const std::string& filename)
 {
+    // Create output directory if it doesn't exist
+    std::string mkdir_cmd = "mkdir -p " + _output_directory;
+    system(mkdir_cmd.c_str());
+    
     std::string full_path = _output_directory + "/" + filename + ".csv";
     std::ofstream file(full_path);
     
