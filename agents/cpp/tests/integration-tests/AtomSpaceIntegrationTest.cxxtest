@@ -134,9 +134,9 @@ public:
         
         Handle atom = createTestAtom(CONCEPT_NODE, "ValueAttachTest");
         
-        // Attach float value using AtomSpace value API
+        // Attach float value using OpenCog FloatValue API
         std::vector<double> float_data = {1.0, 2.0, 3.0, 4.0, 5.0};
-        ValuePtr float_value = createFloatValue(float_data);
+        ProtoAtomPtr float_value = createFloatValue(float_data);
         Handle key_atom = createTestAtom(PREDICATE_NODE, "scores");
         atom->setValue(key_atom, float_value);
         
@@ -144,12 +144,14 @@ public:
         ValuePtr retrieved = atom->getValue(key_atom);
         TS_ASSERT(retrieved != nullptr);
         
-        FloatValuePtr fv = FloatValueCast(retrieved);
-        TS_ASSERT(fv != nullptr);
-        if (fv != nullptr) {
-            TS_ASSERT_EQUALS(fv->value().size(), 5);
-            TS_ASSERT_DELTA(fv->value()[0], 1.0, 0.001);
-            TS_ASSERT_DELTA(fv->value()[4], 5.0, 0.001);
+        if (retrieved != nullptr) {
+            FloatValuePtr fv = FloatValueCast(retrieved);
+            TS_ASSERT(fv != nullptr);
+            if (fv != nullptr) {
+                TS_ASSERT_EQUALS(fv->value().size(), 5);
+                TS_ASSERT_DELTA(fv->value()[0], 1.0, 0.001);
+                TS_ASSERT_DELTA(fv->value()[4], 5.0, 0.001);
+            }
         }
         
         stopTestTimer();
