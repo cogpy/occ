@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Build verification script for AZ-SCALE-001
 
 set -e
