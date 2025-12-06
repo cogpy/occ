@@ -193,6 +193,7 @@ cdef class CognitiveLoop:
                 'reflections': 0
             }
         
+        # Get statistics from C++ and convert
         cdef map[string, long] stats = self.c_obj.get_statistics()
         result = {}
         for item in stats:

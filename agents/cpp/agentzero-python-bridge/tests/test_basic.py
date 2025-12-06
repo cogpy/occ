@@ -120,9 +120,9 @@ def test_stub_classes():
         print("  ✓ Stub classes available")
         
         # Try to create instances (will use stubs if C++ not available)
-        # This tests that the stubs work
+        # Check if this is a compiled Cython module by looking for __pyx_vtable__ attribute
         print("  ℹ Cython bindings status:")
-        if AgentZeroCore.__module__.endswith('.pyx'):
+        if hasattr(AgentZeroCore, '__pyx_vtable__'):
             print("    - Compiled Cython modules")
         else:
             print("    - Using stub implementations")

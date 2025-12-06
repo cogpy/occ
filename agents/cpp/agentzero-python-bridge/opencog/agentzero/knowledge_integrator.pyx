@@ -184,7 +184,8 @@ cdef class KnowledgeIntegrator:
         """
         if self.c_obj == NULL:
             return False
-        return self.c_obj.infer(<cHandle>query)
+        # return self.c_obj.infer(<cHandle>query)
+        return False
     
     def get_truth_value(self, atom):
         """

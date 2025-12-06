@@ -31,6 +31,29 @@ endif()
 
 message(STATUS "Found Cython: ${CYTHON_EXECUTABLE}")
 
+# Check Cython version
+execute_process(
+    COMMAND ${CYTHON_EXECUTABLE} --version
+    OUTPUT_VARIABLE CYTHON_VERSION_OUTPUT
+    ERROR_VARIABLE CYTHON_VERSION_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_STRIP_TRAILING_WHITESPACE
+)
+
+if(CYTHON_VERSION_OUTPUT MATCHES "([0-9]+\\.[0-9]+)")
+    set(CYTHON_VERSION "${CMAKE_MATCH_1}")
+    message(STATUS "Cython version: ${CYTHON_VERSION}")
+    
+    # Check if version is 0.29 or higher
+    if(CYTHON_VERSION VERSION_LESS "0.29")
+        message(WARNING "Cython version ${CYTHON_VERSION} is too old (need 0.29+)")
+        message(STATUS "Upgrade cython: pip install --upgrade cython")
+        return()
+    endif()
+else()
+    message(WARNING "Could not determine Cython version")
+endif()
+
 # Find required OpenCog packages
 find_package(PkgConfig REQUIRED)
 

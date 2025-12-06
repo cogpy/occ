@@ -168,7 +168,8 @@ def get_agent_statistics(agent):
     try:
         loop_stats = agent.statistics
         stats.update(loop_stats)
-    except:
+    except (AttributeError, TypeError):
+        # Statistics not available or agent not initialized properly
         pass
     
     return stats
