@@ -15,6 +15,7 @@ add_subdirectory(cpp/agentzero-perception)
 add_subdirectory(cpp/agentzero-planning)  # AZ-SPATIAL-001: Added planning module
 add_subdirectory(cpp/agentzero-memory)    # AZ-MEM-003: Added memory module
 add_subdirectory(cpp/agentzero-memory)    # AZ-MEM-002: Added memory management module
+add_subdirectory(cpp/agentzero-tools)     # AZ-TOOL-001: Added tools integration module
 
 # Future: Add other agent implementations here
 # add_subdirectory(python)  # For Python-based agents
