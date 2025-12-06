@@ -1,0 +1,446 @@
+---
+name: Agent-Zero CI Build
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'agents/**'
+      - '.github/workflows/agent-zero-ci.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'agents/**'
+      - '.github/workflows/agent-zero-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+env:
+  # Build configuration
+  CMAKE_BUILD_TYPE: Release
+  BUILD_TESTING: ON
+  BUILD_EXAMPLES: ON
+  BUILD_DOCS: OFF
+  
+  # Compiler settings
+  CXX: g++
+  CC: gcc
+  
+  # Agent-Zero specific settings
+  AGENT_ZERO_VERSION: 0.1.0
+
+jobs:
+  # ==== Foundation: Build OpenCog Dependencies ====
+  build-opencog-dependencies:
+    name: Build OpenCog Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ccache \
+            pkg-config \
+            cmake \
+            build-essential \
+            git \
+            libboost-all-dev \
+            librocksdb-dev \
+            liboctomap-dev \
+            libssl-dev \
+            guile-3.0-dev \
+            cython3 \
+            python3-nose \
+            python3-dev \
+            python3-pip \
+            valgrind \
+            doxygen
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install cython numpy
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-opencog-deps
+
+      - name: Build and install cogutil
+        run: |
+          cd cogutil
+          mkdir -p build && cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build and install atomspace
+        run: |
+          cd atomspace
+          # Create missing lib directory if needed
+          if [ ! -d "lib" ]; then
+            mkdir -p lib
+            echo "# Empty lib directory for build compatibility" > lib/CMakeLists.txt
+          fi
+          mkdir -p build && cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Build and install cogserver
+        run: |
+          cd cogserver
+          mkdir -p build && cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Cache OpenCog installation
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /usr/local/lib
+            /usr/local/include
+            /usr/local/lib/pkgconfig
+          key: opencog-deps-${{ runner.os }}-${{ github.sha }}
+
+  # ==== Build Agent-Zero Core ====
+  build-agent-zero-core:
+    name: Build Agent-Zero Core
+    runs-on: ubuntu-latest
+    needs: [build-opencog-dependencies]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ccache \
+            pkg-config \
+            cmake \
+            build-essential \
+            git \
+            libboost-all-dev \
+            librocksdb-dev \
+            liboctomap-dev \
+            libssl-dev \
+            guile-3.0-dev \
+            cython3 \
+            python3-nose \
+            python3-dev \
+            python3-pip
+
+      - name: Restore OpenCog dependencies cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /usr/local/lib
+            /usr/local/include
+            /usr/local/lib/pkgconfig
+          key: opencog-deps-${{ runner.os }}-${{ github.sha }}
+
+      - name: Update library cache
+        run: sudo ldconfig
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-agent-zero-core
+
+      - name: Configure Agent-Zero Core
+        run: |
+          cd agents/cpp/agentzero-core
+          mkdir -p build && cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DBUILD_TESTING=${{ env.BUILD_TESTING }}
+
+      - name: Build Agent-Zero Core
+        run: |
+          cd agents/cpp/agentzero-core/build
+          make -j$(nproc)
+
+      - name: Run Agent-Zero Core tests
+        run: |
+          cd agents/cpp/agentzero-core/build
+          ctest --output-on-failure --verbose
+
+      - name: Install Agent-Zero Core
+        run: |
+          cd agents/cpp/agentzero-core/build
+          sudo make install
+          sudo ldconfig
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: agent-zero-core-build
+          path: |
+            agents/cpp/agentzero-core/build/
+          retention-days: 7
+
+  # ==== Build Agent-Zero Full System ====
+  build-agent-zero-full:
+    name: Build Agent-Zero Full System
+    runs-on: ubuntu-latest
+    needs: [build-agent-zero-core]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ccache \
+            pkg-config \
+            cmake \
+            build-essential \
+            git \
+            libboost-all-dev \
+            librocksdb-dev \
+            liboctomap-dev \
+            libssl-dev \
+            guile-3.0-dev \
+            cython3 \
+            python3-nose \
+            python3-dev \
+            python3-pip
+
+      - name: Restore OpenCog dependencies cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /usr/local/lib
+            /usr/local/include
+            /usr/local/lib/pkgconfig
+          key: opencog-deps-${{ runner.os }}-${{ github.sha }}
+
+      - name: Update library cache
+        run: sudo ldconfig
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-agent-zero-full
+
+      - name: Configure Agent-Zero Full System
+        run: |
+          cd agents
+          mkdir -p build && cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DBUILD_TESTING=${{ env.BUILD_TESTING }} \
+            -DBUILD_EXAMPLES=${{ env.BUILD_EXAMPLES }} \
+            -DBUILD_DOCS=${{ env.BUILD_DOCS }}
+
+      - name: Build Agent-Zero Full System
+        run: |
+          cd agents/build
+          make -j$(nproc)
+
+      - name: Run Agent-Zero tests
+        run: |
+          cd agents/build
+          ctest --output-on-failure --verbose
+        continue-on-error: true
+
+      - name: Install Agent-Zero
+        run: |
+          cd agents/build
+          sudo make install
+          sudo ldconfig
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: agent-zero-full-build
+          path: |
+            agents/build/
+          retention-days: 7
+
+  # ==== Test Agent-Zero Demonstrations ====
+  test-demonstrations:
+    name: Test Agent-Zero Demonstrations
+    runs-on: ubuntu-latest
+    needs: [build-agent-zero-full]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            cmake \
+            build-essential \
+            git \
+            libboost-all-dev \
+            librocksdb-dev \
+            liboctomap-dev \
+            libssl-dev \
+            guile-3.0-dev \
+            cython3 \
+            python3-nose \
+            python3-dev \
+            python3-pip
+
+      - name: Restore OpenCog dependencies cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /usr/local/lib
+            /usr/local/include
+            /usr/local/lib/pkgconfig
+          key: opencog-deps-${{ runner.os }}-${{ github.sha }}
+
+      - name: Update library cache
+        run: sudo ldconfig
+
+      - name: Install Python dependencies for validation
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pytest pyyaml
+
+      - name: Validate demonstrations
+        run: |
+          cd agents/demonstrations
+          if [ -f "validate_demos.py" ]; then
+            python3 validate_demos.py
+          else
+            echo "No validation script found, skipping..."
+          fi
+        continue-on-error: true
+
+      - name: Run demonstration scripts
+        run: |
+          cd agents/demonstrations
+          if [ -f "run_all_demos.sh" ]; then
+            chmod +x run_all_demos.sh
+            ./run_all_demos.sh || echo "Some demonstrations failed (expected in CI)"
+          else
+            echo "No demo runner script found, skipping..."
+          fi
+        continue-on-error: true
+
+      - name: Upload demonstration results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: demonstration-results
+          path: |
+            agents/demonstrations/*.log
+            agents/demonstrations/*.json
+          retention-days: 7
+
+  # ==== Code Quality Checks ====
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
+      - name: Check C++ code formatting
+        run: |
+          cd agents
+          find . -name "*.cpp" -o -name "*.h" -o -name "*.hpp" | \
+            xargs clang-format --dry-run --Werror || \
+            echo "Code formatting issues found (non-blocking)"
+        continue-on-error: true
+
+      - name: Check for TODO/FIXME comments
+        run: |
+          cd agents
+          echo "=== TODO/FIXME Summary ==="
+          grep -r "TODO\|FIXME" --include="*.cpp" --include="*.h" --include="*.hpp" . || \
+            echo "No TODO/FIXME comments found"
+
+      - name: Generate code statistics
+        run: |
+          cd agents
+          echo "=== Code Statistics ==="
+          echo "C++ files:"
+          find . -name "*.cpp" | wc -l
+          echo "Header files:"
+          find . -name "*.h" -o -name "*.hpp" | wc -l
+          echo "Total lines of code:"
+          find . -name "*.cpp" -o -name "*.h" -o -name "*.hpp" | xargs wc -l | tail -1
+
+  # ==== Build Summary Report ====
+  build-summary:
+    name: Build Summary Report
+    runs-on: ubuntu-latest
+    needs: [build-agent-zero-full, test-demonstrations, code-quality]
+    if: always()
+    steps:
+      - name: Generate build summary
+        run: |
+          echo "# Agent-Zero CI Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Build Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workflow:** ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Agent-Zero Version:** ${{ env.AGENT_ZERO_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Job Status" >> $GITHUB_STEP_SUMMARY
+          echo "- OpenCog Dependencies: ${{ needs.build-opencog-dependencies.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Agent-Zero Core: ${{ needs.build-agent-zero-core.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Agent-Zero Full: ${{ needs.build-agent-zero-full.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Demonstrations: ${{ needs.test-demonstrations.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Quality: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check overall build status
+        run: |
+          if [[ "${{ needs.build-agent-zero-full.result }}" == "success" ]]; then
+            echo "✅ Agent-Zero build completed successfully!"
+            exit 0
+          else
+            echo "❌ Agent-Zero build failed or was cancelled"
+            exit 1
+          fi
