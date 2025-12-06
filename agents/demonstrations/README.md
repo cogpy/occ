@@ -64,7 +64,7 @@ guile -l demo3_perception_action.scm
 guile -l demo4_goal_management.scm
 ```
 
-### Demo 5: Multi-Component Integration (`demo5_full_integration.scm`)
+### Demo 5: Full Integration (`demo5_full_integration.scm`)
 **Focus**: Complete system integration with all components  
 **Components**: All Agent-Zero modules  
 **Demonstrates**:
