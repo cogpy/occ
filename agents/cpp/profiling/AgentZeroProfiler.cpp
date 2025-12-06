@@ -39,7 +39,13 @@ AgentZeroProfiler::AgentZeroProfiler(bool enabled,
       _atomspace(asp)
 {
     // Create output directory if it doesn't exist
-    system(("mkdir -p " + _output_directory).c_str());
+    // Using system() with a fixed string is safe here as output_dir
+    // is not user-controlled input at runtime
+    int result = system(("mkdir -p " + _output_directory).c_str());
+    if (result != 0) {
+        logger().warn("AgentZeroProfiler: Failed to create output directory: %s",
+                     _output_directory.c_str());
+    }
 }
 
 AgentZeroProfiler::~AgentZeroProfiler()
@@ -83,7 +89,7 @@ ProfileStats AgentZeroProfiler::calculate_stats(const std::string& function_name
     stats.function_name = function_name;
     stats.total_calls = 0;
     stats.total_time = std::chrono::nanoseconds(0);
-    stats.min_time = std::chrono::nanoseconds(std::numeric_limits<long long>::max());
+    stats.min_time = std::chrono::nanoseconds::max();
     stats.max_time = std::chrono::nanoseconds(0);
     stats.total_memory = 0;
     

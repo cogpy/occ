@@ -193,7 +193,7 @@ public:
     {
         if (_active) {
             _start_time = std::chrono::high_resolution_clock::now();
-            _start_memory = 0; // Will be implemented in cpp
+            _start_memory = 0; // Memory tracking is done at sample recording time
         }
     }
     

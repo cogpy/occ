@@ -10,7 +10,6 @@
 #include "AgentZeroProfiler.h"
 
 #include <iostream>
-#include <thread>
 #include <vector>
 #include <cmath>
 
