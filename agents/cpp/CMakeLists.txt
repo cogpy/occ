@@ -194,6 +194,9 @@ add_subdirectory(agentzero-tools)
 # Phase 9: Profiling Infrastructure (AZ-PERF-001)
 add_subdirectory(profiling)
 
+# Phase 10: Advanced Features - Distributed Computing (AZ-SCALE-001)
+add_subdirectory(agentzero-distributed)
+
 # Examples and tests
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)
