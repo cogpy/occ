@@ -139,6 +139,10 @@ public:
     double getUsagePercentage() const;
     double getPeakUsage() const { return _peak_usage; }
     
+    // Resource type
+    ResourceType getResourceType() const { return _resource_type; }
+    const std::string& getResourceName() const { return _resource_name; }
+    
     // Status management
     ResourceStatus getStatus() const { return _status; }
     void updateStatus();
@@ -150,7 +154,7 @@ public:
     int getAllocationCount() const { return _allocations.size(); }
     
     // Cleanup
-    void cleanupExpiredAllocations();
+    int cleanupExpiredAllocations();
     void releaseAll();
     
     // Statistics

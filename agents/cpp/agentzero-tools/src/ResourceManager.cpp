@@ -256,7 +256,7 @@ std::vector<std::shared_ptr<ResourceAllocation>> ResourcePool::getAllocations() 
     return _allocations;
 }
 
-void ResourcePool::cleanupExpiredAllocations()
+int ResourcePool::cleanupExpiredAllocations()
 {
     std::lock_guard<std::mutex> lock(_pool_mutex);
     
@@ -282,6 +282,8 @@ void ResourcePool::cleanupExpiredAllocations()
         logger().debug("ResourcePool: Cleaned up %d expired allocations from pool '%s'",
                       cleaned, _resource_name.c_str());
     }
+    
+    return cleaned;
 }
 
 void ResourcePool::releaseAll()
@@ -422,7 +424,7 @@ bool ResourceManager::removeResourcePool(const std::string& name)
     }
     
     auto pool = it->second;
-    ResourceType type = pool->_resource_type;
+    ResourceType type = pool->getResourceType();
     
     // Release all allocations first
     pool->releaseAll();
@@ -629,7 +631,7 @@ std::shared_ptr<ResourceAllocation> ResourceManager::allocateFromPool(const std:
     }
     
     // Track usage
-    _total_usage_by_type[pool->_resource_type] += amount;
+    _total_usage_by_type[pool->getResourceType()] += amount;
     
     // Record in AtomSpace
     if (_atomspace) {
@@ -756,7 +758,7 @@ int ResourceManager::cleanupExpiredAllocations()
     
     for (auto& [type, pools] : _resource_pools) {
         for (auto& pool : pools) {
-            pool->cleanupExpiredAllocations();
+            total_cleaned += pool->cleanupExpiredAllocations();
         }
     }
     
