@@ -75,7 +75,7 @@ struct CoordinationTask {
     std::string status;                         // Task status (pending, assigned, in_progress, completed, failed)
     std::chrono::system_clock::time_point created; // Creation time
     std::chrono::system_clock::time_point deadline; // Deadline (if any)
-    Handle task_atom;                           // AtomSpace representation
+    mutable Handle task_atom;                   // AtomSpace representation (mutable for updateTaskAtom)
     std::map<std::string, std::string> parameters; // Task parameters
     
     CoordinationTask() : priority(MessagePriority::NORMAL), 

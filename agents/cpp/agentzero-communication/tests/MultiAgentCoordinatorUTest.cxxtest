@@ -9,6 +9,8 @@
  */
 
 #include <cxxtest/TestSuite.h>
+#include <thread>
+#include <chrono>
 
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/util/Logger.h>
