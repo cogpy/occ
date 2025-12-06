@@ -191,6 +191,9 @@ endif()
 # Phase 8: Tool Integration (depends on core)
 add_subdirectory(agentzero-tools)
 
+# Phase 9: Profiling Infrastructure (AZ-PERF-001)
+add_subdirectory(profiling)
+
 # Examples and tests
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)
