@@ -1,0 +1,44 @@
+===================================================
+       Agent-Zero Performance Profiling Report    
+===================================================
+
+Total Profiled Functions: 11
+Total Execution Time: 266.307 ms
+
+---------------------------------------------------
+Top Functions by Execution Time
+---------------------------------------------------
+
+Function                                       Calls     Total (ms)       Avg (ms)    % Total
+----------------------------------------------------------------------------------------------
+compute_intensive_task                            10        116.350         11.635      43.69%
+cognitive_cycle_simulation                         5         58.870         11.774      22.11%
+cognitive_cycle::reasoning                         5         58.064         11.613      21.80%
+nested_profiling_example                           3         14.132          4.711       5.31%
+nested_profiling_example::inner_loop_2             3          9.928          3.309       3.73%
+nested_profiling_example::inner_loop_1             3          4.197          1.399       1.58%
+atomspace_query_task                              15          2.015          0.134       0.76%
+memory_intensive_task                              3          1.959          0.653       0.74%
+cognitive_cycle::action_selection                  5          0.741          0.148       0.28%
+cognitive_cycle::perception                        5          0.047          0.009       0.02%
+fast_operation                                   100          0.003          0.000       0.00%
+
+---------------------------------------------------
+Memory Usage Statistics
+---------------------------------------------------
+
+Function                                    Total Mem (KB)     Avg Mem (KB)
+----------------------------------------------------------------------------
+compute_intensive_task                               82312              8231
+cognitive_cycle_simulation                           43460              8692
+cognitive_cycle::reasoning                           43332              8666
+nested_profiling_example                             25692              8564
+nested_profiling_example::inner_loop_2               25692              8564
+nested_profiling_example::inner_loop_1               25692              8564
+atomspace_query_task                                129100              8606
+memory_intensive_task                                25692              8564
+cognitive_cycle::action_selection                    43460              8692
+cognitive_cycle::perception                          43332              8666
+fast_operation                                      856400              8564
+
+===================================================

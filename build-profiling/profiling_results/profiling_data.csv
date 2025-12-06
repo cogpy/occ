@@ -1,0 +1,12 @@
+Function,Total Calls,Total Time (ms),Avg Time (ms),Min Time (ms),Max Time (ms),Total Memory (bytes),Avg Memory (bytes)
+compute_intensive_task,10,116.35,11.635,11.5964,11.8293,84287488,8428748
+cognitive_cycle_simulation,5,58.8698,11.774,11.7519,11.8097,44503040,8900608
+cognitive_cycle::reasoning,5,58.0642,11.6128,11.6037,11.6212,44371968,8874393
+nested_profiling_example,3,14.1321,4.71071,4.70217,4.71957,26308608,8769536
+nested_profiling_example::inner_loop_2,3,9.92789,3.3093,3.30203,3.32146,26308608,8769536
+nested_profiling_example::inner_loop_1,3,4.19726,1.39909,1.39559,1.4058,26308608,8769536
+atomspace_query_task,15,2.01496,0.13433,0.1236,0.176949,132198400,8813226
+memory_intensive_task,3,1.95862,0.652872,0.384626,1.1827,26308608,8769536
+cognitive_cycle::action_selection,5,0.741471,0.148294,0.134981,0.178563,44503040,8900608
+cognitive_cycle::perception,5,0.047499,0.009499,0.008045,0.014667,44371968,8874393
+fast_operation,100,0.002856,2.8e-05,2e-05,3.1e-05,876953600,8769536
