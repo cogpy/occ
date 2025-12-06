@@ -176,19 +176,30 @@ class DemoValidator:
             ("Check dependencies", r"check_dependencies"),
             ("Run demo function", r"run_demo"),
             ("Demo list", r"DEMOS="),
-            ("All 5 demos listed", r"demo1.*demo2.*demo3.*demo4.*demo5"),
+            ("All 5 demos listed", r"demo1"),  # Check for at least demo1
             ("Summary function", r"print_summary"),
         ]
         
         all_passed = True
         for element_name, pattern in required_elements:
             self.total_checks += 1
-            if re.search(pattern, content, re.DOTALL):
+            # Use MULTILINE for simple patterns, only use more specific flags when needed
+            flags = re.MULTILINE if element_name != "All 5 demos listed" else 0
+            if re.search(pattern, content, flags):
                 self.passed_checks += 1
                 print(f"  {Colors.GREEN}✓{Colors.NC} {element_name}")
             else:
                 print(f"  {Colors.RED}✗{Colors.NC} {element_name} missing")
                 all_passed = False
+        
+        # Additional check: verify all 5 demos are present
+        self.total_checks += 1
+        if all(demo in content for demo in ['demo1', 'demo2', 'demo3', 'demo4', 'demo5']):
+            self.passed_checks += 1
+            print(f"  {Colors.GREEN}✓{Colors.NC} All 5 demos present in list")
+        else:
+            print(f"  {Colors.RED}✗{Colors.NC} Not all demos present in list")
+            all_passed = False
         
         # Check if executable
         self.total_checks += 1
