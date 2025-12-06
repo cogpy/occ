@@ -106,6 +106,31 @@ if(GTEST_FOUND)
         
         message(STATUS "ReasoningEngine tests configured")
     endif()
+    
+    # SelfModification tests
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/SelfModificationTest.cpp")
+        add_executable(SelfModificationTest SelfModificationTest.cpp)
+        
+        target_link_libraries(SelfModificationTest
+            agentzero-core
+            ${COGUTIL_LIBRARIES}
+            ${ATOMSPACE_LIBRARIES}
+            Threads::Threads
+        )
+        
+        target_compile_features(SelfModificationTest PRIVATE cxx_std_17)
+        
+        # Add the test to CTest
+        add_test(NAME SelfModificationTest COMMAND SelfModificationTest)
+        
+        set_tests_properties(SelfModificationTest
+            PROPERTIES
+            TIMEOUT 60
+            LABELS "meta;selfmodification"
+        )
+        
+        message(STATUS "SelfModification tests configured")
+    endif()
 
     # Create test executable for action framework
     add_executable(test_agentzero_action_framework
