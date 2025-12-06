@@ -17,6 +17,9 @@ add_subdirectory(cpp/agentzero-memory)    # AZ-MEM-003: Added memory module
 add_subdirectory(cpp/agentzero-memory)    # AZ-MEM-002: Added memory management module
 add_subdirectory(cpp/agentzero-tools)     # AZ-TOOL-001: Added tools integration module
 
+# Add demonstration scenarios (AZ-DEMO-001)
+add_subdirectory(demonstrations)
+
 # Future: Add other agent implementations here
 # add_subdirectory(python)  # For Python-based agents
 # add_subdirectory(scheme)  # For pure Scheme agents
