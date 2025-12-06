@@ -22,8 +22,12 @@
 
 #include "AgentZeroBenchmark.h"
 #include <sys/resource.h>
+#include <iostream>
 #include <algorithm>
 #include <iomanip>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
 
 using namespace opencog;
 
@@ -165,9 +169,16 @@ std::vector<BenchmarkResult> AgentZeroBenchmark::run_scaling_benchmark(
 
 void AgentZeroBenchmark::export_results_to_csv(const std::string& filename)
 {
-    // Create output directory if it doesn't exist
-    std::string mkdir_cmd = "mkdir -p " + _output_directory;
-    system(mkdir_cmd.c_str());
+    // Create output directory if it doesn't exist - safe method without system()
+    struct stat st;
+    if (stat(_output_directory.c_str(), &st) != 0) {
+        // Directory doesn't exist, create it
+        mode_t mode = 0755;
+        if (mkdir(_output_directory.c_str(), mode) != 0 && errno != EEXIST) {
+            logger().error("Failed to create output directory: " + _output_directory);
+            return;
+        }
+    }
     
     std::string full_path = _output_directory + "/" + filename + ".csv";
     std::ofstream file(full_path);

@@ -20,7 +20,6 @@ target_link_libraries(agentzero-benchmark
     ${ATOMSPACE_LIBRARIES}
     atombase
     atomcore
-    atomspace
 )
 
 target_include_directories(agentzero-benchmark PUBLIC
@@ -58,7 +57,6 @@ target_link_libraries(agentzero-component-benchmarks
     atom_types
     atombase
     atomcore
-    atomspace
 )
 
 target_link_directories(agentzero-component-benchmarks PUBLIC
