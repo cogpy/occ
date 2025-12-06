@@ -11,9 +11,16 @@
 #include <algorithm>
 #include <random>
 #include <cmath>
+#include <climits>
 
 using namespace opencog;
 using namespace opencog::agentzero;
+
+// Configuration constants
+namespace {
+    // Threshold for suggesting load rebalancing (percentage difference)
+    constexpr int REBALANCE_THRESHOLD = 20;
+}
 
 LoadBalancer::LoadBalancer(AtomSpacePtr atomspace, LoadBalancingStrategy strategy)
     : atomspace_(atomspace),
@@ -163,7 +170,7 @@ std::map<std::string, std::string> LoadBalancer::suggestRebalancing(
     // Suggest migration if imbalance is significant
     if (most_loaded && least_loaded) {
         int load_diff = most_loaded->current_load - least_loaded->current_load;
-        if (load_diff > 20) {  // Threshold for rebalancing
+        if (load_diff > REBALANCE_THRESHOLD) {
             logger_.info("Suggesting rebalancing: move tasks from %s to %s",
                         most_loaded->id.c_str(), least_loaded->id.c_str());
             // In real implementation, would identify specific tasks to migrate
