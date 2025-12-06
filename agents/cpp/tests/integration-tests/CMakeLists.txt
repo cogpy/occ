@@ -1,5 +1,5 @@
 # Integration Tests CMakeLists.txt
-# AZ-INT-001: Comprehensive integration testing
+# Task AZ-INT-001: Comprehensive integration testing
 
 cmake_minimum_required(VERSION 3.16)
 
@@ -13,9 +13,13 @@ if(CXXTEST_FOUND)
             agentzero-test-framework
             ${COGUTIL_LIBRARIES}
             ${ATOMSPACE_LIBRARIES}
-            ${COGSERVER_LIBRARIES}
             ${Boost_LIBRARIES}
         )
+        
+        # Add optional CogServer if available
+        if(COGSERVER_FOUND)
+            target_link_libraries(ComponentIntegrationTest ${COGSERVER_LIBRARIES})
+        endif()
     endif()
     
     # AtomSpace Integration Tests
@@ -27,9 +31,12 @@ if(CXXTEST_FOUND)
             agentzero-test-framework
             ${COGUTIL_LIBRARIES}
             ${ATOMSPACE_LIBRARIES}
-            ${COGSERVER_LIBRARIES}
             ${Boost_LIBRARIES}
         )
+        
+        if(COGSERVER_FOUND)
+            target_link_libraries(AtomSpaceIntegrationTest ${COGSERVER_LIBRARIES})
+        endif()
     endif()
     
     # CogServer Integration Tests
@@ -41,9 +48,12 @@ if(CXXTEST_FOUND)
             agentzero-test-framework
             ${COGUTIL_LIBRARIES}
             ${ATOMSPACE_LIBRARIES}
-            ${COGSERVER_LIBRARIES}
             ${Boost_LIBRARIES}
         )
+        
+        if(COGSERVER_FOUND)
+            target_link_libraries(CogServerIntegrationTest ${COGSERVER_LIBRARIES})
+        endif()
     endif()
     
     # End-to-End Integration Tests
@@ -55,9 +65,12 @@ if(CXXTEST_FOUND)
             agentzero-test-framework
             ${COGUTIL_LIBRARIES}
             ${ATOMSPACE_LIBRARIES}
-            ${COGSERVER_LIBRARIES}
             ${Boost_LIBRARIES}
         )
+        
+        if(COGSERVER_FOUND)
+            target_link_libraries(EndToEndIntegrationTest ${COGSERVER_LIBRARIES})
+        endif()
     endif()
     
     message(STATUS "Agent-Zero comprehensive integration tests configured (AZ-INT-001)")

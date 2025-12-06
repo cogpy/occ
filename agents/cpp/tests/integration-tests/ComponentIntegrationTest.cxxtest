@@ -258,9 +258,9 @@ public:
         startTestTimer("complete_lifecycle");
         
         // 1. Initialization phase
-        TS_ASSERT(!_agent_core->isInitialized() || _agent_core->isInitialized());
+        TS_ASSERT(_agent_core->isInitialized());
         Handle agent_self = _agent_core->getAgentSelfAtom();
-        TS_ASSERT(agent_self != Handle::UNDEFINED || agent_self == Handle::UNDEFINED);
+        // Agent self atom may or may not be defined depending on initialization
         
         // 2. Configuration phase
         TS_ASSERT(_agent_core->config("enable_cognitive_loop=true"));

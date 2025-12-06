@@ -536,21 +536,17 @@ public:
             _task_manager->addTask(goal, 0.5);
         }
         
-        // Process rapidly
-        auto start_time = std::chrono::steady_clock::now();
-        
+        // Process rapidly with fixed iteration count for consistent testing
         int cycles = 0;
-        while (cycles < 200 && 
-               std::chrono::duration_cast<std::chrono::seconds>(
-                   std::chrono::steady_clock::now() - start_time).count() < 5) {
+        int max_cycles = 200;
+        
+        for (cycles = 0; cycles < max_cycles; ++cycles) {
             _agent->processCognitiveStep();
             _cognitive_loop->executeSingleCycle();
             
             if (cycles % 20 == 0) {
                 _task_manager->executeNextTask();
             }
-            
-            cycles++;
         }
         
         // Verify system remained stable

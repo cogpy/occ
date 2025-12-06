@@ -134,20 +134,23 @@ public:
         
         Handle atom = createTestAtom(CONCEPT_NODE, "ValueAttachTest");
         
-        // Attach float value
+        // Attach float value using AtomSpace value API
         std::vector<double> float_data = {1.0, 2.0, 3.0, 4.0, 5.0};
         ValuePtr float_value = createFloatValue(float_data);
-        atom->setValue(createNode(PREDICATE_NODE, "scores"), float_value);
+        Handle key_atom = createTestAtom(PREDICATE_NODE, "scores");
+        atom->setValue(key_atom, float_value);
         
         // Retrieve and verify
-        ValuePtr retrieved = atom->getValue(createNode(PREDICATE_NODE, "scores"));
+        ValuePtr retrieved = atom->getValue(key_atom);
         TS_ASSERT(retrieved != nullptr);
         
         FloatValuePtr fv = FloatValueCast(retrieved);
         TS_ASSERT(fv != nullptr);
-        TS_ASSERT_EQUALS(fv->value().size(), 5);
-        TS_ASSERT_DELTA(fv->value()[0], 1.0, 0.001);
-        TS_ASSERT_DELTA(fv->value()[4], 5.0, 0.001);
+        if (fv != nullptr) {
+            TS_ASSERT_EQUALS(fv->value().size(), 5);
+            TS_ASSERT_DELTA(fv->value()[0], 1.0, 0.001);
+            TS_ASSERT_DELTA(fv->value()[4], 5.0, 0.001);
+        }
         
         stopTestTimer();
         TS_ASSERT_PERFORMANCE_OK(*this);
