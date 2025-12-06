@@ -77,10 +77,34 @@ cmake -DBUILD_DOCS=ON ..
 
 ## 📚 Documentation
 
-- **[AGENT-ZERO-GENESIS.md](../../AGENT-ZERO-GENESIS.md)**: Complete project roadmap and architecture
-- **Module READMEs**: Each module has detailed documentation in its subdirectory
-- **[OpenCog Documentation](https://wiki.opencog.org/)**: Background on OpenCog architecture
-- **[Build Documentation](../../docs/)**: Comprehensive build and deployment guides
+**📖 [Complete Documentation Index](docs/INDEX.md)** - Start here for all documentation
+
+### Quick Links
+
+**Getting Started:**
+- [Quick Start Guide](docs/QUICK_START.md) - Get up and running in 30 minutes
+- [Architecture Overview](docs/ARCHITECTURE.md) - System design and components
+- [Installation Guide](docs/QUICK_START.md#installation) - Detailed setup
+
+**Developer Resources:**
+- [API Reference](docs/API_REFERENCE.md) - Complete API documentation
+- [Developer Guide](docs/DEVELOPER_GUIDE.md) - Development workflow and standards
+- [Integration Guide](docs/INTEGRATION_GUIDE.md) - OpenCog integration patterns
+- [Code Standards](docs/CODE_STANDARDS.md) - Coding conventions
+
+**Testing & Quality:**
+- [Testing Guide](docs/TESTING_GUIDE.md) - Unit, integration, and performance testing
+- [Benchmarking Guide](docs/BENCHMARKING_GUIDE.md) - Performance measurement
+
+**Operations:**
+- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) - Production deployment
+- [Troubleshooting Guide](docs/TROUBLESHOOTING.md) - Common issues and solutions
+
+**Project Resources:**
+- [AGENT-ZERO-GENESIS.md](../../AGENT-ZERO-GENESIS.md) - Complete project roadmap
+- [Module READMEs](.) - Each module has detailed documentation in its subdirectory
+- [OpenCog Documentation](https://wiki.opencog.org/) - Background on OpenCog architecture
+- [Build Documentation](../../docs/) - OpenCog ecosystem build guides
 
 ## 🔧 Development Workflow
 
@@ -230,29 +254,34 @@ ctest -R performance
 
 ## 🆘 Troubleshooting
 
-### Common Issues
+For comprehensive troubleshooting information, see the [Troubleshooting Guide](docs/TROUBLESHOOTING.md).
+
+### Quick Fixes
 
 **Build fails with "cogutil not found"**
 - Install OpenCog dependencies first
 - Use the OpenCog Dependency Build workflow
 - Check pkg-config path: `export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH`
+- See: [Troubleshooting Guide - Build Issues](docs/TROUBLESHOOTING.md#build-issues)
 
 **CMake configuration errors**
 - Ensure CMake 3.16+ is installed
 - Check C++17 compiler support
 - Verify all OpenCog components are installed in the same prefix
+- See: [Troubleshooting Guide - CMake Configuration](docs/TROUBLESHOOTING.md#cmake-configuration-fails)
 
 **Runtime errors with AtomSpace**
 - Check AtomSpace initialization
 - Verify proper Handle usage and memory management
 - Ensure thread-safe operations where needed
+- See: [Troubleshooting Guide - Runtime Errors](docs/TROUBLESHOOTING.md#runtime-errors)
 
 ### Getting Help
 
-- **GitHub Issues**: Report bugs and request features
-- **Documentation**: Check module-specific READMEs
+- **Documentation**: Check [docs/](docs/) directory for comprehensive guides
+- **GitHub Issues**: Report bugs and request features at https://github.com/OpenCoq/pycog0/issues
 - **OpenCog Community**: Join the OpenCog discussion forums
-- **Workflow Support**: Use the automated issue generation for guidance
+- **Troubleshooting Guide**: See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for detailed solutions
 
 ---
 
