@@ -18,6 +18,24 @@ target_link_libraries(CapabilityComposerDemo
     ${ATOMSPACE_LIBRARY}
 )
 
+# ToolWrapper demonstration example
+add_executable(ToolWrapperDemo ToolWrapperDemo.cpp)
+
+target_link_libraries(ToolWrapperDemo
+    agentzero-tools
+    ${COGUTIL_LIBRARY}
+    ${ATOMSPACE_LIBRARY}
+)
+
+# ResourceManager demonstration
+add_executable(ResourceManagerDemo ResourceManagerDemo.cpp)
+
+target_link_libraries(ResourceManagerDemo
+    agentzero-tools
+    ${COGUTIL_LIBRARY}
+    ${ATOMSPACE_LIBRARY}
+)
+
 message(STATUS "Agent-Zero Tools examples configured successfully")
 # Agent-Zero Tools Examples CMakeLists.txt
 # Examples for AZ-TOOL-002: ToolWrapper unified interface

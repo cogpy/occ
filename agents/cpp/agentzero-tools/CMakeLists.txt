@@ -74,6 +74,9 @@ include_directories(
 # Library sources
 set(TOOLS_SOURCES
     src/CapabilityComposer.cpp
+    src/ToolWrapper.cpp
+    src/ToolRegistry.cpp
+    src/ResourceManager.cpp
 )
 
 # Create the agentzero-tools library
