@@ -229,10 +229,8 @@ set(AGENTZERO_COMMUNICATION_SOURCES
     src/ConversationState.cpp
     src/LanguageProcessor.cpp
     src/MessageHandler.cpp
-    src/LanguageProcessor.cpp
-    src/DialogueManager.cpp
-    src/AgentComms.cpp
     src/HumanInterface.cpp
+    src/MultiAgentCoordinator.cpp
 )
 
 # Header files
@@ -242,14 +240,11 @@ set(AGENTZERO_COMMUNICATION_HEADERS
     include/opencog/agentzero/communication/ProtocolManager.h
     include/opencog/agentzero/communication/MessageSerializer.h
     include/opencog/agentzero/communication/CommTypes.h
+    include/opencog/agentzero/communication/MultiAgentCoordinator.h
     include/opencog/agentzero/DialogueManager.h
     include/opencog/agentzero/ConversationState.h
     include/opencog/agentzero/LanguageProcessor.h
     include/opencog/agentzero/MessageHandler.h
-    include/agentzero/communication/LanguageProcessor.h
-    include/agentzero/communication/DialogueManager.h
-    include/agentzero/communication/AgentComms.h
-    include/agentzero/communication/HumanInterface.h
 )
 
 # Create library

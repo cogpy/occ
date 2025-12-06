@@ -100,6 +100,7 @@ if(CXXTEST_BIN AND CXXTEST_INCLUDE_DIR)
         ConversationStateUTest.cxxtest
         LanguageProcessorUTest.cxxtest
         MessageHandlerUTest.cxxtest
+        MultiAgentCoordinatorUTest.cxxtest
     )
     
     # Generate and build tests
