@@ -174,3 +174,25 @@ endif()
 if(VALUE_LIBRARY)
     target_link_libraries(batch_processing_example ${VALUE_LIBRARY})
 endif()
+
+# Example: Multi-Agent Coordination
+add_executable(multi_agent_coordination_example
+    multi_agent_coordination_example.cpp
+)
+
+target_link_libraries(multi_agent_coordination_example
+    agentzero-communication
+    ${COGUTIL_LIBRARIES}
+    ${ATOMSPACE_LIBRARIES}
+)
+
+# Link libraries to multi-agent coordination example too
+if(ATOMBASE_LIBRARY)
+    target_link_libraries(multi_agent_coordination_example ${ATOMBASE_LIBRARY})
+endif()
+if(ATOMCORE_LIBRARY)
+    target_link_libraries(multi_agent_coordination_example ${ATOMCORE_LIBRARY})
+endif()
+if(VALUE_LIBRARY)
+    target_link_libraries(multi_agent_coordination_example ${VALUE_LIBRARY})
+endif()
