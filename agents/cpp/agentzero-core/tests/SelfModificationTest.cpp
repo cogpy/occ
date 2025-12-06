@@ -104,9 +104,9 @@ private:
             assert(proposal.expected_improvement >= 0.0);
             assert(proposal.proposal_atom != Handle::UNDEFINED);
             
-            // Verify safety level is set
-            assert(static_cast<int>(proposal.safety_level) >= 0 && 
-                   static_cast<int>(proposal.safety_level) <= 3);
+            // Verify safety level is set (within valid enum range)
+            assert(proposal.safety_level >= SelfModification::SafetyLevel::SAFE && 
+                   proposal.safety_level <= SelfModification::SafetyLevel::UNSAFE);
         }
         
         std::cout << "✓ Proposal generation test passed" << std::endl;

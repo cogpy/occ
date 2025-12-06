@@ -21,6 +21,15 @@
 namespace opencog {
 namespace agentzero {
 
+// Configuration constants
+namespace {
+    constexpr double PARAMETER_REDUCTION_FACTOR = 0.9;  // 10% reduction
+    constexpr double EXPECTED_IMPROVEMENT_PARAMETER_TUNING = 0.10;  // 10%
+    constexpr double EXPECTED_IMPROVEMENT_CODE_OPTIMIZATION = 0.25;  // 25%
+    constexpr double EXPECTED_IMPROVEMENT_ARCHITECTURE_REFACTOR = 0.40;  // 40%
+    constexpr double DEFAULT_EXPECTED_IMPROVEMENT = 0.15;  // 15%
+}
+
 SelfModification::SelfModification(AgentZeroCore* agent_core, AtomSpacePtr atomspace)
     : _agent_core(agent_core)
     , _atomspace(atomspace)
@@ -343,7 +352,7 @@ SelfModification::generateParameterTuningProposal(const std::string& component_n
     
     // Convert numeric parameters to strings
     for (const auto& param : params) {
-        proposal.parameters[param.first] = std::to_string(param.second * 0.9); // Suggest 10% reduction
+        proposal.parameters[param.first] = std::to_string(param.second * PARAMETER_REDUCTION_FACTOR);
     }
     
     return proposal;
@@ -377,13 +386,13 @@ double SelfModification::predictImprovement(const ModificationProposal& proposal
     
     switch (proposal.type) {
         case ModificationType::PARAMETER_TUNING:
-            return 0.10;  // 10% improvement
+            return EXPECTED_IMPROVEMENT_PARAMETER_TUNING;
         case ModificationType::CODE_OPTIMIZATION:
-            return 0.25;  // 25% improvement
+            return EXPECTED_IMPROVEMENT_CODE_OPTIMIZATION;
         case ModificationType::ARCHITECTURE_REFACTOR:
-            return 0.40;  // 40% improvement
+            return EXPECTED_IMPROVEMENT_ARCHITECTURE_REFACTOR;
         default:
-            return 0.15;  // 15% improvement
+            return DEFAULT_EXPECTED_IMPROVEMENT;
     }
 }
 
@@ -488,8 +497,14 @@ bool SelfModification::applyBehaviorModification(const ModificationProposal& pro
 
 bool SelfModification::checkSafetyConstraints(const ModificationProposal& proposal)
 {
+    // Helper function to compare safety levels
+    auto isMoreRestrictiveThan = [](SafetyLevel a, SafetyLevel b) -> bool {
+        return static_cast<std::underlying_type_t<SafetyLevel>>(a) > 
+               static_cast<std::underlying_type_t<SafetyLevel>>(b);
+    };
+    
     // Check if proposal safety level is acceptable
-    if (static_cast<int>(proposal.safety_level) > static_cast<int>(_current_safety_level)) {
+    if (isMoreRestrictiveThan(proposal.safety_level, _current_safety_level)) {
         logger().warn("[SelfModification] Proposal safety level exceeds current threshold");
         return false;
     }
