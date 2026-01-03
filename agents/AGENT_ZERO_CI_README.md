@@ -4,17 +4,29 @@
 
 This GitHub Actions workflow (`agent-zero-ci.yml`) provides automated continuous integration for the Agent-Zero adaptation of the OpenCog framework. It is designed based on the existing `cogci.yml` patterns and tailored specifically for the agent-zero components located in the `agents/` folder.
 
+**Version**: 0.2.0
+**Last Updated**: January 2026
+
 ## Workflow Features
 
-### 1. **Multi-Stage Build Pipeline**
+### 1. **Multi-Stage Build Pipeline with Matrix Builds**
 
-The workflow is organized into several dependent jobs that build the system incrementally:
+The workflow is organized into several dependent jobs that build the system incrementally across multiple configurations:
 
+**Matrix Configurations**:
+- **Operating Systems**: Ubuntu 22.04, Ubuntu 20.04
+- **Compilers**: GCC, Clang
+
+**Build Jobs**:
 - **OpenCog Dependencies**: Builds foundational OpenCog components (cogutil, atomspace, cogserver)
 - **Agent-Zero Core**: Builds the core agent-zero module
 - **Agent-Zero Full System**: Builds all agent-zero modules with optional dependencies
 - **Demonstrations**: Tests the agent-zero demonstration scenarios
 - **Code Quality**: Performs static analysis and code quality checks
+- **Code Coverage**: Generates lcov/gcovr coverage reports
+- **Static Analysis**: Runs cppcheck and clang-tidy analysis
+- **Performance Benchmarks**: Runs performance and regression tests
+- **Docker Build**: Builds and publishes Docker images to GHCR
 - **Build Summary**: Generates a comprehensive build report
 
 ### 2. **Trigger Conditions**
@@ -22,7 +34,10 @@ The workflow is organized into several dependent jobs that build the system incr
 The workflow runs on:
 - **Push events** to `main` or `develop` branches (when `agents/**` files change)
 - **Pull requests** targeting `main` or `develop` branches (when `agents/**` files change)
-- **Manual dispatch** via GitHub Actions UI
+- **Manual dispatch** via GitHub Actions UI with configurable options:
+  - `enable_coverage`: Enable/disable code coverage analysis (default: true)
+  - `enable_docker`: Enable/disable Docker image building (default: true)
+  - `enable_benchmarks`: Enable/disable performance benchmarks (default: true)
 
 ### 3. **Caching Strategy**
 
@@ -39,7 +54,11 @@ CMAKE_BUILD_TYPE: Release
 BUILD_TESTING: ON
 BUILD_EXAMPLES: ON
 BUILD_DOCS: OFF
-AGENT_ZERO_VERSION: 0.1.0
+AGENT_ZERO_VERSION: 0.2.0
+
+# Docker settings
+DOCKER_REGISTRY: ghcr.io
+DOCKER_IMAGE_NAME: ${{ github.repository }}/agent-zero
 ```
 
 ## Job Breakdown
@@ -115,7 +134,7 @@ AGENT_ZERO_VERSION: 0.1.0
 
 ### Job 5: `code-quality`
 
-**Purpose**: Perform static code quality checks.
+**Purpose**: Perform basic code quality checks.
 
 **Steps**:
 1. Check C++ code formatting with `clang-format`
@@ -128,7 +147,94 @@ AGENT_ZERO_VERSION: 0.1.0
 
 ---
 
-### Job 6: `build-summary`
+### Job 6: `code-coverage`
+
+**Purpose**: Generate code coverage reports using lcov and gcovr.
+
+**Steps**:
+1. Restore OpenCog dependencies from cache
+2. Configure build with coverage flags (`--coverage`, `-fprofile-arcs`, `-ftest-coverage`)
+3. Build Agent-Zero Core in Debug mode
+4. Run tests to generate coverage data
+5. Generate lcov HTML and summary reports
+6. Generate gcovr XML and HTML reports
+7. Upload coverage artifacts
+
+**Dependencies**: `build-opencog-dependencies`
+
+**Artifacts**: `coverage-reports` (coverage.info, coverage.html, coverage.xml)
+
+**Configuration**: Can be disabled via workflow dispatch input `enable_coverage`
+
+---
+
+### Job 7: `static-analysis`
+
+**Purpose**: Perform comprehensive static code analysis.
+
+**Steps**:
+1. Run cppcheck with all checks enabled
+2. Run clang-tidy on sample files
+3. Check code formatting consistency
+4. Generate analysis summary in GitHub Actions
+
+**Dependencies**: None (runs in parallel)
+
+**Artifacts**: `static-analysis-reports` (cppcheck-report.xml)
+
+**Tools Used**:
+- **cppcheck**: Static analysis for C++ code
+- **clang-tidy**: LLVM-based linter and static analyzer
+- **clang-format**: Code style checker
+
+---
+
+### Job 8: `performance-benchmarks`
+
+**Purpose**: Run performance benchmarks and regression testing.
+
+**Steps**:
+1. Build with Release optimizations (`-O3 -march=native`)
+2. Run test suite with timing instrumentation
+3. Profile memory usage
+4. Store benchmark results as JSON
+5. Generate performance summary
+
+**Dependencies**: `build-agent-zero-full`
+
+**Artifacts**: `benchmark-results` (results.json with timing and memory data)
+
+**Configuration**: Can be disabled via workflow dispatch input `enable_benchmarks`
+
+---
+
+### Job 9: `docker-build`
+
+**Purpose**: Build and publish Docker images to GitHub Container Registry.
+
+**Steps**:
+1. Set up Docker Buildx
+2. Login to GitHub Container Registry
+3. Generate multi-stage Dockerfile
+4. Build optimized runtime image
+5. Push to GHCR with semantic version tags
+6. Generate image summary
+
+**Dependencies**: `build-agent-zero-full`
+
+**Artifacts**: Docker image published to `ghcr.io/<repo>/agent-zero`
+
+**Configuration**: Can be disabled via workflow dispatch input `enable_docker`
+
+**Image Tags**:
+- `latest` (for default branch)
+- `<version>` (e.g., `0.2.0`)
+- `<branch>` (branch name)
+- `<sha>` (commit SHA)
+
+---
+
+### Job 10: `build-summary`
 
 **Purpose**: Generate a comprehensive build summary report.
 
@@ -326,25 +432,43 @@ This workflow is designed to complement the existing `cogci.yml` workflow. Key d
 
 ## Continuous Improvement
 
-### Recommended Enhancements
+### Implemented Enhancements (v0.2.0)
 
-1. **Matrix Builds**: Test across multiple OS and compiler versions
-2. **Performance Benchmarks**: Add performance regression testing
-3. **Code Coverage**: Integrate coverage reporting (gcov/lcov)
-4. **Static Analysis**: Add cppcheck or clang-tidy
-5. **Docker Integration**: Build and publish Docker images
+All recommended enhancements have been implemented:
 
-### Example: Matrix Build
+1. **Matrix Builds**: Testing across Ubuntu 22.04/20.04 with GCC and Clang
+2. **Performance Benchmarks**: Performance and regression testing with JSON output
+3. **Code Coverage**: Integrated lcov and gcovr coverage reporting
+4. **Static Analysis**: cppcheck and clang-tidy integration
+5. **Docker Integration**: Multi-stage Docker builds with GHCR publishing
+
+### Matrix Build Configuration
 
 ```yaml
 build-agent-zero-core:
   strategy:
+    fail-fast: false
     matrix:
       os: [ubuntu-22.04, ubuntu-20.04]
-      compiler: [g++-11, clang-14]
+      compiler: [gcc, clang]
+      include:
+        - compiler: gcc
+          cc: gcc
+          cxx: g++
+        - compiler: clang
+          cc: clang
+          cxx: clang++
   runs-on: ${{ matrix.os }}
   # ... rest of job
 ```
+
+### Future Enhancements
+
+1. **ARM64 Support**: Add matrix builds for ARM64 architecture
+2. **Sanitizer Builds**: Add ASan/UBSan/TSan configurations
+3. **Dependency Updates**: Automated dependency version checking
+4. **Benchmark Regression**: Automated performance regression detection
+5. **Coverage Thresholds**: Enforce minimum code coverage requirements
 
 ---
 
@@ -366,6 +490,16 @@ This workflow configuration is part of the OpenCog Agent-Zero project and follow
 ---
 
 ## Changelog
+
+### Version 0.2.0 (January 2026)
+- **Matrix Builds**: Added multi-OS (Ubuntu 22.04/20.04) and multi-compiler (GCC/Clang) support
+- **Code Coverage**: Integrated lcov and gcovr for comprehensive coverage reporting
+- **Static Analysis**: Added cppcheck and clang-tidy integration
+- **Performance Benchmarks**: Added performance testing with JSON output and regression tracking
+- **Docker Integration**: Multi-stage Docker builds with GHCR publishing
+- **Workflow Dispatch**: Added configurable inputs for coverage, Docker, and benchmarks
+- **Enhanced Summary**: Matrix build status and artifact overview in build summary
+- Bumped Agent-Zero version to 0.2.0
 
 ### Version 1.0.0 (Initial Release)
 - Multi-stage build pipeline
