@@ -2,7 +2,10 @@
 # The atom_types.h file is written to the build directory
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
 
-DECLARE_GUILE_CONFIG_TARGET(SCM_CONFIG "opencog as-config" "ATOMSPACE_TEST")
+# Guile configuration target - only needed when Guile is available
+IF (HAVE_GUILE)
+	DECLARE_GUILE_CONFIG_TARGET(SCM_CONFIG "opencog as-config" "ATOMSPACE_TEST")
+ENDIF (HAVE_GUILE)
 
 # The build order used here is loosely in terms of 
 # dependencies: the later parts depend on, or may
