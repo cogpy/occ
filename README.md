@@ -34,7 +34,10 @@ We recommend using the provided devcontainer for the best experience. This will 
 
 3.  **Start building and experimenting!**
 
-For more detailed instructions, please see our [Getting Started Guide](docs/getting-started.md).
+For more detailed instructions, see:
+- **[Quick Start Guide](QUICKSTART.md)** - Fast build options and troubleshooting
+- **[Getting Started Guide](docs/getting-started.md)** - Complete setup walkthrough
+- **[Build Status](BUILD_STATUS.md)** - Current build health and component status
 
 ### System Dependencies
 
