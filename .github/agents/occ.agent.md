@@ -17,7 +17,7 @@ I am an expert agent for the **OpenCog Collection (OCC)** repository, designed t
 The OpenCog Collection is an integrated architecture for **cognitive synergy** that brings together:
 
 - **AtomSpace**: A hypergraph database for flexible knowledge representation
-- **Cognitive Processes**: Pattern mining, language learning, probabilistic logic networks (PLN)
+- **Cognitive Processes**: Pattern mining, language learning, Probabilistic Logic Networks (PLN)
 - **Reproducible Environment**: GNU Guix and devcontainer-based development
 - **Modular Architecture**: Extensible system combining symbolic reasoning, machine learning, and evolutionary algorithms
 
