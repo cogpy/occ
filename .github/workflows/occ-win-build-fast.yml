@@ -109,8 +109,8 @@ jobs:
   build-atomspace:
     runs-on: windows-latest
     name: Build AtomSpace
-    needs: build-cogutil
-    if: needs.build-cogutil.result == 'success'
+    needs: [check-deps, build-cogutil]
+    if: needs.check-deps.outputs.deps_exist == 'true' && needs.build-cogutil.result == 'success'
 
     steps:
       - uses: actions/checkout@v4
@@ -167,8 +167,8 @@ jobs:
   build-moses:
     runs-on: windows-latest
     name: Build Moses
-    needs: build-cogutil
-    if: needs.build-cogutil.result == 'success'
+    needs: [check-deps, build-cogutil]
+    if: needs.check-deps.outputs.deps_exist == 'true' && needs.build-cogutil.result == 'success'
 
     steps:
       - uses: actions/checkout@v4
@@ -225,8 +225,8 @@ jobs:
   build-cogserver:
     runs-on: windows-latest
     name: Build CogServer
-    needs: build-atomspace
-    if: needs.build-atomspace.result == 'success'
+    needs: [check-deps, build-atomspace]
+    if: needs.check-deps.outputs.deps_exist == 'true' && needs.build-atomspace.result == 'success'
 
     steps:
       - uses: actions/checkout@v4
