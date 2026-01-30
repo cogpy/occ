@@ -46,10 +46,10 @@ jobs:
             Write-Host "Found $libCount vendored libraries" -ForegroundColor Green
             echo "exists=true" >> $env:GITHUB_OUTPUT
           } else {
-            Write-Host "ERROR: Vendored dependencies not found!" -ForegroundColor Red
-            Write-Host "Run the 'vendor-dependencies.yml' workflow first." -ForegroundColor Yellow
+            Write-Host "WARNING: Vendored dependencies not found!" -ForegroundColor Yellow
+            Write-Host "This workflow requires vendored dependencies from 'vendor-dependencies.yml'." -ForegroundColor Yellow
+            Write-Host "Build will be skipped. Please run 'vendor-dependencies.yml' workflow first." -ForegroundColor Yellow
             echo "exists=false" >> $env:GITHUB_OUTPUT
-            exit 1
           }
 
   # Stage 1: Build CogUtil (Foundation)
@@ -57,6 +57,7 @@ jobs:
     runs-on: windows-latest
     name: Build CogUtil
     needs: check-deps
+    if: needs.check-deps.outputs.deps_exist == 'true'
 
     steps:
       - uses: actions/checkout@v4
@@ -109,6 +110,7 @@ jobs:
     runs-on: windows-latest
     name: Build AtomSpace
     needs: build-cogutil
+    if: needs.build-cogutil.result == 'success'
 
     steps:
       - uses: actions/checkout@v4
@@ -166,6 +168,7 @@ jobs:
     runs-on: windows-latest
     name: Build Moses
     needs: build-cogutil
+    if: needs.build-cogutil.result == 'success'
 
     steps:
       - uses: actions/checkout@v4
@@ -223,6 +226,7 @@ jobs:
     runs-on: windows-latest
     name: Build CogServer
     needs: build-atomspace
+    if: needs.build-atomspace.result == 'success'
 
     steps:
       - uses: actions/checkout@v4
