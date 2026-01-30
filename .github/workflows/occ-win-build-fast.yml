@@ -296,8 +296,8 @@ jobs:
   consolidate:
     runs-on: windows-latest
     name: Consolidate Build
-    needs: [build-cogutil, build-atomspace, build-moses, build-cogserver]
-    if: always()
+    needs: [check-deps, build-cogutil, build-atomspace, build-moses, build-cogserver]
+    if: always() && needs.check-deps.outputs.deps_exist == 'true'
 
     steps:
       - name: Download all artifacts
