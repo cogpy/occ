@@ -46,10 +46,10 @@ jobs:
             Write-Host "Found $libCount vendored libraries" -ForegroundColor Green
             echo "exists=true" >> $env:GITHUB_OUTPUT
           } else {
-            Write-Host "ERROR: Vendored dependencies not found!" -ForegroundColor Red
-            Write-Host "Run the 'vendor-dependencies.yml' workflow first." -ForegroundColor Yellow
+            Write-Host "WARNING: Vendored dependencies not found!" -ForegroundColor Yellow
+            Write-Host "This workflow requires vendored dependencies from 'vendor-dependencies.yml'." -ForegroundColor Yellow
+            Write-Host "Build will be skipped. Please run 'vendor-dependencies.yml' workflow first." -ForegroundColor Yellow
             echo "exists=false" >> $env:GITHUB_OUTPUT
-            exit 1
           }
 
   # Stage 1: Build CogUtil (Foundation)
@@ -57,6 +57,7 @@ jobs:
     runs-on: windows-latest
     name: Build CogUtil
     needs: check-deps
+    if: needs.check-deps.outputs.deps_exist == 'true'
 
     steps:
       - uses: actions/checkout@v4
@@ -108,7 +109,8 @@ jobs:
   build-atomspace:
     runs-on: windows-latest
     name: Build AtomSpace
-    needs: build-cogutil
+    needs: [check-deps, build-cogutil]
+    if: needs.check-deps.outputs.deps_exist == 'true' && needs.build-cogutil.result == 'success'
 
     steps:
       - uses: actions/checkout@v4
@@ -165,7 +167,8 @@ jobs:
   build-moses:
     runs-on: windows-latest
     name: Build Moses
-    needs: build-cogutil
+    needs: [check-deps, build-cogutil]
+    if: needs.check-deps.outputs.deps_exist == 'true' && needs.build-cogutil.result == 'success'
 
     steps:
       - uses: actions/checkout@v4
@@ -222,7 +225,8 @@ jobs:
   build-cogserver:
     runs-on: windows-latest
     name: Build CogServer
-    needs: build-atomspace
+    needs: [check-deps, build-atomspace]
+    if: needs.check-deps.outputs.deps_exist == 'true' && needs.build-atomspace.result == 'success'
 
     steps:
       - uses: actions/checkout@v4
@@ -292,8 +296,8 @@ jobs:
   consolidate:
     runs-on: windows-latest
     name: Consolidate Build
-    needs: [build-cogutil, build-atomspace, build-moses, build-cogserver]
-    if: always()
+    needs: [check-deps, build-cogutil, build-atomspace, build-moses, build-cogserver]
+    if: always() && needs.check-deps.outputs.deps_exist == 'true'
 
     steps:
       - name: Download all artifacts
