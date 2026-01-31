@@ -52,7 +52,7 @@ ADD_DEFINITIONS(-DPROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 # CogUtil must come first, because it supplies various FindXXX macros.
 
 # Add the 'lib' dir to cmake's module search path
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/lib/")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lib/")
 
 # Cogutil
 FIND_PACKAGE(CogUtil 2.0.1 CONFIG REQUIRED)
@@ -214,11 +214,11 @@ IF (CXXTEST_FOUND AND HAVE_SERVER)
 	ENDIF (CMAKE_BUILD_TYPE STREQUAL "Coverage")
 ENDIF (CXXTEST_FOUND AND HAVE_SERVER)
 
-ADD_CUSTOM_TARGET(cscope
-	COMMAND find opencog examples tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' -o -name '*.scm' > ${CMAKE_SOURCE_DIR}/cscope.files
+ADD_CUSTOM_TARGET(cscope-cogserver
+	COMMAND find opencog examples tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' -o -name '*.scm' > ${CMAKE_CURRENT_SOURCE_DIR}/cscope.files
 	COMMAND cscope -b
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	COMMENT "Generating CScope database"
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	COMMENT "Generating CScope database for CogServer"
 )
 
 # ===================================================================

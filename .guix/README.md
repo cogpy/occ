@@ -79,7 +79,7 @@ Add to your `~/.config/guix/channels.scm`:
 ```scheme
 (cons* (channel
         (name 'opencog-collection)
-        (url "https://github.com/rzonedevops/occ.git")
+        (url "https://github.com/cogpy/occ.git")
         (branch "main"))
        %default-channels)
 ```

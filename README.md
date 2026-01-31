@@ -11,6 +11,7 @@ This repository provides a complete, FSF-endorsed, and reproducible environment 
 
 - **Unified Cognitive Architecture**: A coherent system that brings together core OpenCog components like the **AtomSpace** (a hypergraph database) with advanced AI tools.
 - **Cognitive Synergy by Design**: The architecture is explicitly designed to facilitate the interaction and collaboration of different AI paradigms, including symbolic reasoning, machine learning, and evolutionary algorithms.
+- **Autogenesis - Self-Evolution**: AI-powered system that identifies novel features in the "adjacent possible" - capabilities that can emerge from current components through synergy and integration.
 - **Reproducible Development Environment**: Utilizes **GNU Guix** and a devcontainer to provide a fully declarative and isolated development environment, ensuring that all developers have a consistent setup.
 - **Extensible and Modular**: The OCC is designed to be easily extended with new components and integrations, allowing researchers to experiment with different cognitive architectures.
 - **Focus on AGI Research**: The ultimate goal of the OCC is to provide a platform for building and experimenting with AGI systems.
@@ -37,9 +38,16 @@ For more detailed instructions, please see our [Getting Started Guide](docs/gett
 
 ## Documentation
 
+### Core Documentation
 - **[Architecture Overview](docs/architecture.md)**: A detailed look at the OCC architecture and its components.
 - **[Cognitive Synergy](docs/cognitive-synergy.md)**: An explanation of the principles of cognitive synergy and how they are applied in the OCC.
+- **[Autogenesis](docs/autogenesis.md)**: AI-powered novel feature generation based on the adjacent possible.
 - **[Contributing Guide](CONTRIBUTING.md)**: How to contribute to the OpenCog Collection.
+
+### AGI-OS / AGI-Kern Evaluation
+- **[AGI Kernel Evaluation](docs/AGI_KERNEL_EVALUATION.md)**: Comprehensive evaluation of OCC against traditional OS kernel primitives for AGI-OS development.
+- **[AGI-OS Integration Guide](docs/AGI_OS_INTEGRATION_GUIDE.md)**: Technical specifications for integrating 5 OpenCog repositories into a unified AGI Operating System.
+- **[AGI-Kern Coverage Summary](docs/AGI_KERN_COVERAGE_SUMMARY.md)**: Quick reference guide for kernel feature coverage and integration roadmap.
 
 ---
 
@@ -53,4 +61,18 @@ The OpenCog project is a community-driven effort. We welcome contributions from 
 ---
 
 *The OpenCog Collection is a continuation of the OpenCog project, pioneered by Dr. Ben Goertzel.*
+
+## Cognitive Synergy Enhancements
+
+To enforce and test the cognitive synergy between the various components (C++, Python, Rust), a unified entry point has been created.
+
+### Unified Synergy Check
+
+Run the following script to build all components, and perform mock interoperability and demo tests:
+
+```bash
+./synergy.sh
+```
+
+This script ensures that the entire collection is a coherent whole, a key principle for achieving cognitive synergy.
 

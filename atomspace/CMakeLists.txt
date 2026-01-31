@@ -76,7 +76,7 @@ ENDIF (CMAKE_BUILD_TYPE STREQUAL "Profile")
 # CogUtil must come first, because it supplies various FindXXX macros.
 
 # Add the 'lib' dir to cmake's module search path
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/lib/")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lib/")
 
 # Cogutil
 FIND_PACKAGE(CogUtil CONFIG)
@@ -84,9 +84,18 @@ IF (COGUTIL_FOUND)
 	MESSAGE(STATUS "CogUtil version ${COGUTIL_VERSION} found.")
 	ADD_DEFINITIONS(-DHAVE_COGUTIL)
 	SET(HAVE_COGUTIL 1)
-ELSE (COGUTIL_FOUND)
+ELSEIF(TARGET cogutil)
+	# CogUtil is being built as part of the same project
+	MESSAGE(STATUS "CogUtil being built in-tree as subdirectory.")
+	ADD_DEFINITIONS(-DHAVE_COGUTIL)
+	SET(HAVE_COGUTIL 1)
+	# Set variables that would normally come from the CogUtil package
+	SET(COGUTIL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/cogutil")
+	SET(COGUTIL_DATA_DIR "${CMAKE_SOURCE_DIR}/cogutil")
+	SET(COGUTIL_LIBRARIES cogutil)
+ELSE ()
 	MESSAGE(FATAL_ERROR "CogUtil missing: it is needed!")
-ENDIF (COGUTIL_FOUND)
+ENDIF ()
 
 # add the 'cmake' directory from cogutil to search path
 list(APPEND CMAKE_MODULE_PATH  ${COGUTIL_DATA_DIR}/cmake)
@@ -205,7 +214,7 @@ ENDIF (VALGRIND_FOUND)
 # NOTE: This is the official semantic-version, as it is derived from
 # a version-control independent means of declaring versioning.
 #
-FILE(READ "${CMAKE_SOURCE_DIR}/opencog/atomspace/version.h" _ATOMSPACE_H_CONTENTS)
+FILE(READ "${CMAKE_CURRENT_SOURCE_DIR}/opencog/atomspace/version.h" _ATOMSPACE_H_CONTENTS)
 STRING(REGEX MATCH
 	"#define ATOMSPACE_VERSION_STRING \"([0-9]+[.0-9]+[.0-9]+)\""
         _ "${_ATOMSPACE_H_CONTENTS}")
@@ -215,7 +224,9 @@ SET(SEMANTIC_VERSION ${CMAKE_MATCH_1})
 # Include configuration.
 
 # Set default include paths.
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR}
+# PROJECT_BINARY_DIR is needed for generated files like atom_types.h
+# (when built standalone, PROJECT_BINARY_DIR == CMAKE_BINARY_DIR)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${PROJECT_BINARY_DIR}
 	${COGUTIL_INCLUDE_DIR})
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
@@ -227,12 +238,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 endif()
 
 # Macros that define how atom types get declared.
-INCLUDE("${CMAKE_SOURCE_DIR}/cmake/OpenCogAtomTypes.cmake")
+INCLUDE("${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenCogAtomTypes.cmake")
 
 # Macros for building language-specific objects.
-INCLUDE("${CMAKE_SOURCE_DIR}/cmake/OpenCogCython.cmake")
-INCLUDE("${CMAKE_SOURCE_DIR}/cmake/OpenCogGuile.cmake")
-INCLUDE("${CMAKE_SOURCE_DIR}/cmake/OpenCogOCaml.cmake")
+INCLUDE("${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenCogCython.cmake")
+INCLUDE("${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenCogGuile.cmake")
+INCLUDE("${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenCogOCaml.cmake")
 
 # ==========================================================
 # Decide what to build, based on the packages found.
@@ -335,11 +346,11 @@ ADD_CUSTOM_TARGET (examples
 	COMMENT "Building examples"
 )
 
-ADD_CUSTOM_TARGET(cscope
-	COMMAND find opencog examples tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' -o -name '*.scm' > ${CMAKE_SOURCE_DIR}/cscope.files
+ADD_CUSTOM_TARGET(cscope-atomspace
+	COMMAND find opencog examples tests -name '*.cc' -o -name '*.h' -o -name '*.cxxtest' -o -name '*.scm' > ${CMAKE_CURRENT_SOURCE_DIR}/cscope.files
 	COMMAND cscope -b
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	COMMENT "Generating CScope database"
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	COMMENT "Generating CScope database for AtomSpace"
 )
 
 # ===============================================================
