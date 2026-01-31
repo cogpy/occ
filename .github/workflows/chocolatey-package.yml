@@ -119,13 +119,20 @@ jobs:
       run: |
         Write-Host "=== Creating Package Structure ===" -ForegroundColor Cyan
         
-        # Create chocolatey package directory
-        New-Item -ItemType Directory -Force -Path "choco-package/tools" | Out-Null
-        New-Item -ItemType Directory -Force -Path "choco-package/legal" | Out-Null
+        # Use existing packaging structure from repo
+        if (Test-Path "packaging/chocolatey") {
+          Copy-Item -Path "packaging/chocolatey/*" -Destination "choco-package" -Recurse -Force
+          Write-Host "✓ Copied existing packaging structure" -ForegroundColor Green
+        } else {
+          # Create chocolatey package directory
+          New-Item -ItemType Directory -Force -Path "choco-package/tools" | Out-Null
+          New-Item -ItemType Directory -Force -Path "choco-package/legal" | Out-Null
+        }
         
         # Copy build artifacts if available
         if (Test-Path "consolidated") {
-          Copy-Item -Path "consolidated/*" -Destination "choco-package/tools" -Recurse -Force
+          New-Item -ItemType Directory -Force -Path "choco-package/tools/opencog" | Out-Null
+          Copy-Item -Path "consolidated/*" -Destination "choco-package/tools/opencog" -Recurse -Force
           Write-Host "✓ Copied build artifacts" -ForegroundColor Green
         }
         

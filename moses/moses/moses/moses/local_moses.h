@@ -24,6 +24,13 @@
 #ifndef _MOSES_LOCAL_MOSES_H
 #define _MOSES_LOCAL_MOSES_H
 
+// Windows compatibility - must be included first
+#ifdef _WIN32
+#include <opencog/util/windows_compat.h>
+#else
+#include <sys/time.h>
+#endif
+
 #include "../deme/deme_expander.h"
 #include "../metapopulation/metapopulation.h"
 #include "moses_params.h"

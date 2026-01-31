@@ -25,15 +25,17 @@
 #ifndef _OC_ASYNC_BUFFER_H
 #define _OC_ASYNC_BUFFER_H
 
+// Windows compatibility - must be included first
+#ifdef _WIN32
+#include <opencog/util/windows_compat.h>
+#endif
+
 #include <atomic>
 #include <chrono>
 #include <mutex>
 #include <thread>
 #include <vector>
-#ifdef _WIN32
-#include <io.h>
-#include <process.h>
-#else
+#ifndef _WIN32
 #include <unistd.h> /* for usleep() */
 #endif
 

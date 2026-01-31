@@ -7,8 +7,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+// Windows compatibility - must be included first
+#ifdef _WIN32
+#include <opencog/util/windows_compat.h>
+// Note: sys/prctl.h, sys/resource.h not available on Windows
+#else
 #include <sys/prctl.h>
 #include <sys/resource.h>
+#endif
+
 #include <sys/types.h>
 #include <time.h>
 #include <mutex>

@@ -19,20 +19,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <time.h>
+// Windows compatibility - must be included first
 #ifdef _WIN32
-#include <winsock2.h>
-#else
-#ifdef _WIN32
-#include <winsock2.h>
-#else
-#ifdef _WIN32
-#include <winsock2.h>
+#include <opencog/util/windows_compat.h>
 #else
 #include <sys/time.h>
 #endif
-#endif
-#endif
+
+#include <time.h>
 
 #include <opencog/atoms/value/FloatValue.h>
 

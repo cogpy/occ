@@ -29,6 +29,13 @@
 #ifndef _MOSES_HILL_CLIMBING_H
 #define _MOSES_HILL_CLIMBING_H
 
+// Windows compatibility - must be included first
+#ifdef _WIN32
+#include <opencog/util/windows_compat.h>
+#else
+#include <sys/time.h>
+#endif
+
 #include <opencog/util/oc_assert.h>
 
 #include "../representation/instance_set.h"

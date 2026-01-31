@@ -8,28 +8,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include <time.h>
+// Windows compatibility - must be included first
 #ifdef _WIN32
-#ifdef _WIN32
-#include <winsock2.h>
-#else
+#include <opencog/util/windows_compat.h>
 #include <io.h>
-#endif
 #include <process.h>
-#else
-#ifdef _WIN32
-#include <io.h>
-#ifdef _WIN32
-#include <winsock2.h>
-#else
-#include <process.h>
-#endif
+// Note: sys/prctl.h not available on Windows
 #else
 #include <unistd.h>
-#endif
-#endif
 #include <sys/time.h>
 #include <sys/prctl.h>
+#endif
+
+#include <time.h>
 
 #include <opencog/util/Logger.h>
 #include <opencog/util/misc.h>

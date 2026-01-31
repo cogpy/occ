@@ -21,24 +21,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <cstddef>
-#include <libguile.h>
+// Windows compatibility - must be included first
 #ifdef _WIN32
-#include <io.h>
-#include <process.h>
-#else
-#ifdef _WIN32
-#include <io.h>
-#include <process.h>
-#else
-#ifdef _WIN32
+#include <opencog/util/windows_compat.h>
 #include <io.h>
 #include <process.h>
 #else
 #include <unistd.h>
 #endif
-#endif
-#endif
+
+#include <cstddef>
+#include <libguile.h>
 
 #include <opencog/atoms/value/Value.h>
 #include <opencog/atomspace/AtomSpace.h>

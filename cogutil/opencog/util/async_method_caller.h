@@ -25,6 +25,11 @@
 #ifndef _OC_ASYNC_WRITER_H
 #define _OC_ASYNC_WRITER_H
 
+// Windows compatibility - must be included first
+#ifdef _WIN32
+#include <opencog/util/windows_compat.h>
+#endif
+
 #include <atomic>
 #include <chrono>
 #include <mutex>

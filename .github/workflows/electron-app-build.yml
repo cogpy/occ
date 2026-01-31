@@ -181,7 +181,8 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     name: Build Linux Desktop App
-    if: |
+    # TEMPORARILY DISABLED - Focus on Windows builds first
+    if: false && (
       github.event.workflow_run.conclusion == 'success' ||
       github.event_name == 'release' ||
       github.event_name == 'workflow_dispatch'
@@ -292,7 +293,8 @@ jobs:
   build-summary:
     runs-on: ubuntu-latest
     name: Build Summary
-    needs: [build-windows, build-linux]
+    # TEMPORARILY: Only depend on Windows build while Linux is disabled
+    needs: [build-windows]
     if: always()
     
     steps:
@@ -302,11 +304,11 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "## Build Status" >> $GITHUB_STEP_SUMMARY
         echo "- Windows: ${{ needs.build-windows.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "- Linux: ${{ needs.build-linux.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Linux: DISABLED (focus on Windows first)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        if [ "${{ needs.build-windows.result }}" = "success" ] && [ "${{ needs.build-linux.result }}" = "success" ]; then
-          echo "✅ All builds completed successfully!" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ needs.build-windows.result }}" = "success" ]; then
+          echo "✅ Windows build completed successfully!" >> $GITHUB_STEP_SUMMARY
         else
-          echo "⚠️ Some builds failed. Check logs for details." >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ Windows build failed. Check logs for details." >> $GITHUB_STEP_SUMMARY
         fi

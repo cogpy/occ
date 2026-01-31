@@ -22,27 +22,22 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <atomic>
-
+// Windows compatibility - must be included first
 #ifdef _WIN32
+#include <opencog/util/windows_compat.h>
 #include <io.h>
 #include <process.h>
-#else
-#ifdef _WIN32
-#include <io.h>
-#include <process.h>
-#else
-#ifdef _WIN32
-#include <io.h>
-#include <process.h>
+#include <fcntl.h>
+// Note: sys/ioctl.h and termios.h not available on Windows
+// Guile support is limited on Windows
 #else
 #include <unistd.h>
-#endif
-#endif
-#endif
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <termios.h>
+#endif
+
+#include <atomic>
 
 #include <cstddef>
 #include <libguile.h>

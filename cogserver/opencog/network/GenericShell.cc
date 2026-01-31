@@ -20,7 +20,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+// Windows compatibility - must be included first
+#ifdef _WIN32
+#include <opencog/util/windows_compat.h>
+// Note: sys/prctl.h not available on Windows
+#else
 #include <sys/prctl.h>
+#include <unistd.h>
+#endif
 
 #include <chrono>
 #include <mutex>

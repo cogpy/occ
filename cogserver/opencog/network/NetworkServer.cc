@@ -8,27 +8,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+// Windows compatibility - must be included first
+#ifdef _WIN32
+#include <opencog/util/windows_compat.h>
+// Note: netinet/tcp.h, sys/prctl.h, sys/resource.h not available on Windows
+#else
 #include <netinet/tcp.h>
 #include <sys/prctl.h>
 #include <sys/resource.h>
-#ifdef _WIN32
-#ifdef _WIN32
-#include <winsock2.h>
-#else
-#include <winsock2.h>
-#endif
-#else
-#ifdef _WIN32
-#include <winsock2.h>
-#ifdef _WIN32
-#include <winsock2.h>
-#else
-#else
-#endif
 #include <sys/socket.h>
-#endif
-#endif
 #include <sys/time.h>
+#endif
+
 #include <sys/types.h>
 #include <time.h>
 
