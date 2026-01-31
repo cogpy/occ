@@ -65,7 +65,7 @@ def mst2disjuncts(lines, **kwargs):
                 if k in words:
                     if len(v) == 1:
                         disjunct = words[abs(list(v)[0])] \
-                                   + ('+' if list(v)[0] > 0 else '-')
+                            + ('+' if list(v)[0] > 0 else '-')
                     else:
                         l = sorted([x for x in v if abs(x) in words and x <= 0],
                                    reverse=True)

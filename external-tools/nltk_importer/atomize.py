@@ -3,10 +3,10 @@ import nltk
 
 # English lanugae corpora from the nltk-corpus
 corpora_used = ['abc', 'cmudict', 'comparative_sentences', 'conll2000',
-    'gazetteers', 'genesis', 'gutenberg', 'inaugural', 'masc_tagged',
-    'movie_reviews', 'names', 'opinion_lexicon', 'product_reviews_1',
-    'product_reviews_2', 'pros_cons', 'reuters', 'semcor', 'sentence_polarity',
-    'state_union', 'subjectivity', 'switchboard', 'webtext', 'words']
+                'gazetteers', 'genesis', 'gutenberg', 'inaugural', 'masc_tagged',
+                'movie_reviews', 'names', 'opinion_lexicon', 'product_reviews_1',
+                'product_reviews_2', 'pros_cons', 'reuters', 'semcor', 'sentence_polarity',
+                'state_union', 'subjectivity', 'switchboard', 'webtext', 'words']
 
 # List used to collect word lists from the corpora
 word_list = []
@@ -30,7 +30,7 @@ def keep_word(word):
     If the word has one of the characters specified then return False.
     """
     skip_words_with = ["\"", "/", "\\", "*", "+", "=", "[", "]", "(", ")", "{",
-        "}", "<", ">", ",", ";", ":", "|", "#", "@", "%", "$", "^"]
+                       "}", "<", ">", ",", ";", ":", "|", "#", "@", "%", "$", "^"]
     for i in skip_words_with:
         if i in word:
             return False
@@ -61,7 +61,7 @@ output = """
 
 for word in freq_dist.keys():
     a_word =  "(Concept \"{}\" (create-stv {}))".format(word.encode("utf-8"),
-        freq_dist[word])
+                                                        freq_dist[word])
     output += a_word + "\n"
 
 with open("nltk-en.scm", "w") as scm:

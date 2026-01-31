@@ -9,8 +9,12 @@
 #include <memory>
 #include <string>
 #include <functional>
+#include "shard_message.h"
 
 namespace coggml {
+
+// Forward declaration
+class ShardCoordinator;
 
 /**
  * CognitiveShard - Self-aware processing unit
@@ -19,6 +23,7 @@ namespace coggml {
 class CognitiveShard {
 public:
     using ProcessCallback = std::function<void(const std::string&)>;
+    using MessageCallback = std::function<void(const ShardMessage&)>;
 
     CognitiveShard(const std::string& id, const std::string& purpose);
     ~CognitiveShard();
@@ -40,9 +45,22 @@ public:
 
     // Set process callback
     void setProcessCallback(ProcessCallback callback);
+    
+    // Set message callback for receiving messages
+    void setMessageCallback(MessageCallback callback);
 
     // Check if shard is active
     bool isActive() const;
+    
+    // Send message to another shard (via coordinator)
+    void sendMessage(const std::string& receiverId, MessageType type, 
+                    const std::string& payload, MessagePriority priority = MessagePriority::NORMAL);
+    
+    // Receive and handle a message
+    void receiveMessage(const ShardMessage& message);
+    
+    // Set coordinator reference for message routing
+    void setCoordinator(ShardCoordinator* coordinator);
 
 private:
     class Impl;

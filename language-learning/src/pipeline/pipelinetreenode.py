@@ -84,7 +84,7 @@ class PipelineTreeNode2:
             #     # raise FatalPipelineException("Fatal error: " + str(err))
 
         for sibling in node._siblings:
-                PipelineTreeNode2.traverse(job, sibling)
+            PipelineTreeNode2.traverse(job, sibling)
 
     @staticmethod
     def traverse_all(job: Callable) -> None:

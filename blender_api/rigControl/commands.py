@@ -67,7 +67,7 @@ class EvaAPI(RigAPI):
             if animation_mode & (self.PAU_FACE | self.PAU_ACTIVE) == (self.PAU_FACE | self.PAU_ACTIVE):
                 bpy.evaAnimationManager.setMode(1)
             else:
-                 bpy.evaAnimationManager.setMode(0)
+                bpy.evaAnimationManager.setMode(0)
             self.pauAnimationMode = animation_mode
         return 0
 
@@ -91,7 +91,7 @@ class EvaAPI(RigAPI):
             rate = round(cycle.rate, 3)
             ease_in = round(cycle.ease_in, 3)
             somaStates[cycle.name] = {'magnitude': magnitude, 'rate': rate,
-                'ease_in': ease_in}
+                                      'ease_in': ease_in}
         return somaStates
 
     def setSomaState(self, state):
@@ -100,7 +100,7 @@ class EvaAPI(RigAPI):
         magnitude = state['magnitude']
         ease_in = state['ease_in']
         bpy.evaAnimationManager.setCycle(name=name,
-            rate=rate, magnitude=magnitude, ease_in=ease_in)
+                                         rate=rate, magnitude=magnitude, ease_in=ease_in)
         return 0
 
     # Emotion expressions ----------------------------
@@ -146,13 +146,13 @@ class EvaAPI(RigAPI):
             magnitude = round(gesture.magnitude, 3)
             speed = round(gesture.speed, 3)
             emotionGestures[gesture.name] = {'duration': duration, \
-                'magnitude': magnitude, 'speed': speed}
+                                             'magnitude': magnitude, 'speed': speed}
         return emotionGestures
 
 
     def setGesture(self, name, repeat=1, speed=1, magnitude=1.0):
         bpy.evaAnimationManager.newGesture(name='GST-'+name, \
-            repeat=repeat, speed=speed, magnitude=magnitude)
+                                           repeat=repeat, speed=speed, magnitude=magnitude)
         return 0
 
 
@@ -170,9 +170,9 @@ class EvaAPI(RigAPI):
 
 
     def queueViseme(self, vis, start=0, duration=0.5, \
-            rampin=0.1, rampout=0.8, magnitude=1):
+                    rampin=0.1, rampout=0.8, magnitude=1):
         return bpy.evaAnimationManager.newViseme("VIS-"+vis, duration, \
-            rampin, rampout, start)
+                                                 rampin, rampout, start)
 
     # Eye look-at targets ==========================
     # The coordinate system used is head-relative, in 'engineering'public_ws/src/blender_api/rigControl/commands.py:135

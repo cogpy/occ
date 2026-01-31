@@ -55,7 +55,7 @@ class Layer:
                 Ny = 0  # Y coordinate of the current node
                 for J in range(0, input_.shape[1], Ratio):
                     self.nodes[Nx][Ny].load_input(return_node_input(input_, [I, J], Ratio, self.patch_mode,
-                                                                 self.image_type))  # returns inputs to the node located at Position [Nx,Ny]
+                                                                    self.image_type))  # returns inputs to the node located at Position [Nx,Ny]
                     Ny += 1
                 Nx += 1
         else:
@@ -68,7 +68,7 @@ class Layer:
                     for K in range(I, I + Ratio):
                         for L in range(J, J + Ratio):
                             input_temp = np.append(input_temp, np.asarray(input_[K][
-                                                                            L].belief))# Combine the beliefs of the nodes passed
+                                L].belief))# Combine the beliefs of the nodes passed
                     self.nodes[Nx][Ny].load_input(np.ravel(input_temp))
                     Ny += 1
                 Nx += 1

@@ -25,24 +25,24 @@ print("Created an AtomSpace")
 # Stub to cut down on typing. Not sure why the AtomSpace does not
 # provide this by default.
 def execute(atm) :
-	return execute_atom(get_default_atomspace(), atm)
+    return execute_atom(get_default_atomspace(), atm)
 
 # Open the filesystem node, thus creating a stream, and anchor the
 # stream somewhere where we can find it.
 execute(
-	SetValueLink(
-		AnchorNode("xplor"),
-		PredicateNode("fsys"),
-		OpenLink(
-			TypeNode("FileSysStream"),
-			SensoryNode("file:///tmp"))))
+    SetValueLink(
+        AnchorNode("xplor"),
+        PredicateNode("fsys"),
+        OpenLink(
+            TypeNode("FileSysStream"),
+            SensoryNode("file:///tmp"))))
 
 print("Opened a filesystem stream")
 
 # Create a handle by which we can reference the stream.
 anchor = ValueOfLink(
-	AnchorNode("xplor"),
-	PredicateNode("fsys"))
+    AnchorNode("xplor"),
+    PredicateNode("fsys"))
 
 # Perform some operations on the stream.
 pwd = execute(WriteLink(anchor,  ItemNode("pwd")))

@@ -4,7 +4,6 @@
              (guix build-system gnu)
              (guix build-system cmake)
              (guix build-system python)
-             (guix build-system cargo)
              ((guix licenses) #:prefix license:)
              (gnu packages base)
              (gnu packages python)
@@ -13,8 +12,6 @@
              (gnu packages pkg-config)
              (gnu packages guile)
              (gnu packages boost)
-             (gnu packages rust)
-             (gnu packages crates-io)
              (gnu packages maths)
              (gnu packages check))
 
@@ -29,11 +26,12 @@
     (arguments
      `(#:tests? #f  ; Disable tests for now
        #:configure-flags 
-       ,(list "-DCMAKE_BUILD_TYPE=Release"
-              "-DCMAKE_INSTALL_PREFIX=/var/www/opencog-collection"  ; SSR server-side deployment path
-              "-DBUILD_COGUTIL=ON"
-              "-DBUILD_ATOMSPACE=ON"
-              "-DBUILD_COGSERVER=ON")
+       ;; Fixed: Use quoted list instead of ,(list ...) to avoid Scheme error
+       ;; "Wrong type to apply" - see commit 70c2752785a1b9316ffe03d09ebf81f4d01e6529
+       '("-DCMAKE_BUILD_TYPE=Release"
+         "-DBUILD_COGUTIL=ON"
+         "-DBUILD_ATOMSPACE=ON"
+         "-DBUILD_COGSERVER=ON")
        #:phases
        ,(modify-phases %standard-phases
           (add-before 'configure 'set-environment
@@ -42,13 +40,12 @@
               #t)))))
     (native-inputs
      (list pkg-config
-           cmake
-           rust))
+           cmake))
     (inputs
      (list python
            guile-3.0
            boost
-           blas
+           openblas
            lapack
            gsl))
     (synopsis "OpenCog AGI Framework")

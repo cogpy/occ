@@ -17,7 +17,7 @@ import sys
 def get_cli_args():
     """Gets CLI arguments, makes them available gobally"""
     arg_parser = argparse.ArgumentParser("Converts a dump of a CYC KB into Opencog Atomspace")
-    
+
     arg_parser.add_argument("-i", "--infile", help="The input file. If no file is specified. it will read from stdin.")
     arg_parser.add_argument("-o", "--outfile", help="The output fiel to write to. If no file is specified, the program will print to sttout.")
     arg_parser.add_argument("-v", "--verbose", default=False, help="If set to 'True', it will print the actual rule processed")
@@ -70,7 +70,7 @@ def parse_cycl(input):
     print(parserrrs)
     return res
 
-    
+
 def extract_cycl_rule(rule):
     """Extracts the individual CYCL rules in the file content. It does so by picking the first list after '#$ist'."""
     #result = []
@@ -158,7 +158,7 @@ logger.addHandler(stdout_handler)
 dump = read_file()
 content = get_top_level(dump)
 del dump
-    #print(content, "is content")
+#print(content, "is content")
 
 for dump_rule in content:
     #print(dump_rule)
@@ -175,11 +175,11 @@ for dump_rule in content:
 
 ruleset[:] = [rule for rule in ruleset if not  []]
 """I know this is messy but it was my quickest solution..."""
-    #print("ruleset",ruleset)
+#print("ruleset",ruleset)
 for rule in ruleset:
-        #print(rule)
-        #rule2 = []
-        #print(rule, "\m")
+    #print(rule)
+    #rule2 = []
+    #print(rule, "\m")
     try:
         input = rule
         head, *tail = input
@@ -193,13 +193,13 @@ for rule in ruleset:
         #print("unpacking went wrong", rule)
         pass
 del content
-    #print("ruleset:",ruleset)
+#print("ruleset:",ruleset)
 print("items:", len(ruleset2))
 with open(cli_args.outfile, 'w') as outfile:
     for rule in ruleset2:
-            #print("rule before dumps:", rule)
+        #print("rule before dumps:", rule)
         line = dumps(rule)
-            #print("line after:",line)
+        #print("line after:",line)
         outfile.write(line)
         outfile.write("\n")
 end_time = time.time()

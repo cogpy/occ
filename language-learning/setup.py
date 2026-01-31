@@ -46,6 +46,6 @@ setup(name='opencog-ull',
           'Operating System :: POSIX',
           'Programming Language :: Python',
           'Topic :: Software Development :: Bug Tracking',
-          ],
+      ],
       long_description=open('README.md').read()
       )

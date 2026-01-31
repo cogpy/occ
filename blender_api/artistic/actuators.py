@@ -26,7 +26,7 @@ def blink_randomly(self):
     # Register GUI-displayable parameter
     interval = 0
     self.add_parameter(bpy.props.StringProperty(name='interval',
-        get=lambda _: '{:0.3f}s'.format(interval)))
+                                                get=lambda _: '{:0.3f}s'.format(interval)))
 
     # Register GUI-controllable parameters
     intervalMean, intervalVariation, blinkDuration = (
@@ -85,7 +85,7 @@ def blink_when_target_changes(self):
     # Register GUI-displayable parameter
     movement = 0
     self.add_parameter(bpy.props.StringProperty(name='movement',
-        get=lambda _: '{:0.3f}'.format(movement)))
+                                                get=lambda _: '{:0.3f}'.format(movement)))
 
     # Register GUI-controllable parameters
     threshold, cooldownRate = (
@@ -126,7 +126,7 @@ def saccade(self):
     # Register GUI-displayable parameter
     interval = 0
     self.add_parameter(bpy.props.StringProperty(name='interval',
-        get=lambda _: '{:0.3f}s'.format(interval)))
+                                                get=lambda _: '{:0.3f}s'.format(interval)))
 
     # Register GUI-controllable parameters
     intervalMean, intervalVariation, paintScale, scale = (

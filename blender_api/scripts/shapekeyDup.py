@@ -2,7 +2,7 @@ import bpy
 def shapekeyDup():
     if not bpy.context.object.show_only_shape_key:
         bpy.context.object.show_only_shape_key = True
-        
+
     leftname = bpy.context.object.active_shape_key.name
     leftindex = bpy.data.shape_keys["ShapeKeys"].key_blocks.keys().index(leftname)
     if 'L' in leftname:
@@ -11,10 +11,10 @@ def shapekeyDup():
         rightname = leftname.replace('R', 'L')
     else:
         bpy.context.object.show_only_shape_key = False
-        print ('Warning: Skipping duplication due to no L or R in namespace\n')
+        print(('Warning: Skipping duplication due to no L or R in namespace\n'))
         return
     rightindex = bpy.data.shape_keys["ShapeKeys"].key_blocks.keys().index(rightname)
-        
+
     dupname = 'DUP_L_TO_R'
     if dupname in bpy.data.shape_keys["ShapeKeys"].key_blocks.keys():
         dupindex = bpy.data.shape_keys["ShapeKeys"].key_blocks.keys().index(dupname)
@@ -36,7 +36,7 @@ def shapekeyDup():
     bpy.ops.mesh.select_all(action='SELECT')
     bpy.ops.mesh.blend_from_shape(shape='DUP_L_TO_R', blend=1.0, add=False)
     print('Shape key mirrored to other side\n')
-        
+
     bpy.ops.sculpt.sculptmode_toggle()
 
     if dupname in bpy.data.shape_keys["ShapeKeys"].key_blocks.keys():
@@ -46,5 +46,5 @@ def shapekeyDup():
 
     bpy.context.object.show_only_shape_key = False
     bpy.context.object.active_shape_key_index = leftindex
-    
+
 shapekeyDup()

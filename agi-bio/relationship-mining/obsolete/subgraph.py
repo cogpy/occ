@@ -86,9 +86,9 @@ class SubgraphMiner:
         scheme.__init__(self.atomspace)
 
     def create_connected_subgraph(self, size=DEFAULT_SUBGRAPH_SIZE):
-        print "Creating connected subgraph of {} atoms".format(size)
+        print("Creating connected subgraph of {} atoms".format(size))
         a = self.atomspace
-        print "total atomspace size = {0}".format(len(a))
+        print("total atomspace size = {0}".format(len(a)))
 
         genes = a.get_atoms_by_type(types.GeneNode)
         # print "found {0} genes".format(len(genes))
@@ -106,10 +106,10 @@ class SubgraphMiner:
 
         while len(subgraph) < size and len(unprocessed) > 0: # and i < 5:
             if V:
-                print "unprocessed = {0}     subgraph = {1} ".format(len(unprocessed),len(subgraph))
+                print("unprocessed = {0}     subgraph = {1} ".format(len(unprocessed),len(subgraph)))
             atom = unprocessed.pop()
             if V:
-                print "popped atom {0}".format(atom)
+                print("popped atom {0}".format(atom))
 
             if atom.name in EXCLUDED_NODES_FOR_EXPANSION:
                 continue
@@ -132,12 +132,12 @@ class SubgraphMiner:
             unprocessed.update(new)
 
         # print "\n\n\n\n********************************************************"
-        print "final subgraph = {0} atoms".format(len(subgraph))
+        print("final subgraph = {0} atoms".format(len(subgraph)))
 
         filename = "SUBGRAPH_{}.scm".format(size)
         atoms_to_scheme_file(subgraph,filename)
 
-        print "Generated results file {}".format(filename)
+        print("Generated results file {}".format(filename))
 
 
 

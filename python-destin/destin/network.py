@@ -119,7 +119,7 @@ class Network():
         """
         total_belief_len = len(np.array(self.network_belief).ravel())
         single_belief_len = total_belief_len / num_of_images
-        print np.array(self.network_belief).ravel()
+        print(np.array(self.network_belief).ravel())
         belief = np.array(self.network_belief).reshape(
             num_of_images, single_belief_len)
         io.savemat(self.belief_file_name, belief)

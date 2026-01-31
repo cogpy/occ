@@ -77,7 +77,7 @@ Bye.
 """
 
 lg_post_explosion = \
-"""
+    """
 conclusions : icp-sf-ms is a reliable method of blood analysis for cd , mn and pb even for the evaluation on an individual basis.
 by comparing eyebrow shape and position in both young and mature women , this study provides objective data with which to plan forehead rejuvenating procedures.
 the odds of being overweight in adulthood was @number@ times greater ( @percent@ ci : @date@ @number@ ) in overweight compared with healthy weight youth.
@@ -93,7 +93,7 @@ holocaust survivors did not differ in the level of resilience from comparisons (
 """
 
 sharp_sign_linkage = \
-"""
+    """
 postscript set to 1
 graphics set to 0
 echo set to 1
@@ -117,7 +117,7 @@ Found 8706604 linkages (4 of 1000 random linkages had no P.P. violations) at nul
 """
 
 explosion_no_linkages = \
-"""
+    """
 echo set to 1
 postscript set to 1
 graphics set to 0
@@ -137,7 +137,7 @@ Bye.
 
 
 merged_ps_parses = \
-"""
+    """
 There the train was coming mother was holding Jem's hand Dog Monday was licking it everybody was saying good-bye the train was in !
 No complete linkages found.
 Found 38230999 linkages (0 of 1000 random linkages had no P.P. violations) at null count 2
@@ -253,7 +253,7 @@ class LGInprocParserTestCase(unittest.TestCase):
         with self.assertRaises(LGParseError) as ctx:
             pr = LGInprocParser()
             pr.parse("tests/test-data/dict/poc-turtle", "tests/test-data/corpora/poc-turtle/poc-turtle.txt",
-                 f"{self.tmp_dir}/poc-turtle-01.txt.ull", "tests/test-data/corpora/poc-turtle/poc-turtle.txt", BIT_PARSE_QUALITY)
+                     f"{self.tmp_dir}/poc-turtle-01.txt.ull", "tests/test-data/corpora/poc-turtle/poc-turtle.txt", BIT_PARSE_QUALITY)
 
         # self.assertEqual("list index out of range", str(ctx.exception))
 
@@ -270,22 +270,22 @@ class LGInprocParserTestCase(unittest.TestCase):
     def test_stop_tokens(self):
         pr = LGInprocParser()
         pm, pq = pr.parse("tests/test-data/dict/poc-turtle", "tests/test-data/corpora/poc-turtle/poc-turtle.txt",
-                 f"{self.tmp_dir}/poc-turtle-02.txt.ull", "tests/test-data/parses/poc-turtle-mst/poc-turtle-parses-expected.txt",
-                 BIT_PARSE_QUALITY | BIT_EXISTING_DICT | BIT_NO_LWALL | BIT_NO_PERIOD | BIT_STRIP)
+                          f"{self.tmp_dir}/poc-turtle-02.txt.ull", "tests/test-data/parses/poc-turtle-mst/poc-turtle-parses-expected.txt",
+                          BIT_PARSE_QUALITY | BIT_EXISTING_DICT | BIT_NO_LWALL | BIT_NO_PERIOD | BIT_STRIP)
 
         self.assertEqual(12, pm.sentences)
         self.assertEqual(0, pm.skipped_sentences)
 
         pm, pq = pr.parse("tests/test-data/dict/poc-turtle", "tests/test-data/corpora/poc-turtle/poc-turtle.txt",
-                 f"{self.tmp_dir}/poc-turtle-03.txt.ull", "tests/test-data/parses/poc-turtle-mst/poc-turtle-parses-expected.txt",
-                 BIT_PARSE_QUALITY | BIT_EXISTING_DICT | BIT_NO_LWALL | BIT_NO_PERIOD | BIT_STRIP, stop_tokens="isa")
+                          f"{self.tmp_dir}/poc-turtle-03.txt.ull", "tests/test-data/parses/poc-turtle-mst/poc-turtle-parses-expected.txt",
+                          BIT_PARSE_QUALITY | BIT_EXISTING_DICT | BIT_NO_LWALL | BIT_NO_PERIOD | BIT_STRIP, stop_tokens="isa")
 
         self.assertEqual(6, pm.sentences)
         self.assertEqual(6, pm.skipped_sentences)
 
         pm, pq = pr.parse("tests/test-data/dict/poc-turtle", "tests/test-data/corpora/poc-turtle/poc-turtle.txt",
-                 f"{self.tmp_dir}/poc-turtle-04.txt.ull", "tests/test-data/parses/poc-turtle-mst/poc-turtle-parses-expected.txt",
-                 BIT_PARSE_QUALITY | BIT_EXISTING_DICT | BIT_NO_LWALL | BIT_NO_PERIOD | BIT_STRIP, stop_tokens="tuna herring")
+                          f"{self.tmp_dir}/poc-turtle-04.txt.ull", "tests/test-data/parses/poc-turtle-mst/poc-turtle-parses-expected.txt",
+                          BIT_PARSE_QUALITY | BIT_EXISTING_DICT | BIT_NO_LWALL | BIT_NO_PERIOD | BIT_STRIP, stop_tokens="tuna herring")
 
         self.assertEqual(8, pm.sentences)
         self.assertEqual(4, pm.skipped_sentences)

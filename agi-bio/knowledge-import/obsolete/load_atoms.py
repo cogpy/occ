@@ -26,7 +26,7 @@ os.system(' echo  \'scm\' | nc localhost 17001')
 os.system(' echo \'(clear)\'  | nc localhost 17001 ')
 
 for scm in scm_files:
- os.system(' echo  \'(load-from-path \"'+ path + scm +'\")\' | nc localhost 17001 ')
+    os.system(' echo  \'(load-from-path \"'+ path + scm +'\")\' | nc localhost 17001 ')
 
 #count 
 os.system(' echo \'(count-all)\'  | nc localhost 17001 ')

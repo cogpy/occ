@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
     # Output file
     of = open(args.output, "w") if args.output else sys.stdout
-    
+
     # 1. Put the text in a dict (tln, dt, ln) -> message
     #
     #    where

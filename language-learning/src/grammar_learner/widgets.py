@@ -35,8 +35,8 @@ def plot2d(i, j, df, label='', f=15):
         plt.scatter(x, y)
         annot = {'has': (1, 50), 'is': (1, 5)}
         plt.annotate(wlst, xy=(x, y),
-            xytext = annot.get(' '.join(w for w in wlst), (1+n*2, 6*n)),
-            textcoords = 'offset points', ha='right', va='bottom', )
+                     xytext = annot.get(' '.join(w for w in wlst), (1+n*2, 6*n)),
+                     textcoords = 'offset points', ha='right', va='bottom', )
     # plt.show()
 
 

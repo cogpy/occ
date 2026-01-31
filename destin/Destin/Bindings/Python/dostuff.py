@@ -9,19 +9,19 @@ cvhg.cvMoveWindow = cv2.cv.MoveWindow
 cvhg.cvWaitKey = cv2.cv.WaitKey
 
 centroids = [5,5,5,5,5,5,5,5]
-            
+
 layers = len(centroids)
 top_layer = layers - 1
 
 layers_to_enum = {
-        1: pd.W4,
-        2: pd.W8,
-        3: pd.W16,
-        4: pd.W32,
-        5: pd.W64,
-        6: pd.W128,
-        7: pd.W256,
-        8: pd.W512}
+    1: pd.W4,
+    2: pd.W8,
+    3: pd.W16,
+    4: pd.W32,
+    5: pd.W64,
+    6: pd.W128,
+    7: pd.W256,
+    8: pd.W512}
 
 img_width = layers_to_enum[layers]
 
@@ -48,10 +48,10 @@ opened_windows = []
 def cls():
     import os
     os.system('clear')
-    
+
 def getNodeChild(parent_node, child_num):
     return pd.SWIG_Node_p_Array_getitem(parent_node.children, child_num)
-                                          
+
 def doFrame():
     if(vs.grab()):
         dn.doDestin(vs.getOutput())
@@ -79,7 +79,7 @@ def doFramesWithCallback(frames, callback):
 def beliefAndGridCallback():
     dn.printBeliefGraph(top_layer, 0, 0)
     dn.imageWinningCentroidGrid(1, 4)
-    
+
 def freezeTraining():
     dn.setIsPOSTraining(False)
     #dn.setIsPSSATraining(False)
@@ -111,7 +111,7 @@ def teachCentroid(centroid, frames=20):
     go(frames)
     lucky_centroid = None
     freezeTraining()
-    
+
 
 def slowFreeze(start_layer, end_layer, frames_between):
     for l in range(start_layer, end_layer + 1):
@@ -125,7 +125,7 @@ def arrangeWindows():
         cvhg.cvResizeWindow(w, window_width, window_width)
         r, c = divmod(i, windows_wide)
         cvhg.cvMoveWindow(w, c * window_width, r * window_width)
-    
+
 
 lucky_centroid = None
 
@@ -138,7 +138,7 @@ def the_callback():
         opened_windows.append(wn)
         dn.imageWinningCentroidGrid(i, zoom, wn)
         zoom*=2
-        
+
     dn.printBeliefGraph(top_layer, 0, 0)
     printStats()
     freezeTopCentroidsExcept(lucky_centroid)
@@ -161,18 +161,18 @@ def reportParentAndChildren(parent_layer, pr, pc):
     dn.printNodeBeliefs(L, pr * 2,     pc * 2 + 1)
     dn.printNodeBeliefs(L, pr * 2 + 1, pc * 2    )
     dn.printNodeBeliefs(L, pr * 2 + 1, pc * 2 + 1)
-    
+
     go(1)
     dn.printNodeObservation(parent_layer, pr, pc)
-  
+
 def printCentImage(layer, cent):
     l = pd.GetCentroidImageWidth(dn.getNetwork(), layer)
     l = l * l
     fa = pd.SWIG_FloatArray_frompointer( dn.getCentroidImage(layer, cent))
     for i in range(l):
-        print fa[i]
+        print(fa[i])
 
-        
+
 #display centroid image       
 def dci(layer, cent, equalize_hist = False, exp_weight = 4):
     dn.setCentImgWeightExponent(exp_weight)
@@ -181,25 +181,25 @@ def dci(layer, cent, equalize_hist = False, exp_weight = 4):
 
 def wk(time=100):
     cv2.waitKey(time)
-    
+
 def printStats():
     n = dn.getNode(7,0,0)
-    print "Winner: %i" %(n.winner)
+    print("Winner: %i" %(n.winner))
     starv =  pd.SWIG_FloatArray_frompointer( n.starv )
     for c in range(n.nb):
-        print "starv %i: %f" % (c, starv[c])
-        
-    print ""
-    
+        print("starv %i: %f" % (c, starv[c]))
+
+    print("")
+
 def incrementTrain():
     for l in range(layers):
         freezeTraining()        
         unfreezeLayer(l)
         go(200)
-        
+
 def eatDogFood(centroid):
     if centroid >= dn.getBeliefsPerNode(top_layer):
-        print "out of bounds"
+        print("out of bounds")
         return
     dn.displayCentroidImage(top_layer, centroid)
     dn.setCentImgWeightExponent(8)
@@ -210,7 +210,7 @@ def eatDogFood(centroid):
         dn.doDestin(img)
     the_callback()
     cv2.waitKey(300)
-   
+
 def cycleCentroidImages(layer):
     for c in range(dn.getBeliefsPerNode(layer)):
         dn.displayCentroidImage(layer, c, 256, True)

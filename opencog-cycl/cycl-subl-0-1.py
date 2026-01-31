@@ -111,23 +111,23 @@ def main():
     with open(cli_args.outfile, 'w') as outfile:
         for rule in ruleset:
             for rule1 in rule:
-              try:
-                rule_final = [Symbol('cyc-assert'), Quoted(rule.get("body")), '"' + rule["Mt"] + '"',Quoted([Symbol(':direction'), Symbol(':forward')])]
-                line = dumps(rule_final)
-                #print(line)
-                outfile.write(line)
-                outfile.write("\n")
-              except:
-                if(rule["Mt"] and not ("" or type(rule["Mt"]) == int)):
-                    rule_final = [Symbol('cyc-assert'), Quoted(rule.get("body")) ,Quoted([Symbol(':direction'), Symbol(':forward')])]
+                try:
+                    rule_final = [Symbol('cyc-assert'), Quoted(rule.get("body")), '"' + rule["Mt"] + '"',Quoted([Symbol(':direction'), Symbol(':forward')])]
                     line = dumps(rule_final)
+                    #print(line)
                     outfile.write(line)
                     outfile.write("\n")
-                else:
+                except:
+                    if(rule["Mt"] and not ("" or type(rule["Mt"]) == int)):
+                        rule_final = [Symbol('cyc-assert'), Quoted(rule.get("body")) ,Quoted([Symbol(':direction'), Symbol(':forward')])]
+                        line = dumps(rule_final)
+                        outfile.write(line)
+                        outfile.write("\n")
+                    else:
 
 
-                    print("error", rule)
-                    errors += 1
+                        print("error", rule)
+                        errors += 1
     end_time = time.time()
     print(end_time - start_time, "seconds")
     print(errors, "errors encountered")

@@ -6,10 +6,13 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 
 PROJECT(coggml
-    VERSION 0.1.0
+    VERSION 1.0.0
     DESCRIPTION "CogGML Self-Aware Microkernel for Cognitive Shards"
     LANGUAGES CXX
 )
+
+# Version information
+SET(SEMANTIC_VERSION 1.0.0)
 
 # Set C++17 standard
 set(CMAKE_CXX_STANDARD 17)
@@ -25,6 +28,8 @@ set(COGGML_SOURCES
     src/cognitive_shard.cpp
     src/self_awareness.cpp
     src/shard_coordinator.cpp
+    src/shard_message.cpp
+    src/distributed_coordinator.cpp
 )
 
 # CogGML Microkernel library headers
@@ -33,6 +38,8 @@ set(COGGML_HEADERS
     include/coggml/cognitive_shard.h
     include/coggml/self_awareness.h
     include/coggml/shard_coordinator.h
+    include/coggml/shard_message.h
+    include/coggml/distributed_coordinator.h
 )
 
 # Build CogGML shared library

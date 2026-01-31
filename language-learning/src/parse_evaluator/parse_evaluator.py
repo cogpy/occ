@@ -178,7 +178,7 @@ def Evaluate_Parses(test_parses, test_sents, ref_parses, ref_sents, verbose, ign
     print("{:.2f} ignored links per evaluated parse".format(ignored_links / evaluated_parses))
     if filter:
         fa.close() # close output file if opened
-    
+
 def Make_Sequential(sents, **kwargs):
     """
         Make sequential parses (each word simply linked to the next one), 

@@ -59,7 +59,7 @@ class GrammarTesterTestCase(unittest.TestCase):
         # options = BIT_LG_EXE | BIT_NO_LWALL | BIT_NO_PERIOD | BIT_PARSE_QUALITY | BIT_RM_DIR | BIT_ULL_IN
 
         pa, f1, pr, rc = test_grammar(input_corpus, output_path, input_grammar, grammar_root, template_path, 1000,
-                                   options, ref_path)
+                                      options, ref_path)
 
         print("PA: {:2.4f}\nF1: {:2.4f}\nPrecision: {:2.4f}\nRecall: {:2.4f}\n".format(pa, f1, pr, rc))
 
@@ -89,7 +89,7 @@ class GrammarTesterTestCase(unittest.TestCase):
         options = BIT_LG_EXE | BIT_NO_LWALL | BIT_NO_PERIOD | BIT_PARSE_QUALITY | BIT_RM_DIR | BIT_ULL_IN
 
         pa, f1, pr, rc = test_grammar(input_corpus, output_path, input_grammar, grammar_root, template_path, 1000,
-                                   options, ref_path)
+                                      options, ref_path)
 
         print("PA: {:2.4f}\nF1: {:2.4f}\nPrecision: {:2.4f}\nRecall: {:2.4f}\n".format(pa, f1, pr, rc))
 
@@ -112,7 +112,7 @@ class GrammarTesterTestCase(unittest.TestCase):
         options = BIT_LG_EXE | BIT_NO_LWALL | BIT_NO_PERIOD | BIT_PARSE_QUALITY | BIT_RM_DIR | BIT_ULL_IN
 
         pa, f1, pr, rc = test_grammar(input_corpus, output_path, input_grammar, grammar_root, template_path, 1000,
-                                   options, ref_path)
+                                      options, ref_path)
 
         print("PA: {:2.4f}\nF1: {:2.4f}\nPrecision: {:2.4f}\nRecall: {:2.4f}\n".format(pa, f1, pr, rc))
 

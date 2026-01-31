@@ -205,7 +205,7 @@ for i in range(8):
 maxCount = 1000
 for i in range(1, maxCount+1):
     if i % 10 == 0:
-        print "Iteration " + str(i)
+        print("Iteration " + str(i))
         for j in range(8):
             valDict[str(j)].append(dn.getValidity(j))
             intraDict[str(j)].append(dn.getIntra(j))
@@ -244,7 +244,7 @@ while(vs1.grab()):
     currCount += 1
     if currCount <= maxCount:
         if currCount % 10 == 0:
-            print "Iteration " + str(currCount)
+            print("Iteration " + str(currCount))
         t1.setSource(vs1.getOutput())
         t1.transport()
         network.doDestin(t1.getDest())
@@ -294,7 +294,7 @@ for i in range(nLayer):
 maxCount = 1500
 for i in range(1, maxCount+1):
     if i % 10 == 0:
-        print "Iteration " + str(i)
+        print("Iteration " + str(i))
         for i in range(nLayer):
             sep = dn.getSep(i)
             var = dn.getVar(i)
@@ -336,7 +336,7 @@ for i in range(nLayer):
 maxCount = 1600
 for j in range(1, maxCount+1):
     if j % 10 == 0:
-        print "Iteration " + str(j)
+        print("Iteration " + str(j))
         for i in range(nLayer):
             sep = dn.getSep(i)
             var = dn.getVar(i)
@@ -379,10 +379,10 @@ chart_thread = ChartingThread()
 maxCount = 1600
 for i in xrange(1, maxCount+1):
     if i % 10 == 0:
-        print "Iteration " + str(i)
+        print("Iteration " + str(i))
         j = nLayer-3
         var = dn.getVar(j)
-        print "Variance: " +str(var)
+        print("Variance: " +str(var))
         
         sep = dn.getSep(j)
         qua = dn.getQuality(j)

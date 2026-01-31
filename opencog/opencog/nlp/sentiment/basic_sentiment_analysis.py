@@ -68,7 +68,7 @@ class DictionaryTagger(object):
                     self.dictionary[key] = curr_dict[key]
                     self.max_key_size = max(self.max_key_size, len(key))
                 elif key is False:
-#                    print curr_dict[key]
+                    #                    print curr_dict[key]
                     key = "false"
                     self.dictionary[key] = curr_dict [False]
                     self.max_key_size = max(self.max_key_size, len(key))

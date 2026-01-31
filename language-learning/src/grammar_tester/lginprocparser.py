@@ -240,7 +240,7 @@ class LGInprocParser(AbstractFileParserClient):
         """
         if progress is None:
             self._logger.info("Link Grammar version: {}\n"
-                  "Link Grammar dictionaries: {}".format(self._lg_version, self._lg_dict_path))
+                              "Link Grammar dictionaries: {}".format(self._lg_version, self._lg_dict_path))
 
         if not (options & BIT_EXISTING_DICT):
             dict_ver = get_lg_dict_version(dict_path)
@@ -248,7 +248,7 @@ class LGInprocParser(AbstractFileParserClient):
             self._logger.debug(f"Dictionary version: {dict_ver}, link-parser version: {self._lg_version}")
 
             if dict_ver != "sql-dict" and dict_ver != "0.0.0" and (self._lg_version < "5.5.0" and dict_ver >= "5.5.0" or
-                    self._lg_version >= "5.5.0" and dict_ver < "5.5.0"):
+                                                                   self._lg_version >= "5.5.0" and dict_ver < "5.5.0"):
                 raise LGParseError(f"Wrong dictionary version: {dict_ver}, expected: {self._lg_version}")
 
         # Issue #184 modifications
@@ -311,7 +311,7 @@ class LGInprocParser(AbstractFileParserClient):
                 else open(output_path, "w", encoding="utf-8")
 
             with Popen(sed_cmd, stdout=PIPE) as proc_grep, \
-                 Popen(lgp_cmd, stdin=proc_grep.stdout, stdout=PIPE, stderr=PIPE) as proc_pars:
+                    Popen(lgp_cmd, stdin=proc_grep.stdout, stdout=PIPE, stderr=PIPE) as proc_pars:
 
                 # Closing grep output stream will terminate it's process.
                 proc_grep.stdout.close()
@@ -340,10 +340,10 @@ class LGInprocParser(AbstractFileParserClient):
                     path_len = len(corpus_path)
 
                     raise LGParseError("Number of sentences does not match. "
-                          "Read: {}, Parsed: {}, File: {}".format(sentence_count,
-                                                                  ret_metrics.sentences + ret_metrics.skipped_sentences,
-                                                                  corpus_path if path_len < 31
-                                                                                else "..." + corpus_path[path_len-27:]))
+                                       "Read: {}, Parsed: {}, File: {}".format(sentence_count,
+                                                                               ret_metrics.sentences + ret_metrics.skipped_sentences,
+                                                                               corpus_path if path_len < 31
+                                                                               else "..." + corpus_path[path_len-27:]))
 
         except LGParseError:
             self._logger.debug(err_stream.decode("utf-8-sig"))

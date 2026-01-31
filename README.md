@@ -34,6 +34,31 @@ We recommend using the provided devcontainer for the best experience. This will 
 
 For more detailed instructions, please see our [Getting Started Guide](docs/getting-started.md).
 
+### System Dependencies
+
+The OCC requires several system dependencies to build successfully. On Ubuntu/Debian systems, install the following:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  build-essential \
+  cmake \
+  libboost-all-dev \
+  guile-3.0-dev \
+  python3-dev \
+  cython3 \
+  liboctomap-dev \
+  liboctomap-tools
+```
+
+**Required Dependencies:**
+- **Octomap** (`liboctomap-dev`, `liboctomap-tools`): Required for the SpaceTime component, which provides 3D spatiotemporal object tracking and representation capabilities.
+- **Boost** (`libboost-all-dev`): C++ libraries providing utilities for threading, filesystem operations, and data structures.
+- **Guile 3.0** (`guile-3.0-dev`): Scheme interpreter for AtomSpace scripting and cognitive reasoning.
+- **Python 3 & Cython** (`python3-dev`, `cython3`): Python bindings for C++ components and high-level API access.
+- **CMake** (`cmake`): Cross-platform build system generator.
+- **Build Essentials** (`build-essential`): Compiler toolchain (gcc, g++, make) for building C++ components.
+
 ---
 
 ## Documentation
@@ -48,6 +73,9 @@ For more detailed instructions, please see our [Getting Started Guide](docs/gett
 - **[AGI Kernel Evaluation](docs/AGI_KERNEL_EVALUATION.md)**: Comprehensive evaluation of OCC against traditional OS kernel primitives for AGI-OS development.
 - **[AGI-OS Integration Guide](docs/AGI_OS_INTEGRATION_GUIDE.md)**: Technical specifications for integrating 5 OpenCog repositories into a unified AGI Operating System.
 - **[AGI-Kern Coverage Summary](docs/AGI_KERN_COVERAGE_SUMMARY.md)**: Quick reference guide for kernel feature coverage and integration roadmap.
+
+### Build & Infrastructure
+- **[Guix SSR Implementation](docs/guix-ssr-implementation.md)**: SSR-compliant GNU Guix build system with local installer mirroring for reproducible, reliable CI/CD.
 
 ---
 

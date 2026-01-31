@@ -10,7 +10,7 @@ from src.grammar_tester.parsestat import parse_metrics
 
 
 gutenberg_children_bug = \
-"""
+    """
 [(LEFT-WALL)(")(project.v)(gutenberg[?].n)('s.p)(alice[?].n)('s.p)(adventures.n)([in])(wonderland.n)
 (,)(by)(lewis[!])(carroll[?].n)(")(()(edited.v-d)())]
 [[0 2 1 (Wi)][0 1 0 (ZZZ)][2 9 2 (Os)][6 9 1 (Ds**x)][5 6 0 (YS)][4 5 0 (D*u)][3 4 0 (YS)]
@@ -25,12 +25,12 @@ gutenberg_children_bug2 = "[ebook # @number@ ][(LEFT-WALL)(release.n)(date.n)(:.
 
 # cleaned_Gutenberg_Children bug list
 cgch_bug_001 = \
-"""
+    """
 [ illustration : " i tell you what , you stay right here ! "[(LEFT-WALL)([[])(illustration.n-u)(:.v)(")([i])(tell.v)(you)(what)(,)(you)(stay.v)(right.a)(here)(!)(")][[0 14 4 (Xp)][0 9 3 (Xx)][0 6 2 (WV)][0 2 0 (Wd)][2 3 0 (Ss)][3 6 1 (I*v)][3 4 0 (ZZZ)][6 8 1 (QI)][6 7 0 (Ox)][9 11 1 (WV)][9 10 0 (Wd)][10 11 0 (Sp)][11 12 0 (Pa)][12 13 0 (MVp)][14 15 0 (ZZZ)]][0]
 """
 # most people start at our web site which has the main pg search facility:
 alice_bug_001 = \
-"""
+    """
 [(most)(people)(start)(at)([our])(web)(site)([which])([has])([the])
 ([main])([pg])([search])([facility:])]
 [[0 1 0 (C26C33)][1 2 0 (C33C54)][2 3 0 (C54C22)][3 6 1 (C22C17)][5 6 0 (C23C17)]]
@@ -39,7 +39,7 @@ alice_bug_001 = \
 
 # its business office is located at @number@ north @number@ west, salt lake city, ut @number@ , ( @number@ ) @number@ - @number@ , email business@pglaf.org.
 alice_bug_002 = \
-"""
+    """
 [(LEFT-WALL)(its)(business.n-u)(office.n)(is.v)(located.v-d)(at)(@number@[?].n)(north.a)(@number@[?].a)
 (west.a)(,)(salt.n-u)(lake.n)(city.n)(,)(ut[?].v)(@number@[?].a)(,)([(])
 (@number@[?].a)())(@number@[?].a)(-.r)(@number@[?].a)(,)(email.s)(business@pglaf.org[?].n)(.)]
@@ -52,7 +52,7 @@ alice_bug_002 = \
 """
 
 alice_bug_003 = \
-"""
+    """
 [(LEFT-WALL)([(])(alice[?].n)(had.v-d)(no.misc-d)(idea.n)(what)(latitude.n-u)(was.v-d)(,)
 (or.ij)(longitude.n-u)(either.r)(,)([but])(thought.q-d)(they)(were.v-d)(nice.a)(grand.a)
 (words.n)(to.r)(say.v)(.)([)])]
@@ -64,7 +64,7 @@ alice_bug_003 = \
 """
 
 alice_bug_004 = \
-"""
+    """
 [(LEFT-WALL)(posting.g)(date.n)(:.j)(@date@[?].a)([)(ebook[?].a)([#])(@number@[?].n)(])
 (release.n)(date.n)(:.j)([@date@])(last.ord)(updated.v-d)(:.v)(@date@[?].n)]
 [[0 3 2 (Xx)][0 2 1 (Wa)][1 2 0 (AN)][3 12 5 (Xx)][3 11 4 (Wa)][10 11 0 (AN)][4 10 3 (A)]
@@ -74,7 +74,7 @@ alice_bug_004 = \
 """
 
 gutenberg_children_bug_002 = \
-"""
+    """
 [(LEFT-WALL)([a])(millennium.n-u)(fulcrum.n)(edition.n)([(])([c])([)])(1991[!])([by])
 (duncan[?].n)(research.n-u)]
 [[0 11 5 (Wa)][2 11 4 (AN)][3 11 3 (AN)][4 11 2 (AN)][8 11 1 (AN)][10 11 0 (AN)]]
@@ -92,7 +92,7 @@ gutenberg_children_bug_002l = "[[0 11 5 (Wa)][2 11 4 (AN)][3 11 3 (AN)][4 11 2 (
 gutenberg_children_bug_002lr = [(0, 11), (2, 11), (3, 11), (4, 11), (8, 11), (10, 11)]
 
 explosion_bug = \
-"""
+    """
 conclusions : icp-sf-ms is a reliable method of blood analysis for cd , mn and pb even for the evaluation on an individual basis.
 by comparing eyebrow shape and position in both young and mature women , this study provides objective data with which to plan forehead rejuvenating procedures.
 the odds of being overweight in adulthood was @number@ times greater ( @percent@ ci : @date@ @number@ ) in overweight compared with healthy weight youth.
@@ -108,7 +108,7 @@ holocaust survivors did not differ in the level of resilience from comparisons (
 """
 
 timeout_linkage = \
-"""
+    """
 No complete linkages found.
 Timer is expired!
 Entering "panic" mode...
@@ -124,7 +124,7 @@ Found 576744359 linkages (100 of 100 random linkages had no P.P. violations) at 
 """
 
 sharp_sign_ps_tokens = \
-"""
+    """
 (LEFT-WALL)(but.ij)(there.#their)(still.n)(remained.v-d)(all.a)(the)(damage.n-u)(that.j-p)(had.v-d)
 (been.v)([done])(that.j-r)(day.r)(,)(and.ij)(the)(king.n)(had.v-d)(nothing)
 ([with])([which])(to.r)(pay.v)(for.p)(this.p)(.)
@@ -139,12 +139,12 @@ sharp_sign_ps_tokens = \
 # """
 
 sharp_sign_tokens = \
-["###LEFT-WALL###", "but", "there", "still", "remained", "all", "the", "damage", "that", "had",
-"been", "[done]", "that", "day", ",", "and", "the", "king", "had", "nothing", "[with]", "[which]",
- "to", "pay", "for", "this", "."]
+    ["###LEFT-WALL###", "but", "there", "still", "remained", "all", "the", "damage", "that", "had",
+     "been", "[done]", "that", "day", ",", "and", "the", "king", "had", "nothing", "[with]", "[which]",
+     "to", "pay", "for", "this", "."]
 
 sharp_sign_ps_linkages = \
-"""
+    """
 [(LEFT-WALL)(but.ij)(there.#their)(still.n)(remained.v-d)(all.a)(the)(damage.n-u)(that.j-p)(had.v-d)
 (been.v)([done])(that.j-r)(day.r)(,)(and.ij)(the)(king.n)(had.v-d)(nothing)
 ([with])([which])(to.r)(pay.v)(for.p)(this.p)(.)]
@@ -271,7 +271,7 @@ sharp_sign_links = {
 
 
 merged_ps_parses = \
-"""
+    """
 here the train was coming mother was holding Jem's hand Dog Monday was licking it everybody was saying good-bye the train was in !
 No complete linkages found.
 Found 38230999 linkages (0 of 1000 random linkages had no P.P. violations) at null count 2
@@ -284,7 +284,7 @@ Found 2 linkages (2 had no P.P. violations)
 """
 
 merged_ps_parses2 = \
-"""
+    """
 There the train was coming mother was holding Jem's hand Dog Monday was licking it everybody was saying good-bye the train was in !
 No complete linkages found.
 Found 38230999 linkages (0 of 1000 random linkages had no P.P. violations) at null count 2
@@ -300,7 +300,7 @@ Found 2 linkages (2 had no P.P. violations)
 """
 
 merged_ps_parses3 = \
-"""
+    """
 They had gone.
 Found 2 linkages (2 had no P.P. violations)
         Linkage 1, cost vector = (UNUSED=0 DIS= 0.00 LEN=5)
@@ -310,7 +310,7 @@ Found 2 linkages (2 had no P.P. violations)
 """
 
 two_linkages_ps = \
-"""
+    """
 the old beast was whinnying on his shoulder .
 No complete linkages found.
 Found 3 linkages (3 had no P.P. violations) at null count 2
@@ -380,7 +380,7 @@ Found 3 linkages (3 had no P.P. violations) at null count 2
 # """
 
 explosion_no_linkages = \
-"""
+    """
 But there still remained all the damage that had been done that day , and the king had nothing with which to pay for this.
 No complete linkages found.
 Timer is expired!
@@ -392,7 +392,7 @@ Found 27061933 linkages (0 of 100 random linkages had no P.P. violations) at nul
 """
 
 tuna_isa_fish_ps = \
-"""
+    """
 tuna isa fish.
 Found 1 linkage (1 had no P.P. violations)
 	Unique linkage, cost vector = (UNUSED=0 DIS= 0.00 LEN=4)
@@ -471,7 +471,7 @@ Bye.
 """
 
 sticky_parses_01 = \
-"""
+    """
 but if Kilmeny says she will not marry you I am afraid she 'll stick to it . "
 No complete linkages found.
 Timer is expired!
@@ -490,7 +490,7 @@ Found 125746 linkages (100 of 100 random linkages had no P.P. violations) at nul
 
 
 sticky_parses_02 = \
-"""
+    """
 but if Mahbub Ali did not know this , it would be very unsafe to tell him so .
 No complete linkages found.
 Timer is expired!
@@ -510,7 +510,7 @@ Found 13780061 linkages (15 of 16 random linkages had no P.P. violations) at nul
 """
 
 sticky_parses_03 = \
-"""
+    """
 when the horse saw this it changed itself to a dove , and flew up into the air .
 No complete linkages found.
 Timer is expired!
@@ -527,7 +527,7 @@ Found 2147483647 linkages (15 of 16 random linkages had no P.P. violations) at n
 """
 
 explosion_no_linkages_full = \
-"""
+    """
 echo set to 1
 postscript set to 1
 graphics set to 0
@@ -656,8 +656,8 @@ class TestPSParse(unittest.TestCase):
                "(longitude.n-u)(either.r)(,)([but])(thought.q-d)(they)(were.v-d)(nice.a)(grand.a)(words.n)(to.r)(say.v)" \
                "(.)([)])"
         ref = \
-        ["###LEFT-WALL###", "[(]", "alice", "had", "no", "idea", "what", "latitude", "was", ",", "or", "longitude",
-        "either", ",", "[but]", "thought", "they", "were", "nice", "grand", "words", "to", "say", ".", "[)]"]
+            ["###LEFT-WALL###", "[(]", "alice", "had", "no", "idea", "what", "latitude", "was", ",", "or", "longitude",
+             "either", ",", "[but]", "thought", "they", "were", "nice", "grand", "words", "to", "say", ".", "[)]"]
 
         tokens = parse_tokens(post, options)[0]
         self.assertEqual(ref, tokens)
@@ -986,7 +986,7 @@ class TestPSParse(unittest.TestCase):
 
     def test_get_linkage_cost(self):
         linkage = \
-"""
+            """
         Linkage 1, cost vector = (UNUSED=0 DIS=-0.61 LEN=16)
 [(LEFT-WALL)(the)(old.a)(beast.n)(was.v-d)(whinnying.v)(on)(his)(shoulder.n)(.)]
 [[0 9 4 (Xp)][0 4 3 (WV)][0 3 2 (Wd)][3 4 0 (Ss*s)][1 3 1 (Ds**x)][2 3 0 (A)][4 6 1 (MVp)]

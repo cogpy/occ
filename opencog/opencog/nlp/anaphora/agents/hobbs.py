@@ -272,14 +272,14 @@ class HobbsAgent(MindAgent):
 
             # We don't want to output this to unit tests
             if self.DEBUG:
-                    print("accepted "+node.name)
+                print("accepted "+node.name)
             log.fine("accepted "+node.name)
             self.generateReferenceLink(self.currentPronoun,node,TruthValue(STRENGTH_FOR_ACCEPTED_ANTECEDENTS, self.confidence))
             self.confidence=self.confidence*CONFIDENCE_DECREASING_RATE
         else:
             self.generateReferenceLink(self.currentPronoun,node,TV_FOR_FILTERED_OUT_ANTECEDENTS)
             #if self.DEBUG:
-                   # print("rejected "+node.name+" by filter-#"+str(index))
+            # print("rejected "+node.name+" by filter-#"+str(index))
 
         self.atomspace.remove(self.currentResolutionLink_pronoun)
         return not rejected

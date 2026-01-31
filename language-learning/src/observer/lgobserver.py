@@ -35,7 +35,7 @@ class LGPSTokenizer(LGPSStreamParser):
 
         for link in linkage.links:
             # if linkage.tokens[link[0]] == r"###LEFT-WALL###":  # and linkage.tokens[link[1]] == r".":
-                # print("{} {}".format(linkage.tokens[link[0]], linkage.tokens[link[1]]))
+            # print("{} {}".format(linkage.tokens[link[0]], linkage.tokens[link[1]]))
 
             self._pairs.add(linkage.tokens[link[0]], linkage.tokens[link[1]])
 

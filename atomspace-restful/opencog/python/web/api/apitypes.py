@@ -16,7 +16,7 @@ class TypesAPI(Resource):
     # (https://github.com/twilio/flask-restful/pull/131):
     @cors.crossdomain(origin='*')
     @swagger.operation(
-	notes='''
+        notes='''
 Returns a JSON representation of a list of valid atom types
 
 <p>Example:
@@ -26,13 +26,13 @@ Returns a JSON representation of a list of valid atom types
   "PrepositionalRelationshipNode"]}
 </pre>
 ''',
-	responseClass='response',
-	nickname='get',
-	parameters=[
-	],
-	responseMessages=[
-	    {'code': 200, 'message': 'Returned list of valid atom types'},
-	]
+        responseClass='response',
+        nickname='get',
+        parameters=[
+        ],
+        responseMessages=[
+            {'code': 200, 'message': 'Returned list of valid atom types'},
+        ]
     )
     def get(self):
         """

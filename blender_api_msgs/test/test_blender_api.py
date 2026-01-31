@@ -13,8 +13,8 @@ import rosbag
 import rosnode
 from roslaunch import core
 from testing_tools.misc import (wait_for, startxvfb, stopxvfb, capture_screen,
-        run_shell_cmd, add_text_to_video, concatenate_videos,
-        rosbag_msg_generator, get_rosbag_file, check_if_ffmpeg_satisfied)
+                                run_shell_cmd, add_text_to_video, concatenate_videos,
+                                rosbag_msg_generator, get_rosbag_file, check_if_ffmpeg_satisfied)
 from blender_api_msgs.msg import *
 from genpy import Duration
 
@@ -40,7 +40,7 @@ class BlenderAPITest(unittest.TestCase):
                 args='-y %s/Sophia.blend -P %s/autostart.py' % (
                         blender_api_path, blender_api_path),
                 name='blender_api')
-            )
+        )
         self.runner = roslaunch.launch.ROSLaunchRunner(
             self.run_id, config, is_rostest=True)
         self.runner.launch()
@@ -134,7 +134,7 @@ class BlenderAPITest(unittest.TestCase):
             video =  '%s/viseme-%s.avi' % (self.output_dir, viseme)
             with capture_screen(video, timeout):
                 pub.publish(msg_class(
-                        viseme, Duration(0, 0), Duration(0, 5*1e8), 0.1, 0.8, 1))
+                    viseme, Duration(0, 0), Duration(0, 5*1e8), 0.1, 0.8, 1))
             add_text_to_video(video)
             videos.append(video)
         ofile = '%s/viseme.avi' % self.output_dir

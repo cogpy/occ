@@ -6,10 +6,13 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 
 PROJECT(atomspace-accelerator
-    VERSION 0.1.0
+    VERSION 1.0.0
     DESCRIPTION "AtomSpace Accelerator Inference Engine"
     LANGUAGES CXX
 )
+
+# Version information
+SET(SEMANTIC_VERSION 1.0.0)
 
 # Set C++17 standard
 set(CMAKE_CXX_STANDARD 17)
@@ -24,6 +27,7 @@ set(ATOMSPACE_ACCELERATOR_SOURCES
     src/inference_engine.cpp
     src/accelerator.cpp
     src/query_optimizer.cpp
+    src/pattern_miner.cpp
 )
 
 # AtomSpace Accelerator library headers
@@ -31,6 +35,7 @@ set(ATOMSPACE_ACCELERATOR_HEADERS
     include/atomspace_accelerator/inference_engine.h
     include/atomspace_accelerator/accelerator.h
     include/atomspace_accelerator/query_optimizer.h
+    include/atomspace_accelerator/pattern_miner.h
 )
 
 # Build AtomSpace Accelerator shared library

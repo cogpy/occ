@@ -18,9 +18,9 @@ except:
     os.mkdir(path_out)
 
 for filename in glob.iglob(path + '*'):
-     print ("processing " + filename)
-     content = open(filename, 'rb').read()
-     words = " ".join(jieba.cut(content.replace(" ","")))
-     log_f = open(path_out + os.path.basename(filename) +".seg","wb")
-     log_f.write(words.encode('utf-8'))
-     log_f.close()
+    print(("processing " + filename))
+    content = open(filename, 'rb').read()
+    words = " ".join(jieba.cut(content.replace(" ","")))
+    log_f = open(path_out + os.path.basename(filename) +".seg","wb")
+    log_f.write(words.encode('utf-8'))
+    log_f.close()

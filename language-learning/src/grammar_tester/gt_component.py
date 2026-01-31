@@ -79,10 +79,10 @@ class GrammarTesterComponent(AbstractPipelineComponent):
             ref_path = handle_path_string(ref_path)
 
         pa, pq = self.tester.test(dict_path,
-                         handle_path_string(kwargs.pop(CONF_CORP_PATH)),
-                         handle_path_string(kwargs.pop(CONF_DEST_PATH, os.environ['PWD'])),
-                         ref_path,
-                         options, TextProgress, **kwargs)
+                                  handle_path_string(kwargs.pop(CONF_CORP_PATH)),
+                                  handle_path_string(kwargs.pop(CONF_DEST_PATH, os.environ['PWD'])),
+                                  ref_path,
+                                  options, TextProgress, **kwargs)
 
         return {"parseability": pa.parseability_str(pa), "PA": pa.parseability_str(pa), "F1": pq.f1_str(pq),
                 "recall": pq.recall_str(pq), "precision": pq.precision_str(pq), "PT": pa.parse_time_str(pa)}

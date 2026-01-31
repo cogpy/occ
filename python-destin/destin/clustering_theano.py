@@ -38,7 +38,7 @@ for I in range(1000):
     # print ans
 
 elapsed1 = time() - start
-print elapsed1
+print(elapsed1)
 print('Math Module')
 start = time()
 for I in range(1000):
@@ -46,11 +46,11 @@ for I in range(1000):
     # print ans
 
 elapsed2 = time() - start
-print elapsed2
+print(elapsed2)
 print('theano w.o function call')
 start = time()
 for I in range(1000):
     ans1 = f(I, 1)
 elapsed3 = time() - start
-print elapsed3
+print(elapsed3)
 # print('Diff %f' % (elapsed1-elapsed2))

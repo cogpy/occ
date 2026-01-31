@@ -23,6 +23,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Options for selective building
+
+# AGI-OS Layer 1: Cognitive Microkernel
+OPTION(BUILD_COGNUMACH "Build Cognumach (GNU Mach) microkernel - Layer 1" OFF)
+
+# AGI-OS Layer 2: Cognitive Operating System
+OPTION(BUILD_HURDCOG "Build HurdCog (GNU Hurd + cognitive extensions) - Layer 2" OFF)
+
+# Core OpenCog components
 OPTION(BUILD_COGUTIL "Build CogUtil library" ON)
 OPTION(BUILD_ATOMSPACE "Build AtomSpace hypergraph database" ON)  
 OPTION(BUILD_COGSERVER "Build CogServer networking" ON)
@@ -42,6 +50,49 @@ OPTION(BUILD_GNUCASH "Build Gnucash cognitive accounting integration" OFF)
 OPTION(BUILD_KOBOLDCPP "Build KoboldCpp story/world modeling integration" OFF)
 OPTION(BUILD_APHRODITE "Build Aphrodite Engine LLM inference integration" OFF)
 
+# ============================================================================
+# AGI-OS Build Sequence - Three Layer Architecture
+# ============================================================================
+# Layer 0: Build Tools (MIG - Mach Interface Generator)
+# Layer 1: Cognumach (Microkernel)
+# Layer 2: HurdCog (Operating System + Cognitive Extensions) 
+# Layer 3: OCC (AGI Framework)
+# ============================================================================
+
+# Layer 0: Build Tools - MIG (Mach Interface Generator)
+IF(BUILD_COGNUMACH OR BUILD_HURDCOG)
+    MESSAGE(STATUS "Building Layer 0: MIG (Mach Interface Generator)...")
+    MESSAGE(STATUS "  Location: build-tools/mig/")
+    MESSAGE(STATUS "  Note: Centralized MIG for all Mach-based components")
+    IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/build-tools/mig/Makefile.am")
+        # MIG uses autotools, so we'll handle it separately
+        MESSAGE(STATUS "  MIG found at build-tools/mig/ (autotools-based)")
+    ELSE()
+        MESSAGE(WARNING "  MIG not found at build-tools/mig/")
+    ENDIF()
+ENDIF()
+
+# Layer 1: Cognumach Microkernel (autotools-based)
+IF(BUILD_COGNUMACH)
+    MESSAGE(STATUS "Building Layer 1: Cognumach Microkernel...")
+    MESSAGE(STATUS "  Note: Requires autotools (autoconf, automake, libtool)")
+    add_subdirectory(cognumach)
+ENDIF()
+
+# Layer 2: HurdCog Operating System (autotools-based + cognitive extensions)
+IF(BUILD_HURDCOG)
+    MESSAGE(STATUS "Building Layer 2: HurdCog Operating System...")
+    MESSAGE(STATUS "  Note: Requires Cognumach and autotools")
+    IF(BUILD_COGNUMACH)
+        add_subdirectory(hurdcog)
+    ELSE()
+        MESSAGE(WARNING "HurdCog requires Cognumach. Skipping HurdCog build.")
+    ENDIF()
+ENDIF()
+
+# Layer 3: OCC Components (CMake-based)
+MESSAGE(STATUS "Building Layer 3: OpenCog Collection (OCC)...")
+
 # Core components built in dependency order
 IF(BUILD_COGUTIL)
     MESSAGE(STATUS "Building CogUtil...")
@@ -59,8 +110,8 @@ IF(BUILD_ATOMSPACE AND BUILD_COGUTIL)
     add_subdirectory(atomspace)
 ENDIF()
 
-# AtomSpace Accelerator - depends on AtomSpace
-IF(BUILD_ATOMSPACE_ACCELERATOR AND BUILD_ATOMSPACE)
+# AtomSpace Accelerator - can build independently for cognitive architecture
+IF(BUILD_ATOMSPACE_ACCELERATOR)
     MESSAGE(STATUS "Building AtomSpace Accelerator Inference Engine...")
     add_subdirectory(atomspace-accelerator)
 ENDIF()
@@ -90,8 +141,8 @@ IF(BUILD_SENSORY AND BUILD_ATOMSPACE)
     add_subdirectory(sensory)
 ENDIF()
 
-# Agentic Chatbots - integrates with AtomSpace
-IF(BUILD_AGENTIC_CHATBOTS AND BUILD_ATOMSPACE)
+# Agentic Chatbots - can build independently for cognitive architecture
+IF(BUILD_AGENTIC_CHATBOTS)
     MESSAGE(STATUS "Building Agentic Chatbots...")
     add_subdirectory(agentic-chatbots)
 ENDIF()
@@ -118,6 +169,15 @@ IF(BUILD_APHRODITE AND BUILD_ATOMSPACE)
     add_subdirectory(aphrodite-engine)
 ENDIF()
 
+# Integration layer
+OPTION(BUILD_INTEGRATION_LAYER "Build integration bridges" ON)
+IF(BUILD_INTEGRATION_LAYER)
+    MESSAGE(STATUS "Building integration layer...")
+    IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/integration/CMakeLists.txt")
+        add_subdirectory(integration)
+    ENDIF()
+ENDIF()
+
 # Optional: Additional AtomSpace extensions
 OPTION(BUILD_ATOMSPACE_STORAGE "Build AtomSpace storage backends" OFF)
 IF(BUILD_ATOMSPACE_STORAGE AND BUILD_ATOMSPACE)
@@ -137,6 +197,11 @@ MESSAGE(STATUS "")
 MESSAGE(STATUS "OpenCog Collection Configuration Summary:")
 MESSAGE(STATUS "========================================")
 MESSAGE(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+MESSAGE(STATUS "")
+MESSAGE(STATUS "AGI-OS Stack:")
+MESSAGE(STATUS "Layer 1 - Cognumach (Microkernel): ${BUILD_COGNUMACH}")
+MESSAGE(STATUS "Layer 2 - HurdCog (OS + Cognitive): ${BUILD_HURDCOG}")
+MESSAGE(STATUS "Layer 3 - OCC (AGI Framework): enabled")
 MESSAGE(STATUS "")
 MESSAGE(STATUS "Core Components:")
 MESSAGE(STATUS "CogUtil: ${BUILD_COGUTIL}")

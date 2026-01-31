@@ -118,7 +118,7 @@ def createSom():
     som = som_type(som_height,som_width, be.getOutputSize())
     #euclian = e
     #cosine = u #TODO: test that the character is surviving the translation into c code
-                #and not defaulting back to euclean
+    #and not defaulting back to euclean
     som.setDistMetric('u')
 
 #train the network
@@ -127,7 +127,7 @@ def train_destin():
     image_ids = []
     for i in range(training_iterations):
         if i % 100 == 0:
-            print "Training DeSTIN iteration: " + str(i)
+            print("Training DeSTIN iteration: " + str(i))
 
         #find an image of an enabled class
         cs.findNextImage()
@@ -146,7 +146,7 @@ def train_destin():
         for j in range(layers):
             dn.setLayerIsTraining(j, True)
             dn.doDestin(cs.getGrayImageFloat())
-            
+
         #let it train for 2 more times with all layers training
         for j in range(2):
             dn.doDestin(cs.getGrayImageFloat())
@@ -161,7 +161,7 @@ def showDestinImage(i):
     dn.clearBeliefs()
     for j in range(layers):
         dn.doDestin(cs.getGrayImageFloat())
-            
+
 #train the self organizing maps
 def train_som():
     createSom()
@@ -172,23 +172,23 @@ def train_som():
     #its beliefs for a given image stay fixed
     for j in range(layers):
         dn.setLayerIsTraining(j, False)
-        
+
     for i in range(som_train_iterations):
         showDestinImage(i)
         som.addTrainData(be.getBeliefs() )
     som.train(som_train_iterations)
 
-            
+
     #finish by saving
     #   som.saveSom("saved.som")
-            
-    
+
+
 def showCifarImage(id):
-     cs.setCurrentImage(id)
-     ci = cs.getColorImageMat()
-     pd.imshow("Cifar Image: " + str(id), ci)
-     
-	
+    cs.setCurrentImage(id)
+    ci = cs.getColorImageMat()
+    pd.imshow("Cifar Image: " + str(id), ci)
+
+
 #blue = 0
 #yellow = .5
 
@@ -196,7 +196,7 @@ def showCifarImage(id):
 # paints the colored image dots on the SOM
 coords_to_image_index = None
 def paintClasses(classes_to_show = []):
-    print "Calculating dot locations..."
+    print("Calculating dot locations...")
     sp.clearSimMapMarkers()
     global coords_to_image_index
     coords_to_image_index = {}
@@ -208,9 +208,9 @@ def paintClasses(classes_to_show = []):
             hue = label / 10.0
             coords_to_image_index[ ( bmu.x, bmu.y) ] = cs.getImageIndex()
             sp.addSimMapMaker(bmu.y, bmu.x, hue, marker_width)
-        
+
     #finish
-    print "Calculating Simularity Grayscale Map"
+    print("Calculating Simularity Grayscale Map")
     sp.showSimularityMap(som_window_title,
                          som_sim_map_nh_width,
                          som_display_width,
@@ -222,7 +222,7 @@ def paintClasses(classes_to_show = []):
 # the corresponding image for it.
 def som_click_callback(event, x, y, flag, param):
     if event == cv.CV_EVENT_LBUTTONUP:
-        print "clicked r:%i c:%i" % (y, x)
+        print("clicked r:%i c:%i" % (y, x))
         scale_x = som_width /  float(som_display_width)
         scale_y = som_height / float(som_display_height)
         minDist = 1e100
@@ -241,11 +241,11 @@ def som_click_callback(event, x, y, flag, param):
                 min_bmu_coords = bmu_coords
 
         image_index = coords_to_image_index[min_bmu_coords]
-        print "BMU X: %i Y:%i, Image index: %i" % (min_bmu_coords[0], min_bmu_coords[1], image_index )
+        print("BMU X: %i Y:%i, Image index: %i" % (min_bmu_coords[0], min_bmu_coords[1], image_index ))
         cs.displayColorImage(image_index)
         cs.displayGrayImage(image_index)
-                
-                
+
+
 
 # This waitkey thread lets the opencv windows refresh automatically
 # without needed to manually call the cv::waitkey method
@@ -255,7 +255,7 @@ class waitkey(threading.Thread):
         while True:    
             hg.cvWaitKey(100)
             if kill_waitkey:
-                print "waitkey killed"
+                print("waitkey killed")
                 return
 
 waitkey().start()
@@ -263,10 +263,10 @@ waitkey().start()
 
 def go():
     train_destin()
-    print "Training SOM..."
+    print("Training SOM...")
     train_som()
     paintClasses()
-    print "Done."
+    print("Done.")
 
 #Start it all up
 go()

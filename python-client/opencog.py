@@ -390,7 +390,7 @@ def relex(sentence, display=True, concise=True):
             result = result.strip()
 
         if display:
-            print result
+            print(result)
         else:
             return result
 
@@ -406,7 +406,7 @@ def to_logic(sentence, clear=True, display=True):
         scheme("(clear)")
     scheme('(r2l "' + sentence + '")')
     if display:
-        print scheme("(cog-outgoing-set (car (cog-get-atoms 'SetLink)))")
+        print(scheme("(cog-outgoing-set (car (cog-get-atoms 'SetLink)))"))
 
 
 class RelExServer(object):

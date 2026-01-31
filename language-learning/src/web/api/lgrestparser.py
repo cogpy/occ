@@ -138,8 +138,8 @@ class LinkParserResource:
                     link_list['linkages'].append(linkage.postscript())
 
             elif mode == MOD_ULL_SENT:
-                    for linkage in linkages:
-                        link_list['linkages'].append(get_ull_sentence(linkage.postscript()))
+                for linkage in linkages:
+                    link_list['linkages'].append(get_ull_sentence(linkage.postscript()))
 
             else:   # MOD_DIAGRAM is default mode
                 for linkage in linkages:

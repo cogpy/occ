@@ -33,7 +33,7 @@
 #include <opencog/atoms/base/Valuation.h>
 
 #include <opencog/atomspace/AtomTable.h>
-#include <opencog/atomspace/BackingStore.h>
+#include <opencog/persist/api/BackingStore.h>
 
 namespace opencog
 {

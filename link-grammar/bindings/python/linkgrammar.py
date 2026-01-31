@@ -521,12 +521,12 @@ class Sentence(object):
     # split() has ParseOptions as an optional argument
     # (defaults to that of Sentence)
     if sent.split(ParseOptions(verbosity=2)) < 0:
-        print "Cannot split sentence"
+        print("Cannot split sentence")
     else
         linkages = sent.parse()
-        print "English: found ", sent.num_valid_linkages(), "linkages"
+        print("English: found ", sent.num_valid_linkages(), "linkages")
         for linkage in linkages:
-            print linkage.diagram()
+            print(linkage.diagram())
     """
     def __init__(self, text, lgdict, parse_options):
         # Keep all args passed into clg.* functions.

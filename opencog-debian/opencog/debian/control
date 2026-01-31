@@ -19,3 +19,23 @@ Description: framework for Artificial General Intelligence (AGI)
  functional core framework, and a number of cognitive agents at varying
  levels of completion, some already displaying interesting and useful
  functionalities alone and in combination.
+ .
+ This meta-package installs the complete OpenCog Collection, including:
+  - AtomSpace: Hypergraph knowledge representation system
+  - PLN: Probabilistic Logic Networks for uncertain reasoning
+  - URE: Unified Rule Engine for forward and backward chaining
+  - ECAN: Economic Attention Networks for attention allocation
+  - Pattern Miner: Frequent pattern discovery in knowledge graphs
+  - Language Learning: Unsupervised grammar induction
+  - MOSES: Meta-Optimizing Semantic Evolutionary Search
+  - Vision: Visual perception and object recognition
+  - CogServer: Network server for distributed AtomSpace access
+ .
+ OpenCog is designed for cognitive synergy, where the interaction of diverse
+ AI components produces emergent intelligence beyond individual algorithms.
+ It is used in research areas including natural language understanding,
+ bioinformatics, robotics, and autonomous systems.
+ .
+ The framework supports multiple programming languages (C++, Python, Scheme,
+ Haskell) and provides both symbolic and sub-symbolic AI capabilities,
+ enabling integration of logic, learning, and evolutionary optimization.

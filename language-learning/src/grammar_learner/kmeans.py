@@ -40,7 +40,7 @@ def cluster_words_kmeans(words_df, n_clusters):
 
 
 def number_of_clusters(vdf, cluster_range, algorithm='kmeans', \
-        criteria='silhouette', level=0.9, verbose='none'):
+                       criteria='silhouette', level=0.9, verbose='none'):
 
     logger = logging.getLogger(__name__ + ".number_of_clusters")
 

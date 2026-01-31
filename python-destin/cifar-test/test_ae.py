@@ -13,9 +13,9 @@ y = Data['y']
 X = Data['X']
 for I in range(X.shape[0]):
     if I % 100 == 0:
-        print I
+        print(I)
     for Temp in range(0, epoch, 1):
         testAE.train((X[I][:].reshape(1, 400)))
-print np.shape(testAE.W)
+print(np.shape(testAE.W))
 D1 = np.asarray(testAE.apply((X[100][:].reshape(1, 400))))
 D2 = np.asarray(testAE.apply((X[101][:].reshape(1, 400))))

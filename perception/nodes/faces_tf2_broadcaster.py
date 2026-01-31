@@ -40,11 +40,11 @@ class FacesPublisher:
         # angle for faces to be marked as same, to be refined in future
         #self.max_angle = rospy.get_param('max_angle', 0.085)
         rospy.Subscriber('camera/face_locations',
-                     pi_face_tracker.msg.Faces,
-                     self.handle_faces)
+                         pi_face_tracker.msg.Faces,
+                         self.handle_faces)
         rospy.Subscriber('eye_camera/face_locations',
-                     pi_face_tracker.msg.Faces,
-                     self.handle_eye_faces)
+                         pi_face_tracker.msg.Faces,
+                         self.handle_eye_faces)
         # Last faces gotten from body camera
         self.last_faces = {}
         # Stores delta information for the faces
@@ -54,7 +54,7 @@ class FacesPublisher:
         # Wait for camera and eye transforms
         try:
             self.listener.waitForTransform('camera', 'world', \
-                rospy.Time(0), rospy.Duration(3.0))
+                                           rospy.Time(0), rospy.Duration(3.0))
         except Exception:
             rospy.logerr("No camera transforms!")
             exit(1)
@@ -74,7 +74,7 @@ class FacesPublisher:
             # self.broadcaster.sendTransform(tr)    --- tf2 version
 
             self.broadcaster.sendTransform((face.point.x,face.point.y,face.point.z),(0,0,0,1),
-                                            self.last_faces_time,"face_base" + str(face.id),"camera")
+                                           self.last_faces_time,"face_base" + str(face.id),"camera")
             time.sleep(0.005) # Need to investigate why we cant publish multiple messages at same time
             # Publish eye detected face
             # t = TransformStamped(header=Header(stamp=rospy.Time.now(), frame_id="face_base" + str(face.id)),

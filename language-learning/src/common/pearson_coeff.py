@@ -115,7 +115,7 @@ def main(argv):
 
     try:
         opts, args = getopt.getopt(argv, "hl:d:n:p:", ["LGfile=", "distFile=",
-         "noDistFile=", "plotfile="])
+                                                       "noDistFile=", "plotfile="])
     except getopt.GetoptError:
         print("Usage: ./PearsonsCoeff.py -l <LG file> -d <distance file> -n <no-distance file> -p <plotfile>")
         sys.exit(2)

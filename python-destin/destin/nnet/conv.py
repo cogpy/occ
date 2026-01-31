@@ -24,7 +24,7 @@ try:
     from pylearn2.sandbox.cuda_convnet.filter_acts import FilterActs
     from pylearn2.sandbox.cuda_convnet.pool import MaxPool
 except ImportError:
-    print "Note: pylearn2 not available, FilterActs cannot be used"
+    print("Note: pylearn2 not available, FilterActs cannot be used")
     pylearn2=None
 
 
@@ -105,13 +105,13 @@ class ConvLayer(object):
         # each unit in the lower layer receives a gradient from:
         # (number of output feature maps * filter height * filter width) / pooling_size
         fan_out=(self.filter_shape[0] * np.prod(self.filter_shape[2:]) / np.prod(self.pool_size))
-        
+
         W_bound=np.sqrt(6. / (fan_in + fan_out))
         self.W=theano.shared(np.asarray(self.rng.uniform(low=-W_bound,
                                                          high=W_bound,
                                                          size=self.filter_shape),
-                                                         type='theano.config.floatX'),
-                                                         borrow=True)
+                                        type='theano.config.floatX'),
+                             borrow=True)
         # Generate bias values, initialize as 0
         # the bias is a 1D tensor -- one bias per output feature map when using untied biases
         b_values=np.zeros((self.filter_shape[0],), dtype='theano.config.floatX')
@@ -123,9 +123,9 @@ class ConvLayer(object):
     def apply_conv(self, input):
         """
         This method applies the convolution operation on the input provided
-        
+
         @note Convolution operation in this version is not as powerful as using dnn_conv
-        
+
         @param input: symbolic tensor of shape image_shape (theano.tensor.dtensor4)
                       A 4D tensor with the axes representing batch size, number of
                       channels, image height, and image width.
@@ -133,11 +133,11 @@ class ConvLayer(object):
         @return output : A 4D tensor of filtered images (feature maps) with dimensions
                          representing batch size, number of filters, feature map height,
                          and feature map width.
-			
+
                         The height and width of the feature map depend on the border
                         mode. For 'valid' it is ``image_size - filter_size + 1`` while
                         for 'full' it is ``image_size + filter_size - 1``
-    	"""
+        """
         self.output=conv.conv2d(input=input,
                                 filters=self.W, 
                                 image_shape=self.image_shape,
@@ -152,14 +152,14 @@ class ConvLayer(object):
         if self.pool==True:
             self.pooling=MaxPooling(self.pool_size, self.stride)
             self.output=self.pooling.apply(self.output)
-         
+
         return self.output   
 
     def apply_activation(self, pre_activation):
         """
         Apply activation on pre-activation input
         i.e. f(pre_activation)
-        
+
         @param pre_activation: pre-activation matrix
         ---------------------------------------------
         @return: layer activation
@@ -193,9 +193,9 @@ class ConvLayerFilterActs(ConvLayer):
                  tied_biases=False):
         """
         Initialise the ConvNet Layer
-        
+
         @note: Supports only max pooling for now
-        
+
         @param rng: random number generator for initializing weights (numpy.random.RandomState)
         @param input: symbolic tensor of shape image_shape (theano.tensor.dtensor4)
         @param image_shape: (batch size, number of input feature maps,image height, image width) (tuple or list of length 4)
@@ -226,9 +226,9 @@ class ConvLayerFilterActs(ConvLayer):
     def apply_conv(self, input):
         """
         This method applies the convolution operation on the input provided
-        
+
         @note Convolution operation in this version is not as powerful as using dnn_conv
-        
+
         @param input: symbolic tensor of shape image_shape (theano.tensor.dtensor4)
                       A 4D tensor with the axes representing batch size, number of
                       channels, image height, and image width.
@@ -236,13 +236,13 @@ class ConvLayerFilterActs(ConvLayer):
         @return output : A 4D tensor of filtered images (feature maps) with dimensions
                          representing batch size, number of filters, feature map height,
                          and feature map width.
-			
+
                         The height and width of the feature map depend on the border
                         mode. For 'valid' it is ``image_size - filter_size + 1`` while
                         for 'full' it is ``image_size + filter_size - 1``
         ----------------------------------------------------------------------------------
         Limitations of using FilterActs compared to conv2d:
-        
+
         > Number of channels <= 3; If you want to compute the gradient, it should be divisible by 4.
         > Filters must be square.
         > Number of filters must be a multiple of 16
@@ -271,12 +271,12 @@ class ConvLayerFilterActs(ConvLayer):
             pooled_out=conv_out
 
         self.output=pooled_out
-        
+
         if self.tied_biases:
             self.output+=self.b.dimshuffle("x", 0, "x", "x")
         else:
             self.output+=self.b.dimshuffle('x', 0, 1, 2)
-            
+
         return self.output
 
 
@@ -296,11 +296,11 @@ class MaxPooling(object):
         """
         self.pooling_size=pooling_size
         self.stride=stride
-        
+
     def apply(self, input):
         """
         Apply the pooling (subsampling) transformation.
-        
+
         @param input: An tensor with dimension greater or equal to 2. The last two
                       dimensions will be downsampled. For example, with images this
                       means that the last two dimensions should represent the height

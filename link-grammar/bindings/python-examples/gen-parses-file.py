@@ -69,7 +69,7 @@ po = ParseOptions(verbosity=arg.verbosity)
 MAX_DISPLAY_LINKAGES = 6
 po.max_null_count = 999    # > allowed maximum number of words
 po.linkage_limit = 100000  # maximum number of linkages to generate
-                           # (should be >= num_linkages_found)
+# (should be >= num_linkages_found)
 po.max_parse_time = 10     # actual parse timeout may be about twice bigger
 po.spell_guess = arg.spell_guess
 po.display_morphology = arg.morphology

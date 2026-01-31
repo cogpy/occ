@@ -108,7 +108,7 @@ def get_bones_rotation_rad(armature, bone, axis, refbone=None):
         mat = get_pose_matrix(
             bpy.data.objects[armature].pose.bones[bone],
             bpy.data.objects[armature].pose.bones[refbone]
-            )
+        )
     else:
         mat = get_local_pose_matrix(bpy.data.objects[armature].pose.bones[bone])
     return getattr(mat.to_euler(), axis)

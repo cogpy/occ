@@ -7,7 +7,7 @@ from optparse import OptionParser
 def main(fileName):
     with open(fileName, "r") as f:
         lines = f.readlines()
-        
+
     # find AGPL header if any
     has_AGPL_header = False
     i = 0
@@ -34,17 +34,17 @@ def main(fileName):
           " * See the License for the specific language governing permissions and\n",
           " * limitations under the License.\n",
           " */\n"]
-    
+
     if has_AGPL_header:
         lines_with_apache = lines[:start_idx] + lines_apache + lines[end_idx+1:]
         with open(fileName, "w") as f:
             f.write("".join(lines_with_apache))
-    
+
 if __name__ == "__main__":
     parser = OptionParser()
     (options, args) = parser.parse_args()
 
     fileName = args[0]
-    
+
     main(fileName)
 

@@ -131,7 +131,7 @@ class GrammarTester(AbstractGrammarTestClient):
     def _get_output_file_name(self, corpus_file_path: str, args: list) -> str:
         suff = get_output_suffix(self._options)
         return args[CORP_ARG_DEST] + "/" + os.path.split(corpus_file_path)[1] \
-               + ("" if corpus_file_path.endswith(suff) else suff)
+            + ("" if corpus_file_path.endswith(suff) else suff)
 
     def _get_ref_file_name(self, corpus_file_path: str, args: list):
         """ Return reference file path """
@@ -211,7 +211,7 @@ class GrammarTester(AbstractGrammarTestClient):
 
         elif os.path.isdir(corp_path):
             traverse_dir_tree(corp_path, "", [self._on_corpus_file, dest_path, lang_path] + args,
-                                             [self._on_corp_dir, dest_path, lang_path] + args, True)
+                              [self._on_corp_dir, dest_path, lang_path] + args, True)
 
         # If output format is set to ULL
         if not (self._options & BIT_OUTPUT):
@@ -228,7 +228,7 @@ class GrammarTester(AbstractGrammarTestClient):
 
             if self._progress is None:
                 self._logger.info(os.path.split(dict_file_path)[1] + " dictionary processing time: "
-                      + self._total_metrics.parse_time_str(self._total_metrics))
+                                  + self._total_metrics.parse_time_str(self._total_metrics))
 
         self._total_dicts += 1
 
@@ -331,7 +331,7 @@ class GrammarTester(AbstractGrammarTestClient):
 
 
 def test_grammar(corpus_path: str, output_path: str, dict_path: str, grammar_path: str, template_path: str,
-                       linkage_limit: int, options: int, reference_path: str, timeout: int=1, **kwargs) \
+                 linkage_limit: int, options: int, reference_path: str, timeout: int=1, **kwargs) \
         -> (Decimal, Decimal, Decimal, Decimal):
     """
     Test grammar(s) over specified corpus providing numerical estimation of parsing quality.

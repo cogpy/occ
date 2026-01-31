@@ -55,7 +55,7 @@ class SmartFormatter(argparse.HelpFormatter):
 
 # Setup the argument parser.
 parser = argparse.ArgumentParser(description="OpenCog Python Benchmark",
-        formatter_class=SmartFormatter)
+                                 formatter_class=SmartFormatter)
 verbosity_group = parser.add_mutually_exclusive_group()
 verbosity_group.add_argument("-v", "--verbose", action="store_true", help="verbose output")
 verbosity_group.add_argument("-c", "--columns", action="store_true", default=True, help="columnar output (default)")
@@ -82,10 +82,10 @@ if args.verbose:
 test_iterations = args.iterations
 
 scheme_preload = [
-                    "opencog/atoms/base/core_types.scm",
-                    "opencog/scm/utilities.scm",
-                    "opencog/scm/opencog/query.scm"
-                 ]
+    "opencog/atoms/base/core_types.scm",
+    "opencog/scm/utilities.scm",
+    "opencog/scm/opencog/query.scm"
+]
 
 def loop_time_per_op():
     start = time.time()
@@ -142,8 +142,8 @@ def prep_get_outgoing(atomspace):
         for j in xrange(1, i):
             # atomspace.add_link(types.HebbianLink,
             atomspace.add_link(types.AssociativeLink,
-                       [Atom(i + offset, atomspace), Atom(j + offset, atomspace)],
-                       TruthValue(.2, .3))
+                               [Atom(i + offset, atomspace), Atom(j + offset, atomspace)],
+                               TruthValue(.2, .3))
 
     # Number of vertices plus number of edges in a fully connected graph
     return n + (n**2 - n) / 2
@@ -270,8 +270,8 @@ def test_add_connected(atomspace, prep_atom):
         for j in xrange(1, i):
             # atomspace.add_link(types.HebbianLink,
             atomspace.add_link(types.AssociativeLink,
-                       [Atom(i + offset, atomspace), Atom(j + offset, atomspace)],
-                       TruthValue(.2, .3))
+                               [Atom(i + offset, atomspace), Atom(j + offset, atomspace)],
+                               TruthValue(.2, .3))
 
     # Number of vertices plus number of edges in a fully connected graph
     return n + (n**2 - n) / 2
@@ -290,7 +290,7 @@ def test_resolve_traversal(atomspace, prep_traverse_result):
     atom_count, atom_list = prep_traverse_result
     for atom in atom_list:
         if not atom:
-            print "test_resolve_traversal - atom didn't resolve"
+            print("test_resolve_traversal - atom didn't resolve")
             break
 
     # Prep for traversal returned the node count. The above iterates all.
@@ -366,7 +366,7 @@ def test_add_nodes_scheme(atomspace, prep_atom):
     n = 10000
     for i in xrange(n):
         scheme = 'cog-new-node \'ConceptNode "' + str(i) + \
-                '" (cog-new-stv 0.5 0.5)'
+            '" (cog-new-stv 0.5 0.5)'
         scheme_eval_h(atomspace, scheme)
     return n
 
@@ -406,7 +406,7 @@ def test_get_predicates_scheme(atomspace, prep_result):
 def do_test(prep, test, description, op_time_adjustment):
     """Runs tests and prints the test name and performance"""
     if not args.columns:
-        print description
+        print(description)
     if (test != None):
         total_time = 0
         total_ops = 0
@@ -431,19 +431,19 @@ def do_test(prep, test, description, op_time_adjustment):
         # Print timing results
         if args.verbose:
             time_string = "{0:.03f}".format(adjusted_time)
-            print "  Total:   {0: >12}s".format(time_string)
+            print("  Total:   {0: >12}s".format(time_string))
 
             test_ops = "{0:,d}".format(int(average_ops))
-            print "  Ops:     {0: >12}".format(test_ops)
+            print("  Ops:     {0: >12}".format(test_ops))
 
         op_time = "{0:.03f}".format(adjusted_time * 1000000 / ops)
         ops_sec = "{0:,d}".format(int(ops / adjusted_time))
         if args.columns:
-            print "{0: <40} {1: >12}µs {2: >15}".format(description, op_time,
-                                                        ops_sec)
+            print("{0: <40} {1: >12}µs {2: >15}".format(description, op_time,)
+                  ops_sec)
         else:
-            print "  Op time: {0: >12}µs".format(op_time)
-            print "  Ops/sec: {0: >12}".format(ops_sec)
+            print("  Op time: {0: >12}µs".format(op_time))
+            print("  Ops/sec: {0: >12}".format(ops_sec))
             print
 
 # The preps column contains functions that setup each test that are not timed.
@@ -451,61 +451,61 @@ def do_test(prep, test, description, op_time_adjustment):
 # build complex predicates etc. without affecting test times.
 # Prep function     # Test function         # Test description
 tests = [
-(['all'],                   None,                   None,                       "-- Testing Node Adds --"),
-(['node','spread'],         prep_none,              test_add_nodes,             "Add nodes - Cython"),
-(['node'],                  prep_none,              test_add_nodes_large,       "Add nodes - Cython (500K)"),
-(['node'],                  prep_none,              test_add_connected,         "Add fully connected nodes"),
+    (['all'],                   None,                   None,                       "-- Testing Node Adds --"),
+    (['node','spread'],         prep_none,              test_add_nodes,             "Add nodes - Cython"),
+    (['node'],                  prep_none,              test_add_nodes_large,       "Add nodes - Cython (500K)"),
+    (['node'],                  prep_none,              test_add_connected,         "Add fully connected nodes"),
 
-(['all'],                   None,                   None,                       "-- Testing Atom Traversal --"),
-(['traverse'],              prep_traverse_100K,     test_bare_traversal,        "Bare atom traversal 100K - by type"),
-(['traverse'],              prep_traverse_10K,      test_resolve_traversal,     "Resolve Handle 10K - by type"),
-(['traverse','spread'],     prep_traverse_100K,     test_resolve_traversal,     "Resolve Handle 100K - by type"),
-(['traverse'],              prep_traverse_1M,       test_resolve_traversal,     "Resolve Handle 1M - by type"),
+    (['all'],                   None,                   None,                       "-- Testing Atom Traversal --"),
+    (['traverse'],              prep_traverse_100K,     test_bare_traversal,        "Bare atom traversal 100K - by type"),
+    (['traverse'],              prep_traverse_10K,      test_resolve_traversal,     "Resolve Handle 10K - by type"),
+    (['traverse','spread'],     prep_traverse_100K,     test_resolve_traversal,     "Resolve Handle 100K - by type"),
+    (['traverse'],              prep_traverse_1M,       test_resolve_traversal,     "Resolve Handle 1M - by type"),
 
-(['all'],                   None,                   None,                       "-- Testing Get versus Yield-based Get --"),
-(['get_vs_xget'],           prep_get_100K,          test_get_traverse,          "Get and Traverse 100K - by type"),
-(['get_vs_xget'],           prep_get_100K,          test_xget_traverse,         "Yield Get and Traverse 100K - by type"),
-(['get_vs_xget'],           prep_get_outgoing,      test_get_outgoing,          "Get Outgoing"),
-(['get_vs_xget'],           prep_get_outgoing,      test_get_outgoing_no_list,  "Get Outgoing - no temporary list"),
+    (['all'],                   None,                   None,                       "-- Testing Get versus Yield-based Get --"),
+    (['get_vs_xget'],           prep_get_100K,          test_get_traverse,          "Get and Traverse 100K - by type"),
+    (['get_vs_xget'],           prep_get_100K,          test_xget_traverse,         "Yield Get and Traverse 100K - by type"),
+    (['get_vs_xget'],           prep_get_outgoing,      test_get_outgoing,          "Get Outgoing"),
+    (['get_vs_xget'],           prep_get_outgoing,      test_get_outgoing_no_list,  "Get Outgoing - no temporary list"),
 
-(['all'],                   None,                   None,                       "-- Testing Bind --"),
-(['bindlink'],              prep_bind_python,       test_stub_bindlink,         "Bind - stub_bindlink - Cython"),
-(['bindlink','spread'],     prep_bind_python,       test_bind,                  "Bind - bindlink - Cython"),
+    (['all'],                   None,                   None,                       "-- Testing Bind --"),
+    (['bindlink'],              prep_bind_python,       test_stub_bindlink,         "Bind - stub_bindlink - Cython"),
+    (['bindlink','spread'],     prep_bind_python,       test_bind,                  "Bind - bindlink - Cython"),
 
-(['all'],                   None,                   None,                       "-- Testing Scheme Eval --"),
-(['scheme','spread'],       prep_none,              test_scheme_eval,           "Test scheme_eval_h(+ 2 2)"),
-(['scheme'],                prep_bind_scheme,       test_bind_scheme,           "Bind - cog-bind - Scheme"),
-(['scheme'],                prep_none,              test_add_nodes_scheme,      "Add nodes - cog-new-node - Scheme"),
-(['scheme'],                prep_none,              test_add_nodes_sugar,       "Add nodes - ConceptNode sugar - Scheme"),
+    (['all'],                   None,                   None,                       "-- Testing Scheme Eval --"),
+    (['scheme','spread'],       prep_none,              test_scheme_eval,           "Test scheme_eval_h(+ 2 2)"),
+    (['scheme'],                prep_bind_scheme,       test_bind_scheme,           "Bind - cog-bind - Scheme"),
+    (['scheme'],                prep_none,              test_add_nodes_scheme,      "Add nodes - cog-new-node - Scheme"),
+    (['scheme'],                prep_none,              test_add_nodes_sugar,       "Add nodes - ConceptNode sugar - Scheme"),
 
-(['all'],                   None,                   None,                       "-- Testing Get Predicates --"),
-(['predicates','spread'],   prep_predicates,        test_get_predicates,        "Predicates - get_predicates"),
-(['predicates'],            prep_predicates,        test_get_predicates_for,    "Predicates - get_predicates_for"),
-(['predicates'],            prep_predicates,        test_get_predicates_scheme, "Predicates - cog-get-pred - Scheme"),
+    (['all'],                   None,                   None,                       "-- Testing Get Predicates --"),
+    (['predicates','spread'],   prep_predicates,        test_get_predicates,        "Predicates - get_predicates"),
+    (['predicates'],            prep_predicates,        test_get_predicates_for,    "Predicates - get_predicates_for"),
+    (['predicates'],            prep_predicates,        test_get_predicates_scheme, "Predicates - cog-get-pred - Scheme"),
 ]
 
 
 print
-print "--- OpenCog Python Benchmark - ", str(datetime.datetime.now()), "---"
+print("--- OpenCog Python Benchmark - ", str(datetime.datetime.now()), "---")
 print
 
 # Get the per-op adjustment to account for the time of the loops themselves.
 op_time_adjustment = loop_time_per_op()
 if args.verbose or args.iterations != 10:
     if args.iterations > 1:
-        print "Test times averaged over {0:d} iterations.".format(test_iterations)
+        print("Test times averaged over {0:d} iterations.".format(test_iterations))
     else:
-        print "Test times averaged over 1 iteration."
+        print("Test times averaged over 1 iteration.")
 if not args.verbose and args.iterations != 10:
     print
 
 if args.verbose:
-    print "Per-op loop adjustment: {0:.03f}µs.".format(op_time_adjustment * 1000000)
+    print("Per-op loop adjustment: {0:.03f}µs.".format(op_time_adjustment * 1000000))
     print
 
 if args.columns:
-    print "{0: <40} {1: >14} {2: >15}".format("Test", "Time per op", "Ops per second")
-    print "{0: <40} {1: >14} {2: >15}".format("----", "-----------", "--------------")
+    print("{0: <40} {1: >14} {2: >15}".format("Test", "Time per op", "Ops per second"))
+    print("{0: <40} {1: >14} {2: >15}".format("----", "-----------", "--------------"))
 
 # Run all the tests.
 for run_list, prep, test, description in tests:

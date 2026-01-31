@@ -9,9 +9,9 @@ lines = f.readlines()
 line_no = []
 
 with open('goa_human.gaf') as  f:  
- for num, line in enumerate(f , 1):
-  if "UniProtKB" in line :
-      line_no.append(num)
+    for num, line in enumerate(f , 1):
+        if "UniProtKB" in line :
+            line_no.append(num)
 
 lines_annotate = lines[line_no[0] -1 : len(lines)]
 
@@ -29,9 +29,9 @@ def memberLink(gene, goID, qualifier):
 # using memberlink representation above now instead
 def evaLink(node1 , node2, qualifier):
     if qualifier == 'NOT' :
-	f_annotation.write("(EvaluationLink (stv 0.0 0.0)\n")
+        f_annotation.write("(EvaluationLink (stv 0.0 0.0)\n")
     else :
-    	f_annotation.write("(EvaluationLink \n")
+        f_annotation.write("(EvaluationLink \n")
     f_annotation.write("\t (PredicateNode \""+ "annotation"+ "\")\n")
     f_annotation.write("\t (ListLink \n")
     f_annotation.write("\t\t (GeneNode"  + " \"" + node1 + "\")\n")

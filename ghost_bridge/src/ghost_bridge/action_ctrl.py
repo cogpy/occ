@@ -166,7 +166,7 @@ class ActionCtrl:
         try:
             self.blender_set_param_srv(ActionCtrl.BPY_PARAM_BLINK, "False")
             rospy.logdebug("blink_cancel: blender_api/set_param service called")
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             rospy.logerr("blink_cancel: blender_api/set_param service call failed %s" % e)
 
     def saccade(self, mean, variation, paint_scale, eye_size, eye_distance, mouth_width, mouth_height, weight_eyes,
@@ -214,7 +214,7 @@ class ActionCtrl:
         try:
             self.blender_set_param_srv(ActionCtrl.BPY_PARAM_SACCADE, "False")
             rospy.logdebug("saccade_cancel: blender_api/set_param service called")
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             rospy.logerr("saccade_cancel: blender_api/set_param service call failed %s" % e)
 
     def emote(self, name, magnitude, duration, blend):

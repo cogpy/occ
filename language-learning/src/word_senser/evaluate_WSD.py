@@ -199,6 +199,6 @@ def main(argv):
         max_wsd_score = max(wsd_score_list)
         wsd_score_indexes = [i for i, j in enumerate(wsd_score_list) if j == max_wsd_score]
         print("Best WSD score: {} in files {}\n".format(max_wsd_score, [eval_files[i] for i in wsd_score_indexes]))
-    
+
 if __name__ == '__main__':
     main(sys.argv[1:])

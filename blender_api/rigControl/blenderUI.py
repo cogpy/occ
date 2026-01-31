@@ -156,7 +156,7 @@ class BLActuatorControl(bpy.types.Panel):
 
             row = layout.row()
             row.label(icon='FORCE_TURBULENCE',
-                text='{}:'.format(attr[4:]).capitalize().replace('_', ' '))
+                      text='{}:'.format(attr[4:]).capitalize().replace('_', ' '))
             col = row.column()
             col.alignment = 'RIGHT'
             col.prop(bl_actuator, 'HEAD_PARAM_enabled', text='On', toggle=True)

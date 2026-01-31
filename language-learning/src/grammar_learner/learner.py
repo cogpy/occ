@@ -12,7 +12,7 @@ from .corpus_stats import corpus_stats
 from .category_learner import learn_categories, cats2list
 from .grammar_inducer import induce_grammar, add_disjuncts, check_cats
 from .generalization import generalize_categories, generalize_rules, \
-                            generalise_rules, add_upper_level
+    generalise_rules, add_upper_level
 from .write_files import list2file, save_link_grammar, save_cat_tree
 from ..common.cliutils import handle_path_string
 

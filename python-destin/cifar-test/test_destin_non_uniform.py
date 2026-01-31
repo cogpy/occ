@@ -17,7 +17,7 @@ network_mode = True
 # For a Node: specify Your Algorithm Choice and Corresponding parameters
 algorithm_choice = 'Clustering'
 alg_params = {'mr': 0.05, 'vr': 0.05, 'sr': 0.001, 'DIMS': [], 'CENTS': [], 'node_id': [],
-             'num_cents_per_layer': num_cents_per_layer}
+              'num_cents_per_layer': num_cents_per_layer}
 # Declare a Network Object
 DESTIN = Network(
     num_layers, algorithm_choice, alg_params, num_nodes_per_layer, patch_mode, image_type)
@@ -50,7 +50,7 @@ for I in range(data.shape[0]):
         file_id.close()
         # Get rid-off accumulated training beliefs
         DESTIN.clean_belief_exporter()
-print time() - t
+print(time() - t)
 exit(0)
 print("Testing Started")
 t = time()
@@ -80,4 +80,4 @@ for I in range(data.shape[0]):
         file_id.close()
         # Get rid-off accumulated training beliefs
         DESTIN.clean_belief_exporter()
-print time() - t
+print(time() - t)

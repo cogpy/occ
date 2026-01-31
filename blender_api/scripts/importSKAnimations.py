@@ -213,13 +213,13 @@ def importAnimations(animations):
             print("Cannot import {} with error {}".format(aname, str(e)))
 
 def removeKeyFrames(action, bone, start, finish, channel=0):
-        remove = []
-        points = action.groups[bone].channels[0].keyframe_points.values()
-        for kf in points:
-            if start <= kf.co[0] <= finish:
-                remove.append(kf)
-        for kf in remove:
-            action.groups[bone].channels[0].keyframe_points.remove(kf)
+    remove = []
+    points = action.groups[bone].channels[0].keyframe_points.values()
+    for kf in points:
+        if start <= kf.co[0] <= finish:
+            remove.append(kf)
+    for kf in remove:
+        action.groups[bone].channels[0].keyframe_points.remove(kf)
 
 def findExpression(exp):
     return findAction('EMO-'+exp.lower())
@@ -263,6 +263,6 @@ def updateExpressions(expressions):
                 print(ex)
 
 if __name__ == '__main__':
-#    importAnimations(animations)
+    #    importAnimations(animations)
     updateExpressions(expressions)
 

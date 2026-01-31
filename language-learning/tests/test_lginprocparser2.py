@@ -81,7 +81,7 @@ Bye.
 """
 
 lg_post_explosion = \
-"""
+    """
 conclusions : icp-sf-ms is a reliable method of blood analysis for cd , mn and pb even for the evaluation on an individual basis.
 by comparing eyebrow shape and position in both young and mature women , this study provides objective data with which to plan forehead rejuvenating procedures.
 the odds of being overweight in adulthood was @number@ times greater ( @percent@ ci : @date@ @number@ ) in overweight compared with healthy weight youth.
@@ -128,7 +128,7 @@ class LGInprocParser2TestCase(unittest.TestCase):
         options = BIT_STRIP | BIT_PARSE_QUALITY | BIT_EXISTING_DICT | BIT_LG_EXE | BIT_NO_LWALL #| BIT_OUTPUT_DIAGRAM
 
         pm, pq = pr.parse("tests/test-data/dict/poc-turtle", "tests/test-data/corpora/poc-turtle/poc-turtle.txt",
-                 f"{self.tmp_path}/poc-turtle-20.txt.ull", "tests/test-data/parses/poc-turtle-mst/poc-turtle-parses-expected.txt", options, bar)
+                          f"{self.tmp_path}/poc-turtle-20.txt.ull", "tests/test-data/parses/poc-turtle-mst/poc-turtle-parses-expected.txt", options, bar)
 
         print(pm.text(pm), pq.text(pq))
         self.assertEqual(12, pm.sentences)

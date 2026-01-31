@@ -159,7 +159,7 @@ class LGInprocParserX():
                                              self._num_linkages)
 
             with Popen(sed_cmd, stdout=PIPE) as proc_grep, \
-                 Popen(lgp_cmd, stdin=proc_grep.stdout, stdout=PIPE, stderr=PIPE) as proc_pars:
+                    Popen(lgp_cmd, stdin=proc_grep.stdout, stdout=PIPE, stderr=PIPE) as proc_pars:
 
                 # Closing grep output stream will terminate it's process.
                 proc_grep.stdout.close()

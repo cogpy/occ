@@ -21,6 +21,6 @@ if __name__ == '__main__':
         if len(paths) == 1:
             print(paths[0])
             exit(0)
-    
+
     # use sysconfig platlib as the fall back
     print(sysconfig.get_paths()['platlib'])

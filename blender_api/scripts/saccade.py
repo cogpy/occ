@@ -7,7 +7,7 @@ if active_mode == 'keep_alive':
     bpy.context.scene.actuators.ACT_blink_randomly.PARAM_interval_mean = 2.25
     bpy.context.scene.actuators.ACT_blink_randomly.PARAM_interval_variation = 0.7
     bpy.context.scene.actuators.ACT_blink_randomly.PARAM_blink_duration = 0.27
-    
+
     bpy.context.scene.actuators.ACT_saccade.PARAM_interval_mean = 2.45
     bpy.context.scene.actuators.ACT_saccade.PARAM_interval_variation = 0.9
     bpy.context.scene.actuators.ACT_saccade.PARAM_paint_scale = 4
@@ -20,7 +20,7 @@ elif active_mode == 'listening':
     bpy.context.scene.actuators.ACT_blink_randomly.PARAM_interval_mean = 1.6
     bpy.context.scene.actuators.ACT_blink_randomly.PARAM_interval_variation = 0.8
     bpy.context.scene.actuators.ACT_blink_randomly.PARAM_blink_duration = 0.2
-    
+
     bpy.context.scene.actuators.ACT_saccade.PARAM_interval_mean = 2.2
     bpy.context.scene.actuators.ACT_saccade.PARAM_interval_variation = 0.6
     bpy.context.scene.actuators.ACT_saccade.PARAM_paint_scale = 1
@@ -33,7 +33,7 @@ elif active_mode == 'chatting':
     bpy.context.scene.actuators.ACT_blink_randomly.PARAM_interval_mean = 1.6
     bpy.context.scene.actuators.ACT_blink_randomly.PARAM_interval_variation = 0.8
     bpy.context.scene.actuators.ACT_blink_randomly.PARAM_blink_duration = 0.2
-   
+
     bpy.context.scene.actuators.ACT_saccade.PARAM_interval_mean = .8
     bpy.context.scene.actuators.ACT_saccade.PARAM_interval_variation = 0.9
     bpy.context.scene.actuators.ACT_saccade.PARAM_paint_scale = 3

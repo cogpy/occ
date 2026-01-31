@@ -12,7 +12,7 @@ DumpAgent is used to dump atomspace content into a file for testing purposes.
 '''
 
 class dumpAgent(MindAgent):
-    
+
     def run(self, atomspace):
         with open('/tmp/log.txt', 'w') as logfile:
             all_atoms = atomspace.get_atoms_by_type(t=types.Atom)

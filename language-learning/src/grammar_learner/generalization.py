@@ -233,7 +233,7 @@ def generalize_rules(categories, **kwargs):  # 80622
         cats['disjuncts'][cluster] = set(new_rule)
 
     return reorder(cats), \
-           {'similarity_thresholds': sims, 'updated_disjuncts': counter}
+        {'similarity_thresholds': sims, 'updated_disjuncts': counter}
 
 
 def renumber(cats):  # 81121

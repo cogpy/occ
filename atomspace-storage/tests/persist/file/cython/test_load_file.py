@@ -27,7 +27,7 @@ class UtilitiesTest(TestCase):
 
     def setUp(self):
         self.atomspace = AtomSpace()
- 
+
     def tearDown(self):
         del self.atomspace
 
@@ -89,6 +89,6 @@ def gen_atoms(atomspace, num=100000):
         arg = atomspace.add_link(link_type, [c1, c2])
         predicate = random.choice(predicates)
         atomspace.add_link(types.EvaluationLink,
-                [predicate,
-                arg])
+                           [predicate,
+                            arg])
     return atomspace

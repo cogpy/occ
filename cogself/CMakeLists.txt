@@ -6,10 +6,13 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 
 PROJECT(cogself
-    VERSION 0.1.0
+    VERSION 1.0.0
     DESCRIPTION "CogSelf AGI Cognitive Synergy Framework"
     LANGUAGES CXX
 )
+
+# Version information
+SET(SEMANTIC_VERSION 1.0.0)
 
 # Set C++17 standard
 set(CMAKE_CXX_STANDARD 17)
@@ -24,6 +27,8 @@ set(COGSELF_SOURCES
     src/cogself.cpp
     src/synergy_manager.cpp
     src/agi_goal_tracker.cpp
+    src/cogprime_identity.cpp
+    src/distributed_identity.cpp
 )
 
 # CogSelf library headers
@@ -31,6 +36,8 @@ set(COGSELF_HEADERS
     include/cogself/cogself.h
     include/cogself/synergy_manager.h
     include/cogself/agi_goal_tracker.h
+    include/cogself/cogprime_identity.h
+    include/cogself/distributed_identity.h
 )
 
 # Build CogSelf shared library

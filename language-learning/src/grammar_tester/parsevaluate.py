@@ -300,7 +300,7 @@ def eval_parses(test_parses: list, ref_parses: list, options: int) \
 
         logger.info(f"{test_parse[0]}")
         logger.info("{} {} {} {} {} {}".format(test_set, ref_set, test_set & ref_set,
-              ParseQuality.recall_str(pq), ParseQuality.precision_str(pq), ParseQuality.f1_str(pq)))
+                                               ParseQuality.recall_str(pq), ParseQuality.precision_str(pq), ParseQuality.f1_str(pq)))
 
         total_parse_quality += pq
 

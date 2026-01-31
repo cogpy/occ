@@ -32,7 +32,7 @@ trainData = trainData[:, 6400:8500]
 # Training SVM
 SVM = svm.LinearSVC(C=10)
 # C=100, kernel='rbf')
-print "Training the SVM"
+print("Training the SVM")
 trainLabel = np.squeeze(np.asarray(trainLabel).reshape(50000, 1))
 SVM.fit(trainData, trainLabel)
 print("Training Score = %f " % float(100 * SVM.score(trainData, trainLabel, sample_weight=None)))
@@ -53,7 +53,7 @@ Width = int(totLen / 10000)
 testData = testData.reshape(10000, Width)
 testData = testData[:, 6400:8500]
 del Temp
-print "Predicting Test samples"
+print("Predicting Test samples")
 print("Test Score = %f" % float(100 * SVM.score(testData, testLabel, sample_weight = None)))
 #print("Training Accuracy = %f" % (SVM.score(testData, testLabel) * 100))
 eff['test'] = SVM.score(testData, testLabel) * 100

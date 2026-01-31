@@ -122,12 +122,12 @@ class Node:
                 m = np.mean(np.mean(activations,1))
                 for K in range(activations.shape[0]):
                         self.nodes[I][J].belief[K,0] = max(0, (activations[K,0] - 0.025))
-                print self.nodes[0][0].belief"""
-            """
+                print(self.nodes[0][0].belief""")
+                """
                 def produce_belief(self, sqdiff):
         """
-        # Update belief state.
-        """
+                # Update belief state.
+                """
         normdist = np.sum(sqdiff / self.var, axis=1)
         chk = (normdist == 0)
         if any(chk):

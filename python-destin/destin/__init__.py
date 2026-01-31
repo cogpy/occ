@@ -7,7 +7,7 @@
 
 import cifar
 __all__ = ["network", 
-		   "layer", 
-		   "node", 
-		   "clustering", 
-		   "auto_encoder"];
+           "layer", 
+           "node", 
+           "clustering", 
+           "auto_encoder"];

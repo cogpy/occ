@@ -14,9 +14,9 @@ import urllib.parse
 import json
 
 __all__     = [
-                'LGClientError', 'LGClient', 'LGClientCallback', 'LGClientLib', 'LGClientREST', 'LGClientCallback',
-                'get_lg_client'
-              ]
+    'LGClientError', 'LGClient', 'LGClientCallback', 'LGClientLib', 'LGClientREST', 'LGClientCallback',
+    'get_lg_client'
+]
 
 __version__ = '0.1'
 
@@ -217,7 +217,7 @@ class LGClientREST(LGClient):
         try:
             # Make up a request string
             req = self._server_url + "?lang=" + self._dict + "&text=" + urllib.parse.quote(line) \
-                  + "&mode=1" + "&limit=" + str(self._linkage_limit)
+                + "&mode=1" + "&limit=" + str(self._linkage_limit)
 
             # Connect to server and run a request
             with urllib.request.urlopen(req) as response:
@@ -238,7 +238,7 @@ class LGClientREST(LGClient):
         try:
             # Make up a request string
             req = self._server_url + "?lang=" + self._dict + "&text=" + urllib.parse.quote(line) \
-                  + "&mode=1" + "&limit=" + str(self._linkage_limit)
+                + "&mode=1" + "&limit=" + str(self._linkage_limit)
 
             # Connect to server and run a request
             with urllib.request.urlopen(req) as response:

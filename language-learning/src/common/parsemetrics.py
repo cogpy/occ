@@ -70,17 +70,17 @@ class ParseMetrics():
                 "Total sentences:\t\t\t{:2.2f}\n" \
                 "Skipped sentences:\t\t\t{:2.2f}\n" \
                 "Parse time:\t\t\t\t{}\n".format( stat.completely_parsed_str(stat),
-                                                      stat.completely_unparsed_str(stat),
-                                                      stat.parseability_str(stat),
-                                                      stat.sentences,
-                                                      stat.skipped_sentences,
-                                                      stat.parse_time_str(stat)
-                                                    )
+                                                  stat.completely_unparsed_str(stat),
+                                                  stat.parseability_str(stat),
+                                                  stat.sentences,
+                                                  stat.skipped_sentences,
+                                                  stat.parse_time_str(stat)
+                                                  )
 
     def __eq__(self, other):
         return  self.average_parsed_ratio == other.average_parsed_ratio and \
-                self.completely_parsed_ratio == other.completely_parsed_ratio and \
-                self.completely_unparsed_ratio == other.completely_unparsed_ratio
+            self.completely_parsed_ratio == other.completely_parsed_ratio and \
+            self.completely_unparsed_ratio == other.completely_unparsed_ratio
 
     def __iadd__(self, other):
         self.completely_parsed_ratio += other.completely_parsed_ratio
@@ -189,27 +189,27 @@ class ParseQuality():
                 "F1:\t\t{}\n\n" \
                 "Total sentences:\t{:2.2f}\n" \
                 "Skipped sentences:\t{:2.2f}\n".format(
-                                                        stat.parse_quality_str(stat),
-                                                        stat.avg_total_links(stat),
-                                                        stat.avg_ignored_links(stat),
-                                                        stat.avg_missing_links(stat),
-                                                        stat.avg_extra_links(stat),
-                                                        stat.recall_str(stat),
-                                                        stat.precision_str(stat),
-                                                        stat.f1_str(stat),
-                                                        stat.sentences,
-                                                        stat.skipped_sentences)
+                    stat.parse_quality_str(stat),
+                    stat.avg_total_links(stat),
+                    stat.avg_ignored_links(stat),
+                    stat.avg_missing_links(stat),
+                    stat.avg_extra_links(stat),
+                    stat.recall_str(stat),
+                    stat.precision_str(stat),
+                    stat.f1_str(stat),
+                    stat.sentences,
+                    stat.skipped_sentences)
 
     def __eq__(self, other):
         return  self.quality == other.quality and \
-                self.total == other.total and \
-                self.ignored == other.ignored and \
-                self.missing == other.missing and \
-                self.extra == other.extra and \
-                self.recall == other.recall and \
-                self.precision == other.precision and \
-                self.sentences == other.sentences and \
-                self.skipped_sentences == other.skipped_sentences
+            self.total == other.total and \
+            self.ignored == other.ignored and \
+            self.missing == other.missing and \
+            self.extra == other.extra and \
+            self.recall == other.recall and \
+            self.precision == other.precision and \
+            self.sentences == other.sentences and \
+            self.skipped_sentences == other.skipped_sentences
 
     def __iadd__(self, other):
         self.total += other.total

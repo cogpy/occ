@@ -89,7 +89,7 @@ class LGParseQualityEstimator(LGPSStreamParser):
         if sentence.valid and (self._options & BIT_PARSE_QUALITY) and len(self._ref_parses):
             pq = sentence.parse_quality
             pq += parse_quality(get_link_set(linkage.tokens, linkage.links, self._options),
-                                          self._ref_parses[self._sentence_count][1])
+                                self._ref_parses[self._sentence_count][1])
             sentence.parse_quality = pq
 
         # sentence.linkage_count += 1

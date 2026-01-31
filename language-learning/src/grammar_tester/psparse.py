@@ -165,7 +165,7 @@ def prepare_tokens(tokens: list, options: int) -> list:
 
     if options & BIT_NO_PERIOD:
         rw = tokens[last_token] if tokens[last_token].startswith(r"###") or tokens[last_token].startswith(r"[##") \
-                                else None
+            else None
 
         # Skip RIGHT-WALL if any
         if last_token and tokens[last_token] in [r"###RIGHT-WALL###", r"[###RIGHT-WALL###]"]:

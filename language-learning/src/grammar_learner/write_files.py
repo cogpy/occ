@@ -123,7 +123,7 @@ def save_link_grammar(rules, output_grammar, grammar_rules = 2,
                  + '\n<dictionary-version-number>: V0v0v7+;\n'
         if linkgrammar.__version__ == '5.4.4':  # 190128: restore LG 5.4.4 option
             header = '% Grammar Learner v.0.6 ' + str(UTC()) \
-            + '\n<dictionary-version-number>: V0v0v6+;\n'
+                + '\n<dictionary-version-number>: V0v0v6+;\n'
     header = header + '<dictionary-locale>: EN4us+;'
 
     unknown_word = '<UNKNOWN-WORD>: XXX+;'
@@ -133,8 +133,8 @@ def save_link_grammar(rules, output_grammar, grammar_rules = 2,
     if footer == '':
         footer = '% ' + str(len(clusters)) + ' word clusters, ' \
                  + str(len(rules)) + ' Link Grammar rules.\n'  # \
-                # + '% Link Grammar file saved to: "' + out_file + '"'
-                # 90110: Link Grammar sometimes parses (commented) filename 
+        # + '% Link Grammar file saved to: "' + out_file + '"'
+        # 90110: Link Grammar sometimes parses (commented) filename 
     lg = header + '\n\n' + '\n'.join(line_list) + '\n' + unknown_word + '\n\n' + footer
     # lg = lg.replace('@', '.')  # 80706 WSD: word@1 ⇒ word.1  # removed  190804
 

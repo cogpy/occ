@@ -34,7 +34,7 @@ __author__ = 'eddie'
 
 import opencog.cogserver
 from opencog.atomspace import AtomSpace, TruthValue, types, get_type_name # , \
-    #is_defined, add_type
+#is_defined, add_type
 from opencog.scheme_wrapper import load_scm, scheme_eval, scheme_eval_h, \
     __init__
 from opencog.bindlink import bindlink
@@ -97,23 +97,23 @@ SCHEME_INIT_FILES = ['opencog/atomspace/core_types.scm',
                      'opencog/scm/utilities.scm',
                      'bioscience/types/bioscience_types.scm',
                      '../agi-bio/relationship_mining/bio_scheme.scm'
-                    ]
+                     ]
 
 KB_FILES = [
-            KB_SCHEME_DIR + GO_FILE
-            , KB_SCHEME_DIR + GO_ANN_FILE
+    KB_SCHEME_DIR + GO_FILE
+    , KB_SCHEME_DIR + GO_ANN_FILE
 ]
 
 
 class miner(opencog.cogserver.Request):
     def run(self, args, atomspace):
-        print 'received request miner ' + str(args)
+        print('received request miner ' + str(args))
         bio = Bio(atomspace)
         bio.atomspace = bio.a = atomspace
 
         if args:
             arg = args[0]
-            print "arg: {0}".format(arg)
+            print("arg: {0}".format(arg))
 
             if arg == 'clear':
                 bio.atomspace.clear()
@@ -142,7 +142,7 @@ class miner(opencog.cogserver.Request):
 
 
             else:
-                print args[0] + ' command not found'
+                print(args[0] + ' command not found')
 
         else:
             bio.do_full_mining(args)
@@ -152,7 +152,7 @@ class miner(opencog.cogserver.Request):
 
 class inference(opencog.cogserver.Request):
     def run(self, args, atomspace):
-        print 'Received request inference ' + str(args)
+        print('Received request inference ' + str(args))
         bio = Bio(atomspace)
         #bio.atomspace = bio.a = atomspace
 
@@ -239,12 +239,12 @@ class Bio:
         self.scheme_loaded = False
 
     def do_full_mining(self, args=None):
-        print "Initiate bio.py mining"
+        print("Initiate bio.py mining")
 
         if not self.scheme_loaded:
             self.load_scheme()
 
-        print "Initial number of atoms in atomsapce: {:,}".format(self.a.size())
+        print("Initial number of atoms in atomsapce: {:,}".format(self.a.size()))
 
         self.populate_genesets_with_descendent_members()
         self.persist_set_members_with_descendents()
@@ -255,7 +255,7 @@ class Bio:
 
         self.pickle_subset_valuesv()
 
-        print "Completed bio relationship mining."
+        print("Completed bio relationship mining.")
 
 
     def get_GO_nodes(self):
@@ -276,7 +276,7 @@ class Bio:
                 goterms.add(link.out[0])
 
 
-            print "python go terms: {0}".format(len(goterms))
+            print("python go terms: {0}".format(len(goterms)))
 
             # print "\nGO nodes: "
             # print self.goterms
@@ -320,14 +320,14 @@ class Bio:
         """
         if not filepath:
             filepath = SUBSET_SCHEME_FILE
-        print "Loading subset relationships from {0}".format(filepath)
+        print("Loading subset relationships from {0}".format(filepath))
         start = time.clock()
         if not load_scm(self.atomspace,filepath):
-            print "*** Error loading scheme file: {0}".format(filepath)
+            print("*** Error loading scheme file: {0}".format(filepath))
         else:
-            print "Loaded subset relationships in {0} seconds".format(
-                int(time.clock()-start)
-            )
+            print("Loaded subset relationships in {0} seconds".format()
+                  int(time.clock()-start)
+                  )
 
     def get_go_term_node(self):
         """
@@ -339,7 +339,7 @@ class Bio:
         return self.go_term_node
 
     def populate_genesets_with_descendent_members(self):
-        print "\nPopulating gene sets with descendent members"
+        print("\nPopulating gene sets with descendent members")
         start = time.clock()
         self.go_term_node = self.get_go_term_node()
         # self.go_term_node = \
@@ -359,7 +359,7 @@ class Bio:
 
         unprocessed_sets = go_terms
         # print goterms
-        print "number of gene sets: {:,}".format(len(unprocessed_sets))
+        print("number of gene sets: {:,}".format(len(unprocessed_sets)))
 
         # print (unprocessed_sets)
 
@@ -367,7 +367,7 @@ class Bio:
         while len(unprocessed_sets) > 0:
             geneset = unprocessed_sets.pop()
             if V:
-                print "\n=== Popped " + geneset.name + " from unprocessed list ==="
+                print("\n=== Popped " + geneset.name + " from unprocessed list ===")
 
             self.add_members_from_children(geneset, unprocessed_sets)
 
@@ -376,8 +376,8 @@ class Bio:
             #     print "Unprocessed sets: {0}".format(len(unprocessed_sets))
 
         self.populate_time = int(time.clock() - start)
-        print "Completed populating sets with descendent members in " \
-              + str(self.populate_time) + " seconds"
+        print("Completed populating sets with descendent members in " \)
+        + str(self.populate_time) + " seconds"
 
 
     def get_inheritance_children_of(self,parent):
@@ -401,7 +401,7 @@ class Bio:
 
     def add_members_from_children(self, geneset, unprocessed_sets):
         if V:
-            print "\nAdding members from children for " + geneset.name
+            print("\nAdding members from children for " + geneset.name)
 
         children = self.get_inheritance_children_of(geneset)
 
@@ -434,10 +434,10 @@ class Bio:
         members = self.get_members_of(geneset)
 
         if V:
-            print "pre-members " + geneset.name + ": ";
-            print sorted_atom_names(members)
-            print "\n" + geneset.name + " children categories: " \
-                  + sorted_atom_names(
+            print("pre-members " + geneset.name + ": ";)
+            print(sorted_atom_names(members))
+            print("\n" + geneset.name + " children categories: " \)
+            + sorted_atom_names(
                 children)  #" ".join([child.name for child in children])
 
         for child in children:
@@ -449,17 +449,17 @@ class Bio:
                 self.add_members_from_children(child, unprocessed_sets)
             else:
                 if V:
-                    print "child " + child.name + " had already been processed"
-                    print child.name + " members: "
-                    print sorted_atom_names(
-                        child_members)  #" ".join([member.name for member in child_members])
+                    print("child " + child.name + " had already been processed")
+                    print(child.name + " members: ")
+                    print(sorted_atom_names()
+                          child_members)  #" ".join([member.name for member in child_members])
             # print "members for child " + child.name + ": "
             # print child_members
             members = members.union(child_members)
 
         if V:
-            print "\npost members " + geneset.name + ":";
-            print sorted_atom_names(members)
+            print("\npost members " + geneset.name + ":";)
+            print(sorted_atom_names(members))
 
         self.set_members_with_descendents_dict[geneset] = members
 
@@ -515,7 +515,7 @@ class Bio:
 
 
     def persist_set_members_with_descendents(self):
-        print "Persisting set members to " + SET_MEMBERS_FILE
+        print("Persisting set members to " + SET_MEMBERS_FILE)
 
         # import pickle
         # #pickle.dump(self.set_members_dict,open('set_members.txt','wb'),protocol=-1)
@@ -540,15 +540,15 @@ class Bio:
                 #     i = i + 1
 
 
-                    # json.dump(jsonDict,f2) # TypeError: set([]) is not JSON serializable  and TypeError: (GeneNode ... is not JSON serializable
-                    # f2.close()
-                    # f.write(json.dumps(jsonDict))  #TypeError: set([]) is not JSON serializable
-                    # f.close()
+                # json.dump(jsonDict,f2) # TypeError: set([]) is not JSON serializable  and TypeError: (GeneNode ... is not JSON serializable
+                # f2.close()
+                # f.write(json.dumps(jsonDict))  #TypeError: set([]) is not JSON serializable
+                # f.close()
 
 
     def get_total_number_of_GeneNodes(self):
         num = len(self.a.get_atoms_by_type(types.GeneNode))
-        print "Total number of genes: {:,}".format(num)
+        print("Total number of genes: {:,}".format(num))
         return num
 
 
@@ -562,7 +562,7 @@ class Bio:
         # Excludes crisp ancestor-descendent category relationships since these
         # can be established through PLN inference
         """
-        print "Calculating gene category subset truth values"
+        print("Calculating gene category subset truth values")
         start = time.clock()
         goterms = self.get_GO_nodes()
         num_sets = len(goterms)
@@ -642,9 +642,9 @@ class Bio:
                     total_est = timing + remaining_time
                 else:
                     total_est = 'thinking about it...'
-                print "processed " + str(i) + ' sets of ' + str(
-                    num_sets) + ' in ' + str(timing) + ' minutes.' \
-                      + ' Total estimated: ' + str(total_est) + ' minutes'
+                print("processed " + str(i) + ' sets of ' + str()
+                      num_sets) + ' in ' + str(timing) + ' minutes.' \
+                    + ' Total estimated: ' + str(total_est) + ' minutes'
                 # + ' Estimated remaining: ' + str(remaining_time) + ' minutes' \
                 # + '  (Total est: ' + str(timing+remaining_time)
 
@@ -653,17 +653,17 @@ class Bio:
                 # print "\nprocessed " + str(i) + ' sets of ' + str(num_sets) + ' in ' + str(timing) + ' seconds'
 
         self.subset_time = int(time.clock() - start)
-        print 'Gene category Subset truth values completed in ' + str(
-            self.subset_time) + " seconds"
-        print 'Created {:,} subset relationships above cuttoff strength value.'.format(
-            len(self.subset_values))
-        print "\nSubset value percentiles: " + str(
-            np.percentile(self.subset_values.values(),
-                range(10, 100, 10))) + "\n"
-        print "Subset importance score percentile: {0}\n".format(
-            [int(x) for x in
-             np.percentile(self.relationship_importance_score.values(),
-                 range(10, 100, 10))])
+        print('Gene category Subset truth values completed in ' + str()
+              self.subset_time) + " seconds"
+        print('Created {:,} subset relationships above cuttoff strength value.'.format()
+              len(self.subset_values))
+        print("\nSubset value percentiles: " + str()
+              np.percentile(self.subset_values.values(),
+                            range(10, 100, 10))) + "\n"
+        print("Subset importance score percentile: {0}\n".format()
+              [int(x) for x in
+               np.percentile(self.relationship_importance_score.values(),
+                             range(10, 100, 10))])
 
         # perist results to file
         f = open(SUBSET_VALUES_FILE, 'wb')
@@ -728,13 +728,13 @@ class Bio:
         for i in range(n):
             go = gos[i]
             ancestors = self.get_category_ancestors(go)
-            print "\nGO category {0} ancestors:".format(go.name)
+            print("\nGO category {0} ancestors:".format(go.name))
             for a in ancestors:
-                print a.name
+                print(a.name)
 
 
         go = self.a.get_atoms_by_name(types.ConceptNode,'GO:0006688')[0]
-        print go
+        print(go)
 
         self.get_category_ancestors(go)
 
@@ -748,13 +748,13 @@ class Bio:
             self.relationship_importance_score.values(),
             IMPORTANCE_SCORE_PERCENTILE_CUTOFF * 100)
         # print "importance cuttoff: {0}".format(importance_cuttoff)
-        print "Creating subset links. Found " + str(
-            num_subsets) + " new subset relationships."
-        print "TV.strength cuttoff value: {0}".format(
-            SUBSET_LINK_TV_STRENGTH_CUTOFF)
-        print "Filtering found relationships with importance score cuttoff {0} ({1}th percentile)".format(
-            importance_cuttoff, int(IMPORTANCE_SCORE_PERCENTILE_CUTOFF * 100)
-        )
+        print("Creating subset links. Found " + str()
+              num_subsets) + " new subset relationships."
+        print("TV.strength cuttoff value: {0}".format()
+              SUBSET_LINK_TV_STRENGTH_CUTOFF)
+        print("Filtering found relationships with importance score cuttoff {0} ({1}th percentile)".format()
+              importance_cuttoff, int(IMPORTANCE_SCORE_PERCENTILE_CUTOFF * 100)
+              )
         subset_relationships = []
         start = time.clock()
         i = 1
@@ -762,9 +762,9 @@ class Bio:
         for set_pair in self.subset_values:
             if i % 1000000 == 0:
                 self.link_creation_time = int((time.clock() - start) / 60)
-                print "processed " + str(i) + ' subset relationships of ' + str(
-                    num_subsets) + ' in ' \
-                      + str(self.link_creation_time) + ' minutes'
+                print("processed " + str(i) + ' subset relationships of ' + str()
+                      num_subsets) + ' in ' \
+                    + str(self.link_creation_time) + ' minutes'
             importance_score = self.relationship_importance_score[set_pair]
             if importance_score < importance_cuttoff:
                 continue
@@ -778,10 +778,10 @@ class Bio:
             i = i + 1
 
         self.link_creation_time = int(time.clock() - start)
-        print "completed creating subsets in " + str(
-            self.link_creation_time) + " seconds"
-        print "{0} SubSet relationships created after importance score filtering".format(
-            created_count)
+        print("completed creating subsets in " + str()
+              self.link_creation_time) + " seconds"
+        print("{0} SubSet relationships created after importance score filtering".format()
+              created_count)
 
         # write to scheme file:
         f = open(SUBSET_SCHEME_FILE, 'wb')
@@ -797,7 +797,7 @@ class Bio:
             genesets = self.member_sets_dict[gene] = scheme_eval_list(
                 self.a, '(get_sets_for_member "' + gene.name.strip() + '")')
         if V:
-            print "genesets for gene " + gene.name + ": " + str(genesets)
+            print("genesets for gene " + gene.name + ": " + str(genesets))
         return genesets
 
     # Atoms don't support pickling (yet), so converting key to string based on
@@ -814,7 +814,7 @@ class Bio:
     def unpickle_subset_values(self):
         if not self.scheme_loaded:
             self.load_scheme()
-        print "unpickling subset values..."
+        print("unpickling subset values...")
         start = time.clock()
         subset_values2 = pickle.load(open(SUBSET_VALUES_PICKLE_FILE, 'rb'))
         end = time.clock()
@@ -824,9 +824,9 @@ class Bio:
         # key = subset_values2.keys()[i]
         #     print key + ' ' + str(subset_values2[key])
 
-        print 'completed unpickling in ' + str(end - start) + ' seconds'
+        print('completed unpickling in ' + str(end - start) + ' seconds')
 
-        print "converting to atom pair key format..."
+        print("converting to atom pair key format...")
         start = time.clock()
         subset_values = self.subset_values = {}
         for key in subset_values2:
@@ -836,8 +836,8 @@ class Bio:
                 n2 = self.a.get_atoms_by_name(types.ConceptNode, name2)[0]
                 subset_values[(n1, n2)] = subset_values2[key]
 
-        print "converted to atom pair key format in " + str(
-            time.clock() - start) + ' seconds'
+        print("converted to atom pair key format in " + str()
+              time.clock() - start) + ' seconds'
 
         # print some out
         # for i in range(10):
@@ -846,7 +846,7 @@ class Bio:
 
 
     def dump_atoms(self,atoms,filename):
-        print "Writing atoms to file " + filename
+        print("Writing atoms to file " + filename)
         with open(filename,'wb') as f:
             for atom in atoms:
                 f.write(str(atom))
@@ -870,9 +870,9 @@ def sorted_atom_names(atoms):
     return " ".join(sorted([gene.name for gene in atoms]))
 
 def print_atoms_in_list(atoms,atom_name='',list_name=''):
-    print "{0} in {1}:".format(atom_name,list_name)
+    print("{0} in {1}:".format(atom_name,list_name))
     for atom in atoms:
-        print atom
+        print(atom)
 
 
 
@@ -915,14 +915,14 @@ if __name__ == '__main__':
 
     # bio.create_subset_links()
 
-    print "\n========================================================="
-    print "final number of atoms in atomspace: " + str(bio.a.size())
+    print("\n=========================================================")
+    print("final number of atoms in atomspace: " + str(bio.a.size()))
     if hasattr(bio, 'scheme_load_time'): print "loaded scheme files in " + str(
         bio.scheme_load_time) + " seconds"
     if hasattr(bio,
                'populate_time'): print "populated genesets with descendent members in " + str(
         bio.populate_time) \
-                                       + " seconds"
+        + " seconds"
     if hasattr(bio,
                'subset_time'): print "calculated subset truth values in " + str(
         bio.subset_time) + " seconds"

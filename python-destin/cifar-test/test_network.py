@@ -38,7 +38,7 @@ for I in range(len(myNetwork.layers)):
         if J == 0:
             myNetwork.layers[I][J].load_input(img, 4)
         else:
-            print type(J - 1)
+            print(type(J - 1))
             exit(0)
             myNetwork.layers[I][0].load_input(
                 myNetwork.layers[I][J - 1].nodes, 4)
@@ -52,8 +52,8 @@ myNetwork.initLayer(0)
 myNetwork.train_layer(0)
 '''
 '''
-print "number of layers"
-print [len(myNetwork.layers),len(myNetwork.layers[0])]
-print "number of nodes in Layer 1"
-print [myNetwork.layers[0][0].nodes[7][7].algorithm_choice]
+print("number of layers")
+print([len(myNetwork.layers),len(myNetwork.layers[0])])
+print("number of nodes in Layer 1")
+print([myNetwork.layers[0][0].nodes[7][7].algorithm_choice])
 '''

@@ -12,7 +12,7 @@ class LGAPITestCase(unittest.TestCase):
         # Testing over poc-turtle corpus... 100% success is expected.
 
         options = BIT_NO_LWALL | BIT_NO_PERIOD | BIT_STRIP | BIT_RM_DIR | BIT_LOC_LANG | BIT_PARSE_QUALITY \
-                  | BIT_EXISTING_DICT
+            | BIT_EXISTING_DICT
 
         lgp = LGInprocParser()
         api = LGApiParser()

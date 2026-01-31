@@ -27,7 +27,7 @@ class SchemeAPI(Resource):
         super(SchemeAPI, self).__init__()
 
     @swagger.operation(
-	notes='''
+        notes='''
 Include a JSON object with the POST request containing the command
 in a field named "command"
 
@@ -53,22 +53,22 @@ blocks until the request has finished.
 
 <p>This functionality is implemented as a POST method because it can
 cause side-effects.''',
-	responseClass='response',
-	nickname='post',
-	parameters=[
-	    {
-		'name': 'command',
-		'description': 'Scheme command',
-		'required': True,
-		'allowMultiple': False,
-		'dataType': 'string',
-		'paramType': 'body'
-	    }
-	],
-	responseMessages=[
-	    {'code': 200, 'message': 'Scheme command executed successfully'},
-	    {'code': 400, 'message': 'Invalid request: Required parameter command missing'}
-	]
+        responseClass='response',
+        nickname='post',
+        parameters=[
+            {
+                'name': 'command',
+                'description': 'Scheme command',
+                'required': True,
+                'allowMultiple': False,
+                'dataType': 'string',
+                'paramType': 'body'
+            }
+        ],
+        responseMessages=[
+            {'code': 200, 'message': 'Scheme command executed successfully'},
+            {'code': 400, 'message': 'Invalid request: Required parameter command missing'}
+        ]
     )
     def post(self):
         """

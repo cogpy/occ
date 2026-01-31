@@ -39,7 +39,7 @@ def moving_average(x, n, type='simple'):
     return a
 
 def graph_file(fn,delta_rss=True):
-    print "Graphing " + fn
+    print("Graphing " + fn)
     records = csv.reader(open(fn,'rb'),delimiter=",")
     sizes=[]; times=[]; times_seconds=[]; memories=[]
     for row in records:

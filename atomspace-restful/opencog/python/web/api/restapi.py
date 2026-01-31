@@ -39,7 +39,7 @@ class Start(opencog.cogserver.Request):
         thread = Thread(target=self.invoke)
         thread.setDaemon(True)
         thread.start()
-        print ("REST API is now running in a separate daemon thread.")
+        print(("REST API is now running in a separate daemon thread."))
 
     def invoke(self):
         self.api = RESTAPI(self.atomspace)

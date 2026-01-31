@@ -1,11 +1,11 @@
 
 # Build C++ code in assorted NLP subdirectories
 
-ADD_SUBDIRECTORY (irc)
+# ADD_SUBDIRECTORY (irc)  # Disabled: missing StringTokenizer dependency
 ADD_SUBDIRECTORY (scm)
 ADD_SUBDIRECTORY (sentiment)
 ADD_SUBDIRECTORY (oc-types)
-ADD_SUBDIRECTORY (wsd)
+# ADD_SUBDIRECTORY (wsd)  # Disabled: wrong include path for atom_types.h
 
 # NOTE: Set BUILD_LOJBAN variable by running `cmake -DBUILD_LOJBAN=1 ..` from
 # the build directory.

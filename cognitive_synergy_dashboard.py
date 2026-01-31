@@ -50,14 +50,14 @@ except ImportError:
 class CognitiveSynergyMonitor:
     """
     Advanced AI-powered monitoring system for cognitive synergy detection.
-    
+
     This system uses machine learning to:
     1. Detect anomalies in component behavior
     2. Identify emergent cognitive patterns
     3. Predict synergy potential
     4. Recommend optimizations
     """
-    
+
     def __init__(self):
         self.components = [
             "cogutil", "atomspace", "cogserver", "matrix", "learn",
@@ -67,11 +67,11 @@ class CognitiveSynergyMonitor:
         self.anomaly_detector = IsolationForest(contamination=0.1, random_state=42)
         self.synergy_score = 0.0
         self.emergence_detected = False
-        
+
     def scan_component(self, component: str) -> Dict:
         """Scan a component and return health metrics."""
         component_path = Path(component)
-        
+
         metrics = {
             "name": component,
             "exists": component_path.exists(),
@@ -83,27 +83,27 @@ class CognitiveSynergyMonitor:
             "health_score": 0.0,
             "timestamp": datetime.now().isoformat()
         }
-        
+
         if metrics["exists"]:
             try:
                 # Count files
                 metrics["files"] = len(list(component_path.rglob("*")))
-                
+
                 # Calculate size
                 total_size = sum(f.stat().st_size for f in component_path.rglob("*") if f.is_file())
                 metrics["size_mb"] = total_size / (1024 * 1024)
-                
+
                 # Check for build system
                 metrics["has_cmake"] = (component_path / "CMakeLists.txt").exists()
-                
+
                 # Check for tests
                 test_dirs = ["tests", "test", "testing"]
                 metrics["has_tests"] = any((component_path / d).exists() for d in test_dirs)
-                
+
                 # Check for documentation
                 doc_files = ["README.md", "README.txt", "README", "docs"]
                 metrics["has_docs"] = any((component_path / d).exists() for d in doc_files)
-                
+
                 # Calculate health score
                 health = 0.0
                 if metrics["exists"]: health += 30
@@ -111,16 +111,16 @@ class CognitiveSynergyMonitor:
                 if metrics["has_tests"]: health += 25
                 if metrics["has_docs"]: health += 20
                 metrics["health_score"] = health
-                
+
             except Exception as e:
                 print(f"Warning: Error scanning {component}: {e}")
                 metrics["health_score"] = 0.0
-        
+
         return metrics
-    
+
     def analyze_synergy(self, metrics_list: List[Dict]) -> Dict:
         """Use AI to analyze cognitive synergy across components."""
-        
+
         # Extract features for ML analysis
         features = []
         for m in metrics_list:
@@ -133,9 +133,9 @@ class CognitiveSynergyMonitor:
                 1.0 if m["has_docs"] else 0.0,
                 m["health_score"] / 100.0
             ])
-        
+
         features_array = np.array(features)
-        
+
         # Detect anomalies
         if len(self.health_history) > 10:
             try:
@@ -146,11 +146,11 @@ class CognitiveSynergyMonitor:
                 anomaly_components = []
         else:
             anomaly_components = []
-        
+
         # Calculate synergy score
         avg_health = np.mean([m["health_score"] for m in metrics_list])
         integration_score = len([m for m in metrics_list if m["exists"]]) / len(metrics_list) * 100
-        
+
         # Detect emergence (when synergy exceeds sum of parts)
         synergy_factor = 1.0
         if len([m for m in metrics_list if m["has_tests"]]) >= 3:
@@ -159,13 +159,13 @@ class CognitiveSynergyMonitor:
             synergy_factor += 0.15
         if integration_score > 70:
             synergy_factor += 0.25
-        
+
         self.synergy_score = avg_health * synergy_factor
         self.emergence_detected = self.synergy_score > 80
-        
+
         # Store history
         self.health_history.append(features_array.flatten())
-        
+
         return {
             "synergy_score": round(self.synergy_score, 2),
             "integration_percentage": round(integration_score, 2),
@@ -175,49 +175,49 @@ class CognitiveSynergyMonitor:
             "synergy_factor": round(synergy_factor, 3),
             "timestamp": datetime.now().isoformat()
         }
-    
+
     def generate_recommendations(self, metrics_list: List[Dict], analysis: Dict) -> List[str]:
         """Generate AI-powered recommendations for improving synergy."""
         recommendations = []
-        
+
         # Check for missing components
         missing = [m["name"] for m in metrics_list if not m["exists"]]
         if missing:
             recommendations.append(f"🔴 CRITICAL: Initialize missing components: {', '.join(missing)}")
-        
+
         # Check for components without tests
         no_tests = [m["name"] for m in metrics_list if m["exists"] and not m["has_tests"]]
         if no_tests:
             recommendations.append(f"🟡 HIGH: Add test suites to: {', '.join(no_tests)}")
-        
+
         # Check for components without docs
         no_docs = [m["name"] for m in metrics_list if m["exists"] and not m["has_docs"]]
         if no_docs:
             recommendations.append(f"🟢 MEDIUM: Add documentation to: {', '.join(no_docs)}")
-        
+
         # Check for anomalies
         if analysis["anomaly_components"]:
             recommendations.append(f"⚠️ ANOMALY: Investigate unusual behavior in: {', '.join(analysis['anomaly_components'])}")
-        
+
         # Synergy-specific recommendations
         if analysis["integration_percentage"] < 50:
             recommendations.append("🚀 SYNERGY: Focus on component integration - less than 50% components are active")
         elif analysis["synergy_score"] > 80:
             recommendations.append("🎉 EXCELLENCE: Cognitive synergy achieved! System is performing optimally")
-        
+
         if not recommendations:
             recommendations.append("✅ ALL SYSTEMS NOMINAL: Continue monitoring for emergent patterns")
-        
+
         return recommendations
 
 
 def generate_html_dashboard(metrics: List[Dict], analysis: Dict, recommendations: List[str]) -> str:
     """Generate a beautiful HTML dashboard with real-time data."""
-    
+
     # Prepare data for visualization
     component_names = [m["name"] for m in metrics]
     health_scores = [m["health_score"] for m in metrics]
-    
+
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -511,24 +511,24 @@ def generate_html_dashboard(metrics: List[Dict], analysis: Dict, recommendations
 
 def start_dashboard_server(html_content: str, port: int = 8888):
     """Start a local web server to serve the dashboard."""
-    
+
     class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         def do_GET(self):
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
             self.wfile.write(html_content.encode())
-        
+
         def log_message(self, format, *args):
             pass  # Suppress log messages
-    
+
     with socketserver.TCPServer(("", port), DashboardHandler) as httpd:
         print(f"\\n🌐 Dashboard server started at http://localhost:{port}")
         print(f"🚀 Opening dashboard in your browser...")
-        
+
         # Open browser
         threading.Timer(1.0, lambda: webbrowser.open(f"http://localhost:{port}")).start()
-        
+
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
@@ -537,32 +537,32 @@ def start_dashboard_server(html_content: str, port: int = 8888):
 
 def main():
     """Main entry point for the Cognitive Synergy Dashboard."""
-    
+
     print("=" * 80)
     print("🧠 COGNITIVE SYNERGY DASHBOARD - SECRET FEATURE ACTIVATED! 🧠")
     print("=" * 80)
     print()
     print("Initializing AI-powered cognitive monitoring system...")
     print()
-    
+
     # Initialize monitor
     monitor = CognitiveSynergyMonitor()
-    
+
     # Scan all components
     print("📡 Scanning components...")
     metrics = []
     for component in monitor.components:
         print(f"  → Analyzing {component}...")
         metrics.append(monitor.scan_component(component))
-    
+
     print()
     print("🤖 Running AI analysis...")
     analysis = monitor.analyze_synergy(metrics)
-    
+
     print()
     print("💡 Generating recommendations...")
     recommendations = monitor.generate_recommendations(metrics, analysis)
-    
+
     print()
     print("=" * 80)
     print("ANALYSIS COMPLETE!")
@@ -572,30 +572,30 @@ def main():
     print(f"🔗 Integration: {analysis['integration_percentage']}%")
     print(f"💚 Average Health: {analysis['average_health']}%")
     print(f"🚨 Anomalies: {len(analysis['anomaly_components'])}")
-    
+
     if analysis['emergence_detected']:
         print()
         print("🎉" * 20)
         print("COGNITIVE EMERGENCE DETECTED!")
         print("The system has achieved true synergy!")
         print("🎉" * 20)
-    
+
     print()
     print("📊 Top Recommendations:")
     for i, rec in enumerate(recommendations[:3], 1):
         print(f"  {i}. {rec}")
-    
+
     print()
     print("=" * 80)
-    
+
     # Generate HTML dashboard
     html = generate_html_dashboard(metrics, analysis, recommendations)
-    
+
     # Save dashboard
     dashboard_path = Path("cognitive_synergy_dashboard.html")
     dashboard_path.write_text(html)
     print(f"\\n💾 Dashboard saved to: {dashboard_path.absolute()}")
-    
+
     # Save JSON data
     # Convert numpy types to native Python types for JSON serialization
     def convert_to_native(obj):
@@ -612,7 +612,7 @@ def main():
         elif isinstance(obj, list):
             return [convert_to_native(item) for item in obj]
         return obj
-    
+
     data = {
         "metrics": convert_to_native(metrics),
         "analysis": convert_to_native(analysis),
@@ -621,13 +621,13 @@ def main():
     json_path = Path("cognitive_synergy_data.json")
     json_path.write_text(json.dumps(data, indent=2))
     print(f"💾 Data saved to: {json_path.absolute()}")
-    
+
     # Start web server
     print()
     print("🚀 Starting interactive dashboard server...")
     print("   Press Ctrl+C to stop")
     print()
-    
+
     try:
         start_dashboard_server(html)
     except OSError as e:

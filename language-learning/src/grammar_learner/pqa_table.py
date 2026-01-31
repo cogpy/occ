@@ -61,7 +61,7 @@ def params(corpus_, dataset_, module_path_, out_dir, **kwargs):         # 90201
                 gen += 2
 
         prj_dir = batch_dir + '_' + dataset + '_' + context + wtf + rules \
-                  + '_' + generalization[gen]
+            + '_' + generalization[gen]
         if 'cluster_range' in kwargs:
             if type(kwargs['cluster_range']) is int:
                 prj_dir = prj_dir + '_' + str(kwargs['cluster_range']) + 'c'

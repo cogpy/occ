@@ -19,8 +19,8 @@ def    readLayout(lay_p):
         f = open( lay_p, "r" )
         layout = f.read()
         f.close()
-    except Exception, e:
-        print ( e )
+    except Exception as e:
+        print(( e ))
         return False
     # the level of the last item that we've seen
     crt_lev = 1
@@ -47,7 +47,7 @@ def    readLayout(lay_p):
         # elif ( it_level == crt_lev ): # adding a sibling
         # else: # adding a sibling to some parent
         lay_tree.append([it_level,lay_lcont])
-            
+
         # save our level for next iteration
         crt_lev = it_level
 
@@ -80,8 +80,8 @@ def    updateAFile(dox_file_p,fileindex):
         f = open( dox_file_p, "r" )
         dox_cont = f.read()
         f.close()
-    except Exception, e:
-        print ( e )
+    except Exception as e:
+        print(( e ))
         return False
 
     # we accumulate new content here
@@ -101,7 +101,7 @@ def    updateAFile(dox_file_p,fileindex):
             new_cont += "\t"*(crt_level-my_level-1)
             new_cont += "- " + pageLink(lay_tree[i][1],"") + "\n"
         i = i + 1
-        
+
     # now the next/previous navigation
     new_cont += "\n<TABLE width=\"100%\" border=\"0\"><TR>\n<TD>"
     if ( fileindex != 0 ):
@@ -133,8 +133,8 @@ def    updateAFile(dox_file_p,fileindex):
             f = open( dox_file_p, "w" )
             f.write( dox_cont )
             f.close()
-        except Exception, e:
-            print ( e )
+        except Exception as e:
+            print(( e ))
             return False
         break;
 

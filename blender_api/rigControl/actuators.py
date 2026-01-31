@@ -86,9 +86,9 @@ class ActuatorManager:
             for func in actuator_functions:
                 enabled_getter = self.property_store.register_actuator(func.__name__)
                 actuator = self.Actuator(func.__name__,
-                    self.property_store.register_parameter,
-                    self.property_store.register_image,
-                    enabled_getter)
+                                         self.property_store.register_parameter,
+                                         self.property_store.register_image,
+                                         enabled_getter)
                 actuator.generator = func(actuator) if _takes_nargs(func, 1) else func()
                 self.actuators.append(actuator)
                 actuator.generator.send(None)

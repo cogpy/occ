@@ -50,7 +50,7 @@ def init_destin(siw=pd.W512, nLayer=8, centroids=[4,8,16,32,64,32,16,8],
                 isUniform=True, imageMode=pd.DST_IMG_MODE_GRAYSCALE):
     temp_network = pd.DestinNetworkAlt(siw, nLayer, centroids, isUniform, imageMode)
     #temp_network.setBeliefTransform(pd.DST_BT_NONE)
-    
+
     return temp_network
 
 """
@@ -60,7 +60,7 @@ Default number is 16,000.
 def train_ims(network, ims, maxCount=16000):
     for i in range(maxCount):
         if i % 10 == 0:
-            print "Iteration " + str(i)
+            print("Iteration " + str(i))
         ims.findNextImage()
         f = ims.getGrayImageFloat()    
         network.doDestin(f)
@@ -75,7 +75,7 @@ def train_2flds(network, fld1, fld2, repeatCount=1600):
         fld2 += "/"
     for i in range(repeatCount):
         if i % 10 == 0:
-            print "RepeatTime: " + str(i)
+            print("RepeatTime: " + str(i))
         for each in os.listdir(fld1):
             f = cl.combineImgs(fld1+each, fld2+each)
             network.doDestin(f)

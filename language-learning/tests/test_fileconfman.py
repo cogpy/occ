@@ -8,11 +8,11 @@ from src.common.parsemetrics import ParseMetrics
 conf_path = "tests/test-data/config/config-example-01.json"
 
 params = \
-      {
+    {
         "input_grammar": "./grammar.dict",
         "input_categories": "./cat_tree.txt",
         "parse_format": "ull"
-      }
+    }
 
 class JsonRWTestCase(unittest.TestCase):
 

@@ -43,8 +43,8 @@ try:
             with hide('output', 'running', 'warnings'):
                 return run(command)
 except ImportError:
-    print "Optional Vagrant functionality not enabled; to enable, install " \
-          "python-vagrant, fabric"
+    print("Optional Vagrant functionality not enabled; to enable, install " \)
+    "python-vagrant, fabric"
 
 ### MongoDB setup
 
@@ -54,8 +54,8 @@ try:
     client = pymongo.MongoClient(MONGODB_CONNECTION_STRING)
     mongo = client[MONGODB_DATABASE]
 except ImportError:
-    print "Optional MongoDB functionality not enabled; to enable, install " \
-          "MongoDB and PyMongo"
+    print("Optional MongoDB functionality not enabled; to enable, install " \)
+    "MongoDB and PyMongo"
 
 
 def clear_mongodb():

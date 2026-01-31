@@ -68,9 +68,9 @@ class AnimationManager():
         self.face_target = [0,1,0]
         # Head and Eye tracking parameters
         self.headTargetLoc = blendedNum.LiveTarget([0,0,0], transition=Wrappers.wrap([
-                Pipes.exponential(7),
-                Pipes.moving_average(window=0.3)],
-                Wrappers.in_spherical(origin=[0, self.face_target_offset, 0], radius=4)
+            Pipes.exponential(7),
+            Pipes.moving_average(window=0.3)],
+            Wrappers.in_spherical(origin=[0, self.face_target_offset, 0], radius=4)
         ))
         self.eyeTargetLoc = blendedNum.LiveTarget([0,0,0], transition=Wrappers.wrap(
             Pipes.linear(speed=300),
@@ -256,7 +256,7 @@ class AnimationManager():
 
         # Create object and add to list
         g = Gesture(name, newTrack, newStrip, duration=duration, speed=speed, \
-             magnitude=magnitude, priority=priority, repeat=repeat, strip_time_kfp=strip_time_kfp)
+                    magnitude=magnitude, priority=priority, repeat=repeat, strip_time_kfp=strip_time_kfp)
         self.gesturesList.append(g)
 
 
@@ -289,7 +289,7 @@ class AnimationManager():
 
 
                 num = blendedNum.Trajectory(start)
-                    # min 0.5s max 1.5s
+                # min 0.5s max 1.5s
                 fade = min(2.0,max(2.0/3.0, 3.0/float(data['duration'])))
                 # Fixme for whatever reason the timed keyframe needs time from beginning,
                 # meaning that need to substract only the fadeout time.
@@ -315,7 +315,7 @@ class AnimationManager():
                         start = emotion.magnitude.current
                         num = blendedNum.Trajectory(start)
                         num.add_keyframe(target=0.0, transition=[
-                             (0, Pipes.linear(fade)), (1, Pipes.moving_average(0.2))])
+                            (0, Pipes.linear(fade)), (1, Pipes.moving_average(0.2))])
                         emotion.magnitude = num
 
 
@@ -391,8 +391,8 @@ class AnimationManager():
         '''enable if necessary and update the blink rate of the artistic actuator'''
 
         if bpy.data.scenes["Scene"].actuators.ACT_blink_randomly.HEAD_PARAM_enabled == False:
-           bpy.data.scenes["Scene"].actuators.ACT_blink_randomly.HEAD_PARAM_enabled = True
-           print("enabled blinking")
+            bpy.data.scenes["Scene"].actuators.ACT_blink_randomly.HEAD_PARAM_enabled = True
+            print("enabled blinking")
         checkValue(interval_mean,0.5,10)
         checkValue(interval_variation,0.0,interval_mean)
         print('changing blink rate to ',interval_mean)
@@ -423,12 +423,12 @@ class AnimationManager():
 
         # if reset delete and restart actuator
     def _deleteViseme(self, viseme):
-            ''' internal use only, stops and deletes a viseme'''
-            # remove from list
-            self.visemesList.remove(viseme)
+        ''' internal use only, stops and deletes a viseme'''
+        # remove from list
+        self.visemesList.remove(viseme)
 
-            # remove from Blender
-            self.deformObj.animation_data.nla_tracks.remove(viseme.trackRef)
+        # remove from Blender
+        self.deformObj.animation_data.nla_tracks.remove(viseme.trackRef)
 
 
     def coordConvert(self, loc, currbu, offset=0):
@@ -462,9 +462,9 @@ class AnimationManager():
             duration = max(0.1 / (speed**2), 0.02)
         locBU = self.coordConvert(loc, self.eyeTargetLoc.current, self.face_target_offset)
         self.headTargetLoc.transition = Wrappers.wrap([
-                Pipes.exponential(7),
-                Pipes.moving_average(window=duration)],
-                Wrappers.in_spherical(origin=[0, self.face_target_offset, 0], radius=4)
+            Pipes.exponential(7),
+            Pipes.moving_average(window=duration)],
+            Wrappers.in_spherical(origin=[0, self.face_target_offset, 0], radius=4)
         )
 
         self.headTargetLoc.target = locBU
@@ -474,7 +474,7 @@ class AnimationManager():
 
             # Move eyes too, really fast
             self.eyeTargetLoc.transition = Wrappers.wrap([
-                    Pipes.linear(speed=300)],
+                Pipes.linear(speed=300)],
                 Wrappers.in_spherical(origin=[0, self.eye_target_offset, 0], radius=4))
             self.eyeTargetLoc.target = locBU
 

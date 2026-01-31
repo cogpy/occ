@@ -117,7 +117,7 @@ class Trajectory:
         if len(self.keyframes) > 0:
             kf = self.keyframes[0]
             if (kf.time != None and self.time >= kf.time or
-                kf.time == None and sum((a-b)**2 for a,b in zip(self._current, self.keyframes[0].target)) < 0.001):
+                    kf.time == None and sum((a-b)**2 for a,b in zip(self._current, self.keyframes[0].target)) < 0.001):
                 self.keyframes = self.keyframes[1:]
                 if len(self.keyframes) > 0:
                     self._absorb_keyframe(self.keyframes[0])

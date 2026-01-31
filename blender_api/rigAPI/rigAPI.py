@@ -66,7 +66,7 @@ class RigAPI:
         return None
 
     def queueVisemes(self, vis, start=0, duration=0.5, \
-        rampin=0.1, rampout=0.8, magnitude=1):
+                     rampin=0.1, rampout=0.8, magnitude=1):
         return None
 
     # Eye look-at targets ==========================

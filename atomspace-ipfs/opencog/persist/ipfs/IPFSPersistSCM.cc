@@ -9,7 +9,7 @@
 #include <libguile.h>
 
 #include <opencog/atomspace/AtomSpace.h>
-#include <opencog/atomspace/BackingStore.h>
+#include <opencog/persist/api/BackingStore.h>
 #include <opencog/guile/SchemePrimitive.h>
 
 #include "IPFSAtomStorage.h"

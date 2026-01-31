@@ -11,8 +11,8 @@ experiment_id = None
 
 # print usage for batch mode
 def usage():
-    print "Usage: " + sys.argv[0] + " <experiment_id> <freq_coeff> <freq_treshold> <add_coeff> " \
-            + "<starv_coeff> <start_centroids> <max_centroids>"
+    print("Usage: " + sys.argv[0] + " <experiment_id> <freq_coeff> <freq_treshold> <add_coeff> " \)
+    + "<starv_coeff> <start_centroids> <max_centroids>"
     sys.exit(1)
 
 if (len(sys.argv) > 1):
@@ -79,131 +79,131 @@ def train():
             chart.draw()
             
             if (i % 300) == 0:
-                print "#####################################";
-                print "Iteration " + str(i)
-                print ""
+                print(")  #####################################";
+                      print("Iteration " + str(i))
+                      print("")
 
-                for j in range(len(centroids)):
-                    print "Layer: " + str(j)
-                    print "Variance: " + str(variances[j])
-                    print "Separation: " + str(separations[j])
-                    print "Quality: " + str(separations[j] - variances[j])
-                    print "Centroids: " + str(dn.getBeliefsPerNode(j))
-                    print ""
-                sys.stdout.flush()
+                      for j in range(len(centroids)):
+                      print("Layer: " + str(j))
+                      print("Variance: " + str(variances[j]))
+                      print("Separation: " + str(separations[j]))
+                      print("Quality: " + str(separations[j] - variances[j]))
+                      print("Centroids: " + str(dn.getBeliefsPerNode(j)))
+                      print("")
+                      sys.stdout.flush()
 
-        ims.findNextImage()
-        #dn.clearBeliefs()
-        for j in range(1):
-            if image_mode == pd.DST_IMG_MODE_GRAYSCALE:
-                f = ims.getGrayImageFloat()    
-            elif image_mode == pd.DST_IMG_MODE_RGB:
-                f = ims.getRGBImageFloat()
-            else:
-                raise Exception("unsupported image mode")
-            dn.doDestin(f)
+                      ims.findNextImage()
+                      #dn.clearBeliefs()
+                      for j in range(1):
+                      if image_mode == pd.DST_IMG_MODE_GRAYSCALE:
+                      f = ims.getGrayImageFloat()    
+                      elif image_mode == pd.DST_IMG_MODE_RGB:
+                      f = ims.getRGBImageFloat()
+                      else:
+                      raise Exception("unsupported image mode")
+                      dn.doDestin(f)
 
-#display centroid image
-def dci(layer, cent, equalize_hist = False, exp_weight = 4):
-    if cent >= dn.getBeliefsPerNode(layer):
-        print "centroid out bounds"
-        return
-    dn.setCentImgWeightExponent(exp_weight)
-    dn.displayCentroidImage(layer, cent, 256, equalize_hist)
-    cv.WaitKey(100)
+                      #display centroid image
+                      def dci(layer, cent, equalize_hist = False, exp_weight = 4):
+                      if cent >= dn.getBeliefsPerNode(layer):
+                      print("centroid out bounds")
+                      return
+                      dn.setCentImgWeightExponent(exp_weight)
+                      dn.displayCentroidImage(layer, cent, 256, equalize_hist)
+                      cv.WaitKey(100)
 
-def dcis(layer):
-    dn.displayLayerCentroidImages(layer,1000)
-    cv.WaitKey(100)
+                      def dcis(layer):
+                      dn.displayLayerCentroidImages(layer,1000)
+                      cv.WaitKey(100)
     
 
-def mkdir(path):
-    try:
-        os.makedirs(path)
-    except OSError as exc: # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else: raise
+                      def mkdir(path):
+                      try:
+                      os.makedirs(path)
+                      except OSError as exc: # Python >2.5
+                      if exc.errno == errno.EEXIST and os.path.isdir(path):
+                      pass
+                      else: raise
 
-def saveCenImages(run_id, layer):
-    run_dir = experiment_root_dir + "/"+run_id+"/"
-    mkdir(run_dir)
+                      def saveCenImages(run_id, layer):
+                      run_dir = experiment_root_dir + "/"+run_id+"/"
+                      mkdir(run_dir)
 
-    # with centroid weight = 1 
-    orig_dir = run_dir+"orig/"
+                      # with centroid weight = 1 
+                      orig_dir = run_dir+"orig/"
     
-    # with centroid weight = 1 and enhanced = true
-    orige_dir = run_dir+"orig_e/"
+                      # with centroid weight = 1 and enhanced = true
+                      orige_dir = run_dir+"orig_e/"
     
-    # store centroid with higher weighting
-    highweighted_dir = run_dir+"highweight/"
+                      # store centroid with higher weighting
+                      highweighted_dir = run_dir+"highweight/"
     
-    highweightede_dir = run_dir+"highweight_e/"
+                      highweightede_dir = run_dir+"highweight_e/"
 
-    for d in [orig_dir, orige_dir, highweighted_dir, highweightede_dir]:
-        mkdir(d)
+                      for d in [orig_dir, orige_dir, highweighted_dir, highweightede_dir]:
+                      mkdir(d)
     
-    # Save centriod images
-    bn = dn.getBeliefsPerNode(layer)
+                      # Save centriod images
+                      bn = dn.getBeliefsPerNode(layer)
         
-    dn.setCentImgWeightExponent(1)
-    dn.updateCentroidImages()
-    for i in range(bn):
-        f = "%02d_%02d_%s.png" % (layer, i,run_id)
-        # save original
-        fn = orig_dir + f 
-        dn.saveCentroidImage(layer, i, fn, 512, False )
+                      dn.setCentImgWeightExponent(1)
+                      dn.updateCentroidImages()
+                      for i in range(bn):
+                      f = "%02d_%02d_%s.png" % (layer, i,run_id)
+                      # save original
+                      fn = orig_dir + f 
+                      dn.saveCentroidImage(layer, i, fn, 512, False )
     
-        # save original enhanced
-        fn = orige_dir + f
-        dn.saveCentroidImage(layer, i, fn, 512, True )
+                      # save original enhanced
+                      fn = orige_dir + f
+                      dn.saveCentroidImage(layer, i, fn, 512, True )
     
     
-    dn.setCentImgWeightExponent(weight_exponent)
-    dn.updateCentroidImages()
-    for i in range(bn):
-        f = "%02d_%02d_%s.png" % (layer, i,run_id)
-        fn = highweighted_dir + f 
-        dn.saveCentroidImage(layer, i, fn, 512, False )
-        fn = highweightede_dir + f
-        dn.saveCentroidImage(layer, i, fn, 512, True )
+                      dn.setCentImgWeightExponent(weight_exponent)
+                      dn.updateCentroidImages()
+                      for i in range(bn):
+                      f = "%02d_%02d_%s.png" % (layer, i,run_id)
+                      fn = highweighted_dir + f 
+                      dn.saveCentroidImage(layer, i, fn, 512, False )
+                      fn = highweightede_dir + f
+                      dn.saveCentroidImage(layer, i, fn, 512, True )
 
-def print_csv_entry():
-    variances = dn.getLayersVariances();
-    separations = dn.getLayersSeparations();
+                      def print_csv_entry():
+                      variances = dn.getLayersVariances();
+                      separations = dn.getLayersSeparations();
 
-    entries = [str(experiment_id), str(freq_coeff), str(freq_treshold), str(add_coeff), \
-               str(starv_coeff), str(len(letters)), str(iterations)]
+                      entries = [str(experiment_id), str(freq_coeff), str(freq_treshold), str(add_coeff), \
+                                 str(starv_coeff), str(len(letters)), str(iterations)]
 
-    for j in range(len(centroids)):
-        entries.append(str(dn.getBeliefsPerNode(j)))
-        entries.append(str(variances[j]))
-        entries.append(str(separations[j]))
-        entries.append(str(separations[j] - variances[j]))
-    entries.append(str(time.time() - start_time))
+                      for j in range(len(centroids)):
+                      entries.append(str(dn.getBeliefsPerNode(j)))
+                      entries.append(str(variances[j]))
+                      entries.append(str(separations[j]))
+                      entries.append(str(separations[j] - variances[j]))
+                      entries.append(str(time.time() - start_time))
 
-    separator = ","
-    print "CSV: " + separator.join(entries)
+                      separator = ","
+                      print("CSV: " + separator.join(entries))
 
-do_train = True
-save = True
-if do_train:
-    train()
-    if save:    
-        t = str(int(time.time()))
-        if experiment_id is not None:
-            t += "_" + experiment_id
-        fn = save_root + t + ".dst"
-        print "Saving " + fn
-        dn.save(fn)
-        for i in range(layers):
-            saveCenImages(t,i)
-        if batch_mode:
-            print_csv_entry()
-else:
-    to_load = "letter_exp.dst"
-    dn.load(to_load)
+                      do_train = True
+                      save = True
+                      if do_train:
+                      train()
+                      if save:    
+                      t = str(int(time.time()))
+                      if experiment_id is not None:
+                      t += "_" + experiment_id
+                      fn = save_root + t + ".dst"
+                      print("Saving " + fn)
+                      dn.save(fn)
+                      for i in range(layers):
+                      saveCenImages(t,i)
+                      if batch_mode:
+                      print_csv_entry()
+                      else:
+                      to_load = "letter_exp.dst"
+                      dn.load(to_load)
 
-dn.save("letter_exp.dst")
-dcis(top_layer)
+                      dn.save("letter_exp.dst")
+                      dcis(top_layer)
 

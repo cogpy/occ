@@ -123,7 +123,7 @@ def skl_clustering(cd, n_clusters=10, **kwargs):
     except:  # else:  # FIXME
         print('except: skl_clustering error')
         return np.asarray(range(cd.shape[0])), \
-               {'clustering': 'skl_clustering error'}, []
+            {'clustering': 'skl_clustering error'}, []
 
 
 def optimal_clusters(cd, **kwargs):

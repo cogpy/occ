@@ -29,7 +29,7 @@ def main():
     myNode.init_node_learning_params(algorithm_choice, alg_params)
     # myNode.do_node_learning('training')
     #mylearning_algorithm = learning_algorithm(alg_params)
-    print "Multi-dim nodes example"
+    print("Multi-dim nodes example")
     Row = 4
     Col = 4
     layer_num = 2

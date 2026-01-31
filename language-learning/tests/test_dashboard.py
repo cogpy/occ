@@ -14,21 +14,21 @@ conf =   {
         "row_count": 17,
         "col_count": 10,
         "col_headers": [
-          [
-            {"title": "Corpus"},
-            {"title": "Parsing/MI counting"},
-            {"title": "Connectors/DRK/Connectors"},
-            {"title": "Connectors/DRK/Disjuncts"},
-            {"title": "Disjuncts/DRK/Disjuncts"},
-            {"title": "Disjuncts/ILE/Disjuncts"},
-            {"title": "Connectors/DRK/Connectors"},
-            {"title": "Connectors/DRK/Disjuncts"},
-            {"title": "Disjuncts/DRK/Disjuncts"},
-            {"title": "Disjuncts/ILE/Disjuncts"}
-          ]
+            [
+                {"title": "Corpus"},
+                {"title": "Parsing/MI counting"},
+                {"title": "Connectors/DRK/Connectors"},
+                {"title": "Connectors/DRK/Disjuncts"},
+                {"title": "Disjuncts/DRK/Disjuncts"},
+                {"title": "Disjuncts/ILE/Disjuncts"},
+                {"title": "Connectors/DRK/Connectors"},
+                {"title": "Connectors/DRK/Disjuncts"},
+                {"title": "Disjuncts/DRK/Disjuncts"},
+                {"title": "Disjuncts/ILE/Disjuncts"}
+            ]
         ]
     }
-  }
+}
 
 
 less_headers =   {
@@ -42,19 +42,19 @@ less_headers =   {
         "row_count": 17,
         "col_count": 10,
         "col_headers": [
-          [
-            {"title": "Corpus"},
-            {"title": "Parsing/MI counting"},
-            {"title": "Connectors/DRK/Connectors"},
-            {"title": "Connectors/DRK/Disjuncts"},
-            {"title": "Disjuncts/DRK/Disjuncts"},
-            {"title": "Disjuncts/ILE/Disjuncts"},
-            {"title": "Connectors/DRK/Connectors"},
-            {"title": "Connectors/DRK/Disjuncts"}
-          ]
+            [
+                {"title": "Corpus"},
+                {"title": "Parsing/MI counting"},
+                {"title": "Connectors/DRK/Connectors"},
+                {"title": "Connectors/DRK/Disjuncts"},
+                {"title": "Disjuncts/DRK/Disjuncts"},
+                {"title": "Disjuncts/ILE/Disjuncts"},
+                {"title": "Connectors/DRK/Connectors"},
+                {"title": "Connectors/DRK/Disjuncts"}
+            ]
         ]
     }
-  }
+}
 
 more_headers =   {
     "component": "dash-board",
@@ -67,23 +67,23 @@ more_headers =   {
         "row_count": 17,
         "col_count": 10,
         "col_headers": [
-          [
-            {"title": "Corpus"},
-            {"title": "Parsing/MI counting"},
-            {"title": "Connectors/DRK/Connectors"},
-            {"title": "Connectors/DRK/Disjuncts"},
-            {"title": "Disjuncts/DRK/Disjuncts"},
-            {"title": "Disjuncts/ILE/Disjuncts"},
-            {"title": "Connectors/DRK/Connectors"},
-            {"title": "Connectors/DRK/Disjuncts"},
-            {"title": "Disjuncts/DRK/Disjuncts"},
-            {"title": "Disjuncts/ILE/Disjuncts"},
-            {"title": "Extra 1"},
-            {"title": "Extra 2"}
-          ]
+            [
+                {"title": "Corpus"},
+                {"title": "Parsing/MI counting"},
+                {"title": "Connectors/DRK/Connectors"},
+                {"title": "Connectors/DRK/Disjuncts"},
+                {"title": "Disjuncts/DRK/Disjuncts"},
+                {"title": "Disjuncts/ILE/Disjuncts"},
+                {"title": "Connectors/DRK/Connectors"},
+                {"title": "Connectors/DRK/Disjuncts"},
+                {"title": "Disjuncts/DRK/Disjuncts"},
+                {"title": "Disjuncts/ILE/Disjuncts"},
+                {"title": "Extra 1"},
+                {"title": "Extra 2"}
+            ]
         ]
     }
-  }
+}
 
 
 
@@ -108,12 +108,12 @@ class DashboardTestCase(unittest.TestCase):
             "row_count": 4,
             "col_count": 4,
             "col_headers": [
-              [
-                {"title": "A"},
-                {"title": "B"},
-                {"title": "C"},
-                {"title": "D"},
-              ]
+                [
+                    {"title": "A"},
+                    {"title": "B"},
+                    {"title": "C"},
+                    {"title": "D"},
+                ]
             ]
         })
 

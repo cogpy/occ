@@ -8,8 +8,8 @@ import zmq
 #import storage.Storage
 
 def main(args):
-  endpoint = "tcp://127.0.0.1:5555"
-  socktype = zmq.REQ
+    endpoint = "tcp://127.0.0.1:5555"
+    socktype = zmq.REQ
 #  incr = 0
 #  if len(args) > 1:
 #    incr = int(args[1])
@@ -17,19 +17,19 @@ def main(args):
 #      socktype = zmq.DOWNSTREAM
 #      endpoint = "tcp://127.0.0.1:9091"
 
-  ctx = zmq.Context()
-  socket = ctx.socket(socktype)
-  socket.connect(endpoint)
-  request = "HELLO"
-  print "Sending ", request, " ..."
-  socket.send(request)
-  message = socket.recv()
-  print "Received reply: ", message
+    ctx = zmq.Context()
+    socket = ctx.socket(socktype)
+    socket.connect(endpoint)
+    request = "HELLO"
+    print("Sending ", request, " ...")
+    socket.send(request)
+    message = socket.recv()
+    print("Received reply: ", message)
 
-  #transport = TZmqClient.TZmqClient(ctx, endpoint, socktype)
+    #transport = TZmqClient.TZmqClient(ctx, endpoint, socktype)
 #  protocol = thrift.protocol.TBinaryProtocol.TBinaryProtocolAccelerated(transport)
 #  client = storage.Storage.Client(protocol)
-  #transport.open()
+    #transport.open()
 #  if incr:
 #    client.incr(incr)
 #    time.sleep(0.05)
@@ -38,4 +38,4 @@ def main(args):
 #    print value
 
 if __name__ == "__main__":
-  main(sys.argv)
+    main(sys.argv)

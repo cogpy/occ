@@ -36,6 +36,9 @@ Coordinates multiple cognitive shards:
 - Coordinated execution across shards
 - Synergy optimization algorithms
 - Active shard tracking
+- **Message routing and delivery** (Enhanced)
+- **Inter-shard communication protocols** (Enhanced)
+- **Communication performance metrics** (Enhanced)
 
 ## Usage Example
 
@@ -43,6 +46,7 @@ Coordinates multiple cognitive shards:
 #include <coggml/microkernel.h>
 #include <coggml/cognitive_shard.h>
 #include <coggml/shard_coordinator.h>
+#include <coggml/shard_message.h>
 
 // Initialize microkernel
 coggml::Microkernel kernel;
@@ -56,10 +60,26 @@ auto shard2 = std::make_shared<coggml::CognitiveShard>("learning", "Pattern reco
 coggml::ShardCoordinator coordinator;
 coordinator.registerShard(shard1);
 coordinator.registerShard(shard2);
+
+// Set message callback for inter-shard communication
+shard1->setMessageCallback([](const coggml::ShardMessage& msg) {
+    std::cout << "Shard received: " << msg.getPayload() << std::endl;
+});
+
+// Send message between shards
+shard1->sendMessage("learning", coggml::MessageType::DATA_TRANSFER, 
+                   "inference-result", coggml::MessagePriority::HIGH);
+
+// Execute coordination cycle
 coordinator.coordinate();
 
 // Optimize for cognitive synergy
 coordinator.optimizeSynergy();
+
+// Get communication statistics
+auto stats = coordinator.getCommunicationStats();
+std::cout << "Messages sent: " << stats.totalMessagesSent << std::endl;
+std::cout << "Average delivery time: " << stats.averageDeliveryTimeMs << " ms" << std::endl;
 ```
 
 ## Building
@@ -88,10 +108,24 @@ The CogGML Microkernel embodies principles of cognitive synergy through:
 
 ## Future Directions
 
-- Enhanced shard communication protocols
-- Distributed shard deployment across nodes
+- ~~Enhanced shard communication protocols~~ ✓ Implemented
+- ~~Asynchronous message processing with priority queues~~ ✓ Implemented
+- ~~Distributed shard deployment across nodes~~ ✓ Implemented
 - Advanced synergy optimization algorithms
 - Integration with neural-symbolic hybrid systems
+- Message persistence and replay capabilities
+
+## Recent Enhancements (2025)
+
+### Communication Optimization
+- **Priority-based Message Queuing**: Messages are now queued by priority (LOW, NORMAL, HIGH, CRITICAL)
+- **Asynchronous Processing**: Background thread processes messages in batches for better throughput
+- **Queue Management**: Automatic overflow handling with intelligent message dropping
+
+### Distributed Processing
+- **Network Coordination**: New DistributedCoordinator enables cognitive processing across network nodes
+- **Load Balancing**: Automatic distribution of shards based on node capacity and current load
+- **Health Monitoring**: Real-time network health metrics and synchronization
 
 ## Contributing
 

@@ -106,7 +106,7 @@ class PositiveExplicit(Explicit):
 '''SVD => vectors.txt'''
 
 class Embedding:    # Base class for all embeddings.
-                    # SGNS can be directly instantiated with it.
+    # SGNS can be directly instantiated with it.
     def __init__(self, path, normalize=True):
         self.m = np.load(path + '.npy')
         if normalize: self.normalize()
@@ -166,7 +166,7 @@ class EnsembleEmbedding(Embedding):
         self.wi = dict([(w, i) for i, w in enumerate(self.iw)])
 
         m_joint = emb1.m[[emb1.wi[w] for w in joint_vocab]] \
-                  + emb2.m[[emb2.wi[w] for w in joint_vocab]]
+            + emb2.m[[emb2.wi[w] for w in joint_vocab]]
         m_only1 = emb1.m[[emb1.wi[w] for w in only_vocab1]]
         m_only2 = emb2.m[[emb2.wi[w] for w in only_vocab2]]
         self.m = np.vstack([m_joint, m_only1, m_only2])
@@ -232,7 +232,7 @@ def links2vec(links,out_path,tmp_path,dim=100,cds=1.0,eig=0.5,verbose='none'):
 
     pmi = calc_pmi(counts, cds)
     np.savez_compressed(pmi_path, \
-        data=pmi.data, indices=pmi.indices, indptr=pmi.indptr, shape=pmi.shape)
+                        data=pmi.data, indices=pmi.indices, indptr=pmi.indptr, shape=pmi.shape)
     # if verbose in ['max','debug']:
     #   print('PMI matrix', type(pmi), pmi.shape, '\nsaved to', pmi_path)
     logger.info(f'PMI matrix {type(pmi)}, {pmi.shape}\nsaved to {pmi_path}')
@@ -240,7 +240,7 @@ def links2vec(links,out_path,tmp_path,dim=100,cds=1.0,eig=0.5,verbose='none'):
     '''PMI => SVD'''
     svd_path = pmi_path[:-3] + 'svd'
     neg = 1     # int(args['--neg'])  Number of negative samples;
-                # [default: 1]        subtracts its log from PMI
+    # [default: 1]        subtracts its log from PMI
     # if verbose in ['max','debug']:
     #   print('SVD started: dim', dim, ', output:', svd_path+'...')
     logger.info(f'SVD started: dim {dim}, output: {svd_path}...')
@@ -281,7 +281,7 @@ def epmisvd(links,path,tmpath,dim=100,cds=1.0,eig=0.5,neg=1,verbose='none'):
     # cds = 1.0 # context distribution smoothing [default: 1.0]
     # eig = 0.5 # weighted exponent of the eigenvalue matrix [default: 0.5]
     # neg = 1   # Number of negative samples; [default: 1] subtracts its log from PMI
-                # PMI => SVD PositiveExplicit parameter
+    # PMI => SVD PositiveExplicit parameter
     '''links => PMI'''
     pmi_path = tmpath + 'pmi'
     start = time.time()
@@ -330,7 +330,7 @@ def epmisvd(links,path,tmpath,dim=100,cds=1.0,eig=0.5,neg=1,verbose='none'):
     '''counts + vocab => pmi'''
     pmi = calc_pmi(counts, cds)
     np.savez_compressed(pmi_path, \
-        data=pmi.data, indices=pmi.indices, indptr=pmi.indptr, shape=pmi.shape)
+                        data=pmi.data, indices=pmi.indices, indptr=pmi.indptr, shape=pmi.shape)
     # if verbose in ['max','debug']:
     #   print('PMI matrix', type(pmi), pmi.shape, '\nsaved to', pmi_path)
     logger.info(f'PMI matrix {type(pmi)} {pmi.shape}\nsaved to {pmi_path}')
@@ -386,7 +386,7 @@ def pmisvd(links,path,tmpath, dim=100, cds=1.0, eig=0.5, neg=1, verbose='none'):
     # cds = 1.0 # context distribution smoothing [default: 1.0]
     # eig = 0.5 # weighted exponent of the eigenvalue matrix [default: 0.5]
     # neg = 1   # Number of negative samples; [default: 1] subtracts its log from PMI
-                # PMI => SVD PositiveExplicit parameter
+    # PMI => SVD PositiveExplicit parameter
     if tmpath[-1] == '/': tmpath = tmpath[:-1]
     if path[-1] == '/': path = path[:-1]
 
@@ -423,7 +423,7 @@ def pmisvd(links,path,tmpath, dim=100, cds=1.0, eig=0.5, neg=1, verbose='none'):
     '''counts + vocab => pmi'''
     pmi = calc_pmi(counts, cds)
     np.savez_compressed(pmi_path, \
-        data=pmi.data, indices=pmi.indices, indptr=pmi.indptr, shape=pmi.shape)
+                        data=pmi.data, indices=pmi.indices, indptr=pmi.indptr, shape=pmi.shape)
 
     '''PMI => SVD'''
     svd_path = pmi_path[:-3] + 'svd'

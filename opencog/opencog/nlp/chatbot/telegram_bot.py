@@ -15,7 +15,7 @@ scheme_eval(atomspace, '(use-modules (opencog nlp))')
 scheme_eval(atomspace, '(use-modules (opencog nlp chatbot))')
 scheme_eval(atomspace, '(use-modules (opencog nlp relex2logic))')
 scheme_eval(atomspace, '(load-r2l-rulebase)')
-print ("starting cogserver...")
+print(("starting cogserver..."))
 scheme_eval(atomspace, '(start-cogserver "../lib/opencog-chatbot.conf")')
 
 
@@ -46,11 +46,11 @@ def help(bot, update):
 
 def echo(bot, update):
     """Echo the user message."""
-    print ("Ok, we got message {}".format(update.message.text))
+    print(("Ok, we got message {}".format(update.message.text)))
     reply = scheme_eval(atomspace, '(process-query "{}" "{}")'.format(update.message.from_user.first_name, update.message.text))
-    print ("And now we have a reply {}".format(reply))
+    print(("And now we have a reply {}".format(reply)))
     reply_decoded = reply.decode("utf-8")
-    print ("Decoding the reply: {}".format(reply_decoded))
+    print(("Decoding the reply: {}".format(reply_decoded)))
     bot.send_message(chat_id=update.message.chat_id, text=reply_decoded)
 
 
@@ -62,7 +62,7 @@ def error(bot, update):
 def main():
     """Start the bot."""
     # Create the Updater and pass it your bot's token.
-    
+
     updater = Updater(TOKEN)
 
     # Get the dispatcher to register handlers

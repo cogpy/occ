@@ -37,8 +37,8 @@ for t in range(0, num_steps):
     importance_updating()
     step_python_agent(path, name)
 
-    print "------------------------------------------------------\n"\
-          "{0}\n".format(point_in_time)
+    print("------------------------------------------------------\n"\)
+    "{0}\n".format(point_in_time)
 
     #print(dump_atomspace_scheme())
     print(dump_attentional_focus_scheme())

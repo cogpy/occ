@@ -71,8 +71,8 @@ for t in range(0, num_steps):
           .format(t, len(af_point_in_time['atoms']),
                   len(atomspace_point_in_time['atoms'])))
 
-    print "People with cancer: {0}".format(
-        scheme("(count-people-with-cancer)"))
+    print("People with cancer: {0}".format()
+          scheme("(count-people-with-cancer)"))
 
 #export_timeseries_mongodb(af_timeseries)
 export_timeseries_mongodb(atomspace_timeseries)

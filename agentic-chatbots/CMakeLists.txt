@@ -6,10 +6,13 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 
 PROJECT(agentic-chatbots
-    VERSION 0.1.0
+    VERSION 1.0.0
     DESCRIPTION "Agentic Chatbots Integration with AtomSpace"
     LANGUAGES CXX
 )
+
+# Version information
+SET(SEMANTIC_VERSION 1.0.0)
 
 # Set C++17 standard
 set(CMAKE_CXX_STANDARD 17)
@@ -24,6 +27,7 @@ set(AGENTIC_CHATBOTS_SOURCES
     src/agent.cpp
     src/chatbot_manager.cpp
     src/knowledge_integration.cpp
+    src/collaborative_reasoner.cpp
 )
 
 # Agentic Chatbots library headers
@@ -31,6 +35,7 @@ set(AGENTIC_CHATBOTS_HEADERS
     include/agentic_chatbots/agent.h
     include/agentic_chatbots/chatbot_manager.h
     include/agentic_chatbots/knowledge_integration.h
+    include/agentic_chatbots/collaborative_reasoner.h
 )
 
 # Build Agentic Chatbots shared library

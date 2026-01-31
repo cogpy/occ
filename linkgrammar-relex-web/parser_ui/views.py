@@ -113,7 +113,7 @@ def index(request):
         try:
             parsed_value = json.loads(parsed_value)
         except:
-            print 'error in parsing JSON response...'
+            print('error in parsing JSON response...')
             parse_response = ['An error occurred while trying to parse the sentence...']
             raise
         parse_response = []
@@ -166,8 +166,8 @@ def parse_result(request, page):
 def settings(request):
     servers = {}
     for language, version in SERVERS:
-            servers[LANGUAGES[language] + '-' + VERSIONS[version]] =\
-                Server.objects.get(language=language, version=version)
+        servers[LANGUAGES[language] + '-' + VERSIONS[version]] =\
+            Server.objects.get(language=language, version=version)
 
     if request.method == 'POST':
         error = False

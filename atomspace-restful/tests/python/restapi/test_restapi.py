@@ -61,28 +61,28 @@ class TestRESTApi():
 
     def mkswan(self):
         return self.mkatom(
-                {'type': 'ConceptNode', 'name': 'swan',
-                'truthvalue': {'type': 'simple',
-                'details': {'strength': 0.001, 'count': 0.9}}})
+            {'type': 'ConceptNode', 'name': 'swan',
+             'truthvalue': {'type': 'simple',
+                            'details': {'strength': 0.001, 'count': 0.9}}})
 
     def mkbird(self):
         return self.mkatom(
-                {'type': 'ConceptNode', 'name': 'bird',
-                'truthvalue': {'type': 'simple',
-                'details': {'strength': 0.01, 'count': 0.9}}})
+            {'type': 'ConceptNode', 'name': 'bird',
+             'truthvalue': {'type': 'simple',
+                            'details': {'strength': 0.01, 'count': 0.9}}})
 
     def mkanimal(self):
         return self.mkatom(
-                {'type': 'ConceptNode', 'name': 'animal',
-                'truthvalue': {'type': 'simple',
-                'details': {'strength': 0.1, 'count': 0.95}}})
+            {'type': 'ConceptNode', 'name': 'animal',
+             'truthvalue': {'type': 'simple',
+                            'details': {'strength': 0.1, 'count': 0.95}}})
 
     def mkbird_animal(self):
         jbird = self.mkbird()
         janimal = self.mkanimal()
         return self.mkatom(
             {'type': 'InheritanceLink', 'truthvalue':
-            {'type': 'simple', 'details': {'strength': 1.0, 'count': 0.9}},
+             {'type': 'simple', 'details': {'strength': 1.0, 'count': 0.9}},
              'outgoing': [jbird['handle'], janimal['handle']]})
 
     def get_atom(self, handle):
@@ -97,8 +97,8 @@ class TestRESTApi():
         truthvalue = {'type': 'simple',
                       'details': {'strength': 0.08, 'count': 0.2}}
         jatom = {'type': 'ConceptNode',
-                'name': 'giant_frog',
-                'truthvalue': truthvalue}
+                 'name': 'giant_frog',
+                 'truthvalue': truthvalue}
 
         post_response = self.client.post(self.uri + 'atoms',
                                          data=json.dumps(jatom),
@@ -318,7 +318,7 @@ class TestRESTApi():
             float(post_result['truthvalue']['details']['strength']),
             count_to_confidence(
                 float(post_result['truthvalue']['details']['count']))) \
-               == existing_atom.tv
+            == existing_atom.tv
 
     def test_f_post_revise_existing_link(self):
         # Attempt to create a link, where a link already exists with that name
@@ -351,7 +351,7 @@ class TestRESTApi():
             float(post_result['truthvalue']['details']['strength']),
             count_to_confidence(
                 float(post_result['truthvalue']['details']['count']))) \
-               == existing_atom.tv
+            == existing_atom.tv
 
     # @raises(IndexError)
     def test_g_delete_node(self):

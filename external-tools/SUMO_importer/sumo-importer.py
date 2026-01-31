@@ -196,26 +196,26 @@ def link(i2t, oper, args_atoms, link_tv):
         link_type = types.EvaluationLink
         node_type = types.PredicateNode
     elif oper.endswith('Fn'):   # This is wrong but may happen if the
-                                # SUMO term has not been properly
-                                # defined in SUMO. This is here till
-                                # it gets fixed on the SUMO side
+        # SUMO term has not been properly
+        # defined in SUMO. This is here till
+        # it gets fixed on the SUMO side
         link_type = types.ExecutionOutputLink
         node_type = types.SchemaNode
     elif oper.startswith('?') or oper.startswith('?'): # It's a
-                                                       # variable,
-                                                       # we're gonna
-                                                       # assume it is a
-                                                       # relation,
-                                                       # which seems to
-                                                       # be always
-                                                       # treated as a
-                                                       # predicate
+        # variable,
+        # we're gonna
+        # assume it is a
+        # relation,
+        # which seems to
+        # be always
+        # treated as a
+        # predicate
         link_type = types.EvaluationLink
         node_type = types.VariableNode
     else:                       # By default we assume it is a
-                                # predicate, which is surely wrong in
-                                # practice but seems to work in
-                                # practice
+        # predicate, which is surely wrong in
+        # practice but seems to work in
+        # practice
         link_type = types.EvaluationLink
         node_type = types.PredicateNode
 
@@ -246,7 +246,7 @@ def special_link_type(oper):
                                        # PredictiveImplicationLink but
                                        # that one is not known by the
                                        # python atomspace API
-        }
+    }
 
     if oper in mapping:
         return mapping[oper]

@@ -336,7 +336,7 @@ def new_pqa_meter(dict_path, op, cp, rp, **kwargs):  # TODO
 
     template_path = handle_path_string("tests/test-data/dict/poc-turtle") #FIXME:WTF?
     linkage_limit = kwargs['linkage_limit'] \
-                    if 'linkage_limit' in kwargs else 1000
+        if 'linkage_limit' in kwargs else 1000
     if kwargs['linkage_limit'] == 0:
         return 0.0, 0.0, 0.0, 0.0  # table_rows: get grammar for further tests
     options = BIT_SEP_STAT | BIT_LG_EXE | BIT_NO_LWALL | BIT_NO_PERIOD | BIT_STRIP | BIT_RM_DIR | BIT_DPATH_CREATE | BIT_LOC_LANG | BIT_PARSE_QUALITY | BIT_ULL_IN  # | BIT_OUTPUT_DIAGRAM #| BIT_SEP_STAT

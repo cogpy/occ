@@ -188,9 +188,9 @@ class CommandWrappers:
     def getSomaStates():
         return msg.SomaStates([
             msg.SomaState(name,
-                vals['magnitude'],
-                vals['rate'],
-                rospy.Duration(vals['ease_in']))
+                          vals['magnitude'],
+                          vals['rate'],
+                          rospy.Duration(vals['ease_in']))
             for name, vals in api.getSomaStates().items()
         ])
 
@@ -264,8 +264,8 @@ class CommandWrappers:
             return
         try:
             api.queueViseme(msg.name, msg.start.to_sec(),
-                msg.duration.to_sec(),
-                msg.rampin, msg.rampout, msg.magnitude)
+                            msg.duration.to_sec(),
+                            msg.rampin, msg.rampout, msg.magnitude)
         except TypeError:
             logger.error('Unknown viseme: {}'.format(msg.name))
 

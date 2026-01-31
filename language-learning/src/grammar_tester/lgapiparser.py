@@ -62,7 +62,7 @@ class LGApiParser(AbstractFileParserClient):
 
             input_file_handle = open(corpus_path)
             output_file_handle = sys.stdout if output_path is None \
-                                            else open(output_path, "w")
+                else open(output_path, "w")
 
             for line in input_file_handle:
 
