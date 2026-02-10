@@ -183,22 +183,22 @@ jobs:
         Write-Host "=== Creating Installation Script ===" -ForegroundColor Cyan
         
         $installScript = @'
-          $ErrorActionPreference = 'Stop'
-          $packageName = $env:ChocolateyPackageName
-          $toolsDir = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
-          $installDir = Join-Path $env:ProgramFiles "OpenCog\OCC"
-          Write-Host "Installing $packageName to $installDir" -ForegroundColor Cyan
-          New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-          if (Test-Path "$toolsDir\bin") {
-              Copy-Item -Path "$toolsDir\*" -Destination $installDir -Recurse -Force
-              Write-Host "Installed OpenCog binaries to $installDir" -ForegroundColor Green
-              Install-ChocolateyPath -PathToInstall "$installDir\bin" -PathType 'Machine'
-              Install-ChocolateyEnvironmentVariable -VariableName 'OPENCOG_HOME' -VariableValue $installDir -VariableType 'Machine'
-              Write-Host "OpenCog Collection installed successfully!" -ForegroundColor Green
-          } else {
-              Write-Host "No binaries found in package. This is a minimal installation." -ForegroundColor Yellow
-          }
-          '@
+        $ErrorActionPreference = 'Stop'
+        $packageName = $env:ChocolateyPackageName
+        $toolsDir = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
+        $installDir = Join-Path $env:ProgramFiles "OpenCog\OCC"
+        Write-Host "Installing $packageName to $installDir" -ForegroundColor Cyan
+        New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+        if (Test-Path "$toolsDir\bin") {
+            Copy-Item -Path "$toolsDir\*" -Destination $installDir -Recurse -Force
+            Write-Host "Installed OpenCog binaries to $installDir" -ForegroundColor Green
+            Install-ChocolateyPath -PathToInstall "$installDir\bin" -PathType 'Machine'
+            Install-ChocolateyEnvironmentVariable -VariableName 'OPENCOG_HOME' -VariableValue $installDir -VariableType 'Machine'
+            Write-Host "OpenCog Collection installed successfully!" -ForegroundColor Green
+        } else {
+            Write-Host "No binaries found in package. This is a minimal installation." -ForegroundColor Yellow
+        }
+'@
         
         Set-Content -Path "choco-package/tools/chocolateyinstall.ps1" -Value $installScript
         Write-Host "✓ Installation script created" -ForegroundColor Green
@@ -209,18 +209,18 @@ jobs:
         Write-Host "=== Creating Uninstallation Script ===" -ForegroundColor Cyan
         
         $uninstallScript = @'
-          $ErrorActionPreference = 'Stop'
-          $packageName = $env:ChocolateyPackageName
-          $installDir = Join-Path $env:ProgramFiles "OpenCog\OCC"
-          Write-Host "Uninstalling $packageName" -ForegroundColor Cyan
-          Uninstall-ChocolateyPath -PathToUninstall "$installDir\bin" -PathType 'Machine'
-          Uninstall-ChocolateyEnvironmentVariable -VariableName 'OPENCOG_HOME' -VariableType 'Machine'
-          if (Test-Path $installDir) {
-              Remove-Item -Path $installDir -Recurse -Force
-              Write-Host "Removed installation directory: $installDir" -ForegroundColor Green
-          }
-          Write-Host "OpenCog Collection uninstalled successfully!" -ForegroundColor Green
-          '@
+        $ErrorActionPreference = 'Stop'
+        $packageName = $env:ChocolateyPackageName
+        $installDir = Join-Path $env:ProgramFiles "OpenCog\OCC"
+        Write-Host "Uninstalling $packageName" -ForegroundColor Cyan
+        Uninstall-ChocolateyPath -PathToUninstall "$installDir\bin" -PathType 'Machine'
+        Uninstall-ChocolateyEnvironmentVariable -VariableName 'OPENCOG_HOME' -VariableType 'Machine'
+        if (Test-Path $installDir) {
+            Remove-Item -Path $installDir -Recurse -Force
+            Write-Host "Removed installation directory: $installDir" -ForegroundColor Green
+        }
+        Write-Host "OpenCog Collection uninstalled successfully!" -ForegroundColor Green
+'@
         
         Set-Content -Path "choco-package/tools/chocolateyuninstall.ps1" -Value $uninstallScript
         Write-Host "✓ Uninstallation script created" -ForegroundColor Green
@@ -234,11 +234,11 @@ jobs:
           Copy-Item -Path "LICENSE" -Destination "choco-package/legal/LICENSE.txt"
         } else {
           $license = @'
-          OpenCog Collection (OCC)
-          Copyright 2025 OpenCog Community
-          Licensed under the GNU Affero General Public License v3.0
-          See: https://github.com/o9nn/occ/blob/main/LICENSE
-          '@
+        OpenCog Collection (OCC)
+        Copyright 2025 OpenCog Community
+        Licensed under the GNU Affero General Public License v3.0
+        See: https://github.com/o9nn/occ/blob/main/LICENSE
+'@
           Set-Content -Path "choco-package/legal/LICENSE.txt" -Value $license
         }
         

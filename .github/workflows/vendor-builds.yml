@@ -135,6 +135,7 @@ jobs:
           }
 
           # Save current hashes for next run comparison
+          New-Item -ItemType Directory -Force -Path "prebuilt" | Out-Null
           $currentHashes | ConvertTo-Json | Out-File "prebuilt/SOURCE_HASHES_CURRENT.json" -Encoding UTF8
 
           # Check if vcpkg deps are ready

@@ -6,7 +6,7 @@ name: Build Electron Desktop App
 
 on:
   workflow_run:
-    workflows: ["OCC Windows Build"]
+    workflows: ["OCC Windows Build - Fixed"]
     types:
       - completed
     branches:
@@ -182,10 +182,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build Linux Desktop App
     # TEMPORARILY DISABLED - Focus on Windows builds first
-    if: false && (
-      github.event.workflow_run.conclusion == 'success' ||
-      github.event_name == 'release' ||
-      github.event_name == 'workflow_dispatch'
+    if: false
     
     steps:
     - name: Checkout Repository

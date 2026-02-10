@@ -70,12 +70,6 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$env:VCPKG_INSTALLED_DIR" | Out-Null
 
       # Export GitHub Actions cache environment for vcpkg
-      - name: Export GitHub Actions Cache Variables
-        uses: actions/github-script@v7
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
       - name: Restore Tier 1 Cache
         id: restore-cache
@@ -222,13 +216,6 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
           New-Item -ItemType Directory -Force -Path "$env:VCPKG_INSTALLED_DIR" | Out-Null
 
-      - name: Export GitHub Actions Cache Variables
-        uses: actions/github-script@v7
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-
       - name: Download Tier 1 Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -349,13 +336,6 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
           New-Item -ItemType Directory -Force -Path "$env:VCPKG_INSTALLED_DIR" | Out-Null
-
-      - name: Export GitHub Actions Cache Variables
-        uses: actions/github-script@v7
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
       - name: Download Tier 2 Artifacts
         uses: actions/download-artifact@v4
