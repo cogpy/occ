@@ -123,7 +123,7 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit != 'true' || github.event.inputs.force_rebuild == 'true'
         shell: pwsh
         env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite;files,${{ env.VCPKG_DEFAULT_BINARY_CACHE }},readwrite"
+          VCPKG_BINARY_SOURCES: "clear;files,${{ env.VCPKG_DEFAULT_BINARY_CACHE }},readwrite"
         run: |
           Write-Host "=== Building All Packages from vcpkg.json ===" -ForegroundColor Cyan
           Write-Host "Using manifest mode - vcpkg will install all dependencies from vcpkg.json" -ForegroundColor Gray
@@ -270,7 +270,7 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit != 'true' || github.event.inputs.force_rebuild == 'true'
         shell: pwsh
         env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite;files,${{ env.VCPKG_DEFAULT_BINARY_CACHE }},readwrite"
+          VCPKG_BINARY_SOURCES: "clear;files,${{ env.VCPKG_DEFAULT_BINARY_CACHE }},readwrite"
         run: |
           Write-Host "=== Building Tier 2 Packages from vcpkg.json ===" -ForegroundColor Cyan
 
@@ -400,7 +400,7 @@ jobs:
         id: heavy-build
         shell: pwsh
         env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite;files,${{ env.VCPKG_DEFAULT_BINARY_CACHE }},readwrite"
+          VCPKG_BINARY_SOURCES: "clear;files,${{ env.VCPKG_DEFAULT_BINARY_CACHE }},readwrite"
         run: |
           Write-Host "=== Building All Heavy Packages from vcpkg.json ===" -ForegroundColor Cyan
           Write-Host "This includes: OpenSSL, Protobuf, gRPC, RocksDB, libpq, etc." -ForegroundColor Yellow

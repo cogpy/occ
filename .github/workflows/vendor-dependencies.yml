@@ -92,7 +92,7 @@ jobs:
         if: steps.check-existing.outputs.skip_build != 'true'
         shell: pwsh
         env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+          VCPKG_BINARY_SOURCES: "clear;files,${{ env.VCPKG_DEFAULT_BINARY_CACHE }},readwrite"
         run: |
           Write-Host "========================================" -ForegroundColor Cyan
           Write-Host "  PHASE 1: Header-Only Packages" -ForegroundColor Cyan
@@ -127,7 +127,7 @@ jobs:
         if: steps.check-existing.outputs.skip_build != 'true'
         shell: pwsh
         env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+          VCPKG_BINARY_SOURCES: "clear;files,${{ env.VCPKG_DEFAULT_BINARY_CACHE }},readwrite"
         run: |
           Write-Host "========================================" -ForegroundColor Cyan
           Write-Host "  PHASE 2: Boost Compiled Libraries" -ForegroundColor Cyan
@@ -151,7 +151,7 @@ jobs:
         if: steps.check-existing.outputs.skip_build != 'true'
         shell: pwsh
         env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+          VCPKG_BINARY_SOURCES: "clear;files,${{ env.VCPKG_DEFAULT_BINARY_CACHE }},readwrite"
         run: |
           Write-Host "========================================" -ForegroundColor Cyan
           Write-Host "  PHASE 3: Medium Packages" -ForegroundColor Cyan
@@ -174,7 +174,7 @@ jobs:
         if: steps.check-existing.outputs.skip_build != 'true'
         shell: pwsh
         env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+          VCPKG_BINARY_SOURCES: "clear;files,${{ env.VCPKG_DEFAULT_BINARY_CACHE }},readwrite"
         run: |
           Write-Host "========================================" -ForegroundColor Cyan
           Write-Host "  PHASE 4: Heavy Packages (This takes a while)" -ForegroundColor Cyan
