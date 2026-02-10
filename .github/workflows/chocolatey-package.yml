@@ -122,12 +122,13 @@ jobs:
         # Use existing packaging structure from repo
         if (Test-Path "packaging/chocolatey") {
           Copy-Item -Path "packaging/chocolatey/*" -Destination "choco-package" -Recurse -Force
-          Write-Host "✓ Copied existing packaging structure" -ForegroundColor Green
+          Write-Host "Copied existing packaging structure" -ForegroundColor Green
         } else {
-          # Create chocolatey package directory
-          New-Item -ItemType Directory -Force -Path "choco-package/tools" | Out-Null
-          New-Item -ItemType Directory -Force -Path "choco-package/legal" | Out-Null
+          Write-Host "No existing packaging structure found, creating from scratch" -ForegroundColor Yellow
         }
+        # Always ensure required directories exist
+        New-Item -ItemType Directory -Force -Path "choco-package/tools" | Out-Null
+        New-Item -ItemType Directory -Force -Path "choco-package/legal" | Out-Null
         
         # Copy build artifacts if available
         if (Test-Path "consolidated") {

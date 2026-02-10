@@ -142,11 +142,13 @@ jobs:
     
     - name: Build Electron Application
       shell: pwsh
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         Write-Host "=== Building Electron Application ===" -ForegroundColor Cyan
         Set-Location electron-app
-        npm run build:win
-        Write-Host "✓ Electron app built" -ForegroundColor Green
+        npx electron-builder --win --publish never
+        Write-Host "Electron app built" -ForegroundColor Green
     
     - name: List Build Outputs
       shell: pwsh

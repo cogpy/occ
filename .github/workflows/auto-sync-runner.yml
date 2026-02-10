@@ -45,7 +45,7 @@ jobs:
         repository: ${{ env.SOURCE_REPO }}
         ref: ${{ env.SYNC_BRANCH }}
         fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GIT_PAT }}
     
     - name: Configure Git
       run: |
@@ -75,7 +75,7 @@ jobs:
     - name: Add Target Remote
       run: |
         echo "=== Adding Target Remote ==="
-        git remote add target https://github.com/${{ env.TARGET_REPO }}.git
+        git remote add target https://x-access-token:${{ secrets.GIT_PAT }}@github.com/${{ env.TARGET_REPO }}.git
         git remote -v
         echo "✓ Target remote added"
     
