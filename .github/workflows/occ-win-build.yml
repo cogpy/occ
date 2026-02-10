@@ -32,8 +32,8 @@ env:
   CMAKE_GENERATOR: "Visual Studio 17 2022"
   VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg_cache
   VCPKG_INSTALLED_DIR: ${{ github.workspace }}/vcpkg_installed
-  # Enable GitHub Actions native vcpkg binary caching
-  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+  # Use filesystem-based binary caching (x-gha was removed from vcpkg)
+  VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}/vcpkg_cache,readwrite"
 
 jobs:
   # Stage 1: Build CogUtil (Foundation)
@@ -55,14 +55,6 @@ jobs:
       run: |
         New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
         Write-Host "vcpkg cache directory created at $env:VCPKG_DEFAULT_BINARY_CACHE" -ForegroundColor Green
-
-    # CRITICAL: Export GitHub Actions cache variables for vcpkg binary caching
-    - name: Export GitHub Actions Cache Variables
-      uses: actions/github-script@v7
-      with:
-        script: |
-          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
     # Try to download prebuilt vcpkg packages from prebuild workflow
     - name: Try Download Prebuilt vcpkg Packages
@@ -116,7 +108,7 @@ jobs:
       if: steps.prebuilt-check.outputs.has_prebuilt != 'true'
       shell: pwsh
       env:
-        VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite;files,${{ env.VCPKG_DEFAULT_BINARY_CACHE }},readwrite"
+        VCPKG_BINARY_SOURCES: "clear;files,${{ env.VCPKG_DEFAULT_BINARY_CACHE }},readwrite"
       run: |
         Write-Host "=== Installing Dependencies via vcpkg ===" -ForegroundColor Cyan
         Write-Host "Using GitHub Actions binary cache - prebuilt packages will restore instantly" -ForegroundColor Yellow
@@ -251,14 +243,6 @@ jobs:
         New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
         Write-Host "vcpkg cache directory created" -ForegroundColor Green
 
-    # CRITICAL: Export GitHub Actions cache variables for vcpkg binary caching
-    - name: Export GitHub Actions Cache Variables
-      uses: actions/github-script@v7
-      with:
-        script: |
-          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-
     - name: Cache vcpkg binary packages
       uses: actions/cache@v4
       with:
@@ -376,14 +360,6 @@ jobs:
       run: |
         New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
         Write-Host "vcpkg cache directory created" -ForegroundColor Green
-
-    # CRITICAL: Export GitHub Actions cache variables for vcpkg binary caching
-    - name: Export GitHub Actions Cache Variables
-      uses: actions/github-script@v7
-      with:
-        script: |
-          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
     - name: Cache vcpkg binary packages
       uses: actions/cache@v4
@@ -508,14 +484,6 @@ jobs:
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
-
-    # CRITICAL: Export GitHub Actions cache variables for vcpkg binary caching
-    - name: Export GitHub Actions Cache Variables
-      uses: actions/github-script@v7
-      with:
-        script: |
-          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
     - name: Cache vcpkg binary packages
       uses: actions/cache@v4

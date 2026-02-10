@@ -171,7 +171,7 @@ struct timezone {
     int tz_dsttime;
 };
 
-inline int gettimeofday(struct timeval* tv, struct timezone* tz) {
+static __forceinline int gettimeofday(struct timeval* tv, struct timezone* tz) {
     if (tv) {
         FILETIME ft;
         GetSystemTimeAsFileTime(&ft);
@@ -184,7 +184,6 @@ inline int gettimeofday(struct timeval* tv, struct timezone* tz) {
         
         // FILETIME is in 100-nanosecond intervals since Jan 1, 1601
         // Unix epoch is Jan 1, 1970
-        // Difference is 116444736000000000 * 100ns = 11644473600 seconds
         tmpres -= 116444736000000000ULL;
         tmpres /= 10;  // Convert to microseconds
         
@@ -207,30 +206,42 @@ inline int gettimeofday(struct timeval* tv, struct timezone* tz) {
 }
 #endif // HAVE_GETTIMEOFDAY
 
+// ============================================================================
+// POSIX Function Macros - Use macros to guarantee visibility in all TUs
+// ============================================================================
+
 // usleep() - sleep for microseconds
 // Windows Sleep() takes milliseconds, so convert
-inline int usleep(unsigned int usec) {
-    // Sleep takes milliseconds
+// Using a macro ensures the function is always resolved at compile time
+static __forceinline void _oc_usleep_impl(unsigned int usec) {
     Sleep((usec + 999) / 1000);  // Round up to avoid zero sleep
-    return 0;
 }
+#ifndef usleep
+#define usleep(usec) _oc_usleep_impl(usec)
+#endif
 
 // gmtime_r() - thread-safe version of gmtime
 // Windows has gmtime_s with reversed parameter order
-inline struct tm* gmtime_r(const time_t* timer, struct tm* buf) {
+static __forceinline struct tm* _oc_gmtime_r_impl(const time_t* timer, struct tm* buf) {
     if (gmtime_s(buf, timer) == 0) {
         return buf;
     }
     return nullptr;
 }
+#ifndef gmtime_r
+#define gmtime_r(timer, buf) _oc_gmtime_r_impl(timer, buf)
+#endif
 
 // fdatasync() - sync file data to disk (not metadata)
 // Windows doesn't distinguish between data and metadata sync
 // Use _commit() which is similar to fsync()
 #include <io.h>
-inline int fdatasync(int fd) {
+static __forceinline int _oc_fdatasync_impl(int fd) {
     return _commit(fd);
 }
+#ifndef fdatasync
+#define fdatasync(fd) _oc_fdatasync_impl(fd)
+#endif
 
 // ============================================================================
 // String Functions

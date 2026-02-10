@@ -28,9 +28,11 @@
  */
 
 // Windows compatibility - must be included first before any other headers
+// windows_compat.h provides macro-based POSIX replacements (usleep, fdatasync,
+// gmtime_r, gettimeofday) that are guaranteed visible in all translation units.
 #ifdef _WIN32
 #include "windows_compat.h"
-#endif
+#endif // _WIN32
 
 #if defined(HAVE_GNU_BACKTRACE)
 #include <cxxabi.h>
@@ -46,7 +48,6 @@
 
 #ifdef _WIN32
 #include <string.h>
-#include <io.h>
 #include <process.h>
 #else
 #include <strings.h>
@@ -63,7 +64,7 @@
 
 #include "Logger.h"
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(_WIN32)
 #define fdatasync fsync
 #endif
 
