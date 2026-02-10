@@ -243,8 +243,10 @@ jobs:
       run: |
         Write-Host "=== Building Chocolatey Package ===" -ForegroundColor Cyan
         Set-Location choco-package
-        choco pack
-        Write-Host "✓ Package built successfully" -ForegroundColor Green
+        # Remove any template nuspec files that conflict with our generated one
+        Get-ChildItem -Filter "*.nuspec" | Where-Object { $_.Name -ne "$env:PACKAGE_NAME.nuspec" } | Remove-Item -Force
+        choco pack "$env:PACKAGE_NAME.nuspec"
+        Write-Host "Package built successfully" -ForegroundColor Green
     
     - name: Test Package Installation
       shell: pwsh
