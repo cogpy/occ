@@ -9,12 +9,7 @@
         "inference-bridge.cc"
       ],
       "include_dirs": [
-        "<!@(node -p \"require('node-addon-api').include\")",
-        "../../../cogutil",
-        "../../../atomspace",
-        "../../../attention",
-        "../../../pln",
-        "../../../ure"
+        "<!@(node -p \"require('node-addon-api').include\")"
       ],
       "dependencies": [
         "<!(node -p \"require('node-addon-api').gyp\")"
@@ -27,42 +22,28 @@
           "defines": [
             "_WIN32",
             "_USE_MATH_DEFINES",
-            "NOMINMAX"
+            "NOMINMAX",
+            "OCC_BUILTIN_ATOMSPACE"
           ],
           "msvs_settings": {
             "VCCLCompilerTool": {
               "ExceptionHandling": 1,
               "AdditionalOptions": [ "/std:c++17" ]
             }
-          },
-          "libraries": [
-            "-l../../build/Release/cogutil.lib",
-            "-l../../build/Release/atomspace.lib",
-            "-l../../build/Release/attention.lib"
-          ]
+          }
         }],
         ["OS=='linux'", {
-          "cflags_cc": [ "-std=c++17", "-fexceptions" ],
-          "libraries": [
-            "-L../../build",
-            "-lcogutil",
-            "-latomspace",
-            "-lattention"
-          ]
+          "defines": [ "OCC_BUILTIN_ATOMSPACE" ],
+          "cflags_cc": [ "-std=c++17", "-fexceptions" ]
         }],
         ["OS=='mac'", {
+          "defines": [ "OCC_BUILTIN_ATOMSPACE" ],
           "xcode_settings": {
             "GCC_ENABLE_CPP_EXCEPTIONS": "YES",
             "CLANG_CXX_LIBRARY": "libc++",
             "MACOSX_DEPLOYMENT_TARGET": "10.15",
             "OTHER_CFLAGS": [ "-std=c++17" ]
-          },
-          "libraries": [
-            "-L../../build",
-            "-lcogutil",
-            "-latomspace",
-            "-lattention"
-          ]
+          }
         }]
       ]
     }

@@ -51,66 +51,29 @@ jobs:
     - name: Setup MSVC
       uses: microsoft/setup-msbuild@v2
     
-    - name: Download OpenCog Build Artifacts
-      if: github.event.inputs.skip_native != 'true'
-      uses: actions/download-artifact@v4
-      with:
-        path: opencog-artifacts
-      continue-on-error: true
-    
-    - name: Prepare OpenCog Libraries
-      if: github.event.inputs.skip_native != 'true'
+    - name: Verify Native Addon Sources
       shell: pwsh
       run: |
-        Write-Host "=== Preparing OpenCog Libraries ===" -ForegroundColor Cyan
+        Write-Host "=== Verifying Native Addon Sources ===" -ForegroundColor Cyan
         
-        # Create install directory structure
-        New-Item -ItemType Directory -Force -Path "install/lib" | Out-Null
-        New-Item -ItemType Directory -Force -Path "install/include" | Out-Null
-        New-Item -ItemType Directory -Force -Path "install/bin" | Out-Null
+        $sources = @(
+          "electron-app/native/cognitive-addon.cc",
+          "electron-app/native/atomspace-bridge.cc",
+          "electron-app/native/attention-bridge.cc",
+          "electron-app/native/inference-bridge.cc",
+          "electron-app/native/binding.gyp"
+        )
         
-        # Copy artifacts if available
-        if (Test-Path "opencog-artifacts") {
-          Write-Host "Copying OpenCog artifacts..." -ForegroundColor Yellow
-          
-          # Copy all .lib files
-          Get-ChildItem -Path "opencog-artifacts" -Recurse -Filter "*.lib" | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination "install/lib/" -Force
-            Write-Host "  Copied: $($_.Name)" -ForegroundColor Green
+        foreach ($src in $sources) {
+          if (Test-Path $src) {
+            Write-Host "  ✓ $src" -ForegroundColor Green
+          } else {
+            Write-Host "  ✗ $src MISSING" -ForegroundColor Red
+            exit 1
           }
-          
-          # Copy all .dll files
-          Get-ChildItem -Path "opencog-artifacts" -Recurse -Filter "*.dll" | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination "install/bin/" -Force
-            Write-Host "  Copied: $($_.Name)" -ForegroundColor Green
-          }
-          
-          # Copy header files
-          Get-ChildItem -Path "opencog-artifacts" -Recurse -Filter "*.h" | ForEach-Object {
-            $relativePath = $_.FullName.Replace((Get-Location).Path, "").TrimStart("\")
-            $destPath = Join-Path "install/include" $_.Name
-            Copy-Item -Path $_.FullName -Destination $destPath -Force
-          }
-          
-          Write-Host "✓ OpenCog libraries prepared" -ForegroundColor Green
-        } else {
-          Write-Host "⚠ No OpenCog artifacts found - native addon will use mock mode" -ForegroundColor Yellow
         }
-    
-    - name: Update Native Addon Library Paths
-      if: github.event.inputs.skip_native != 'true'
-      shell: pwsh
-      run: |
-        Write-Host "=== Updating Native Addon Configuration ===" -ForegroundColor Cyan
         
-        $bindingGyp = "electron-app/native/binding.gyp"
-        $content = Get-Content $bindingGyp -Raw
-        
-        # Update Windows library paths to point to install directory
-        $content = $content -replace '\.\./\.\./build/Release/', '../../../install/lib/'
-        
-        Set-Content -Path $bindingGyp -Value $content
-        Write-Host "✓ Library paths updated" -ForegroundColor Green
+        Write-Host "✓ All native addon sources present (self-contained AtomSpace)" -ForegroundColor Green
     
     - name: Install Electron App Dependencies
       shell: pwsh
@@ -124,21 +87,19 @@ jobs:
       if: github.event.inputs.skip_native != 'true'
       shell: pwsh
       run: |
-        Write-Host "=== Building Native Cognitive Addon ===" -ForegroundColor Cyan
+        Write-Host "=== Building Native Cognitive Addon (Self-Contained AtomSpace) ===" -ForegroundColor Cyan
         Set-Location electron-app
         
-        # Set environment variables for native build
-        $env:CMAKE_PREFIX_PATH = "$env:GITHUB_WORKSPACE/install"
-        
-        # Rebuild native addon
+        # Rebuild native addon - no external dependencies needed
         npm run rebuild
         
         if (Test-Path "native/build/Release/cognitive-addon.node") {
-          Write-Host "✓ Native addon built successfully" -ForegroundColor Green
+          $size = [math]::Round((Get-Item "native/build/Release/cognitive-addon.node").Length / 1KB, 2)
+          Write-Host "✓ Native addon built successfully (${size}KB)" -ForegroundColor Green
         } else {
-          Write-Host "⚠ Native addon build failed - app will run in mock mode" -ForegroundColor Yellow
+          Write-Host "✗ Native addon build failed" -ForegroundColor Red
+          exit 1
         }
-      continue-on-error: true
     
     - name: Build Electron Application
       shell: pwsh

@@ -351,7 +351,9 @@ ipcMain.handle('get-system-info', async (event) => {
             nodeVersion: process.version,
             electronVersion: process.versions.electron,
             cognitiveAddon: cognitive !== null,
-            infernoKernel: cognitive !== null
+            infernoKernel: cognitive !== null,
+            addonVersion: cognitive ? (cognitive.version || 'unknown') : null,
+            addonEngine: cognitive ? (cognitive.engine || 'unknown') : null
         }
     };
 });

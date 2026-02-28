@@ -6,6 +6,8 @@
 set -e
 
 PACKAGE_NAME="atomspace-storage"
+REPO_NAME=atomspace-storage
+DEB_NAME=opencog-atomspace-storage
 UPSTREAM_REPO="../../${PACKAGE_NAME}"
 VERSION="1.0.0"
 
