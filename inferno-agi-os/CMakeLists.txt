@@ -1,8 +1,14 @@
 # CMakeLists.txt for Inferno AGI OS Kernel Modules
 # Cross-platform build system for cognitive kernel services
+#
+# This builds the complete OpenCog Inferno AGI OS:
+#   - Kernel modules: AtomSpace, Reasoning, Attention, Cognitive 9P
+#   - Cognitive filesystems: atoms, reasoning, attention, learning, perception, action
+#   - Userspace client libraries
+#   - Test suite
 
 cmake_minimum_required(VERSION 3.16)
-project(InfernoAGIOS VERSION 0.1.0 LANGUAGES C CXX)
+project(InfernoAGIOS VERSION 0.2.0 LANGUAGES C CXX)
 
 # C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -10,6 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Options
 option(BUILD_KERNEL_MODULES "Build kernel-level modules" ON)
+option(BUILD_FILESYSTEMS "Build cognitive filesystem modules" ON)
 option(BUILD_USERSPACE "Build userspace libraries" ON)
 option(BUILD_TESTS "Build test suite" ON)
 option(ENABLE_DISTRIBUTED "Enable distributed cognitive features" ON)
@@ -36,10 +43,13 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/kernel/reasoning
     ${CMAKE_CURRENT_SOURCE_DIR}/kernel/attention
     ${CMAKE_CURRENT_SOURCE_DIR}/kernel/cognitive9p
+    ${CMAKE_CURRENT_SOURCE_DIR}/fs
     ${CMAKE_CURRENT_SOURCE_DIR}/../cogutil/opencog/util
 )
 
+# ============================================================
 # Kernel-compatible source files (portable C implementation)
+# ============================================================
 set(KERNEL_SOURCES
     kernel/atomspace/atomspace_portable.c
     kernel/reasoning/reasoning_portable.c
@@ -47,14 +57,32 @@ set(KERNEL_SOURCES
     kernel/cognitive9p/cognitive9p_portable.c
 )
 
+# ============================================================
+# Cognitive filesystem sources
+# ============================================================
+set(FILESYSTEM_SOURCES
+    fs/atoms/atomfs.c
+    fs/reasoning/reasonfs.c
+    fs/attention/attnfs.c
+    fs/learning/learnfs.c
+    fs/perception/perceptfs.c
+    fs/action/actionfs.c
+)
+
+# ============================================================
 # Userspace library sources
+# ============================================================
 set(USERSPACE_SOURCES
     userspace/cogfs_client.c
     userspace/atomspace_client.c
     userspace/reasoning_client.c
 )
 
-# Create portable kernel library
+# ============================================================
+# Build targets
+# ============================================================
+
+# Kernel library
 if(BUILD_KERNEL_MODULES)
     add_library(inferno_agi_kernel STATIC ${KERNEL_SOURCES})
     target_link_libraries(inferno_agi_kernel Threads::Threads)
@@ -64,17 +92,36 @@ if(BUILD_KERNEL_MODULES)
     endif()
 endif()
 
-# Create userspace library
+# Cognitive filesystem library
+if(BUILD_FILESYSTEMS)
+    add_library(inferno_agi_cogfs STATIC ${FILESYSTEM_SOURCES})
+    target_link_libraries(inferno_agi_cogfs Threads::Threads)
+    
+    if(WIN32)
+        target_link_libraries(inferno_agi_cogfs ws2_32)
+    endif()
+endif()
+
+# Userspace library
 if(BUILD_USERSPACE)
     add_library(inferno_agi_user SHARED ${USERSPACE_SOURCES})
-    target_link_libraries(inferno_agi_user inferno_agi_kernel Threads::Threads)
+    target_link_libraries(inferno_agi_user Threads::Threads)
+    
+    if(BUILD_KERNEL_MODULES)
+        target_link_libraries(inferno_agi_user inferno_agi_kernel)
+    endif()
+    if(BUILD_FILESYSTEMS)
+        target_link_libraries(inferno_agi_user inferno_agi_cogfs)
+    endif()
     
     if(WIN32)
         target_link_libraries(inferno_agi_user ws2_32)
     endif()
 endif()
 
-# Build tests
+# ============================================================
+# Test suite
+# ============================================================
 if(BUILD_TESTS)
     enable_testing()
     
@@ -91,11 +138,20 @@ if(BUILD_TESTS)
     add_test(NAME Cognitive9PTest COMMAND test_cognitive9p)
 endif()
 
+# ============================================================
 # Installation
+# ============================================================
 install(TARGETS inferno_agi_kernel
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
 )
+
+if(BUILD_FILESYSTEMS)
+    install(TARGETS inferno_agi_cogfs
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+    )
+endif()
 
 if(BUILD_USERSPACE)
     install(TARGETS inferno_agi_user
@@ -110,15 +166,19 @@ install(FILES
     kernel/reasoning/reasoning.h
     kernel/attention/attention.h
     kernel/cognitive9p/cognitive9p.h
+    fs/atoms/atomfs.h
     DESTINATION include/inferno-agi
 )
 
-# Print configuration summary
+# ============================================================
+# Configuration summary
+# ============================================================
 message(STATUS "")
 message(STATUS "Inferno AGI OS Configuration:")
 message(STATUS "  Version: ${PROJECT_VERSION}")
 message(STATUS "  Platform: ${CMAKE_SYSTEM_NAME}")
 message(STATUS "  Build kernel modules: ${BUILD_KERNEL_MODULES}")
+message(STATUS "  Build filesystems: ${BUILD_FILESYSTEMS}")
 message(STATUS "  Build userspace: ${BUILD_USERSPACE}")
 message(STATUS "  Build tests: ${BUILD_TESTS}")
 message(STATUS "  Distributed features: ${ENABLE_DISTRIBUTED}")
