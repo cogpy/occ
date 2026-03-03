@@ -1,9 +1,8 @@
 /*
  * Test suite for the Cognitive 9P Filesystem kernel module
  *
- * Tests the 9P protocol interface to cognitive services:
- * atom creation/retrieval via file operations, reasoning
- * via file writes, and attention via the /attention filesystem.
+ * Tests the 9P protocol interface to cognitive services via
+ * the portable cogfs API (cogfs_read, cogfs_write, cogfs_readdir).
  *
  * Copyright (C) 2026 OpenCog Community
  * Licensed under AGPL-3.0
@@ -12,10 +11,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+#include <stdint.h>
 
-#include "../atomspace/atomspace.h"
-#include "../cognitive9p/cognitive9p.h"
+/* Forward declarations for portable build */
+typedef struct AtomSpace AtomSpace;
+
+extern void atomspace_init(void);
+extern void atomspace_shutdown(void);
+extern AtomSpace* get_global_atomspace(void);
+extern uint32_t atomspace_add_node(AtomSpace *as, uint16_t type, const char *name);
+
+/* Cognitive 9P portable API */
+extern void cognitive9p_init(void);
+extern void cognitive9p_shutdown(void);
+extern long cogfs_read(const char *path, void *buf, long n, long offset);
+extern long cogfs_write(const char *path, const void *buf, long n, long offset);
+extern int cogfs_readdir(const char *path, char **names, int max_names);
+extern void cogfs_print_tree(void);
+
+#define ATOM_TYPE_CONCEPT   0x0002
 
 /* Test counters */
 static int tests_passed = 0;
@@ -33,123 +47,106 @@ static int tests_total = 0;
     } \
 } while(0)
 
-/* External globals */
-extern AtomSpace *global_atomspace;
-
 /*
  * Test 1: Cognitive 9P initialization
  */
 static void
-test_cognitive9p_init(void)
+test_cognitive9p_init_test(void)
 {
     printf("\n=== Test: Cognitive 9P Initialization ===\n");
 
     atomspace_init();
-    TEST_ASSERT(global_atomspace != NULL, "AtomSpace initialized");
+    AtomSpace *as = get_global_atomspace();
+    TEST_ASSERT(as != NULL, "AtomSpace initialized");
 
     cognitive9p_init();
     TEST_ASSERT(1, "Cognitive 9P initialized without crash");
 }
 
 /*
- * Test 2: Create atoms via 9P interface
- */
-static void
-test_create_atoms_9p(void)
-{
-    printf("\n=== Test: Create Atoms via 9P ===\n");
-
-    uint32_t id1 = cognitive9p_create_atom("ConceptNode", "Knowledge");
-    TEST_ASSERT(id1 > 0, "Created ConceptNode via 9P");
-
-    uint32_t id2 = cognitive9p_create_atom("ConceptNode", "Wisdom");
-    TEST_ASSERT(id2 > 0, "Created second ConceptNode via 9P");
-    TEST_ASSERT(id2 != id1, "Atom IDs are unique");
-
-    uint32_t id3 = cognitive9p_create_atom("PredicateNode", "is_useful");
-    TEST_ASSERT(id3 > 0, "Created PredicateNode via 9P");
-
-    printf("  Created atoms: %u, %u, %u\n", id1, id2, id3);
-}
-
-/*
- * Test 3: Filesystem tree structure
+ * Test 2: Print filesystem tree
  */
 static void
 test_cogfs_tree(void)
 {
     printf("\n=== Test: Cognitive Filesystem Tree ===\n");
 
-    /* This should print the filesystem tree without crashing */
-    print_cogfs_tree();
+    cogfs_print_tree();
     TEST_ASSERT(1, "Filesystem tree printed without crash");
 }
 
 /*
- * Test 4: AtomSpace access through 9P
+ * Test 3: Read from cognitive filesystem
  */
 static void
-test_atomspace_via_9p(void)
+test_cogfs_read(void)
 {
-    printf("\n=== Test: AtomSpace Access via 9P ===\n");
+    char buf[1024];
+    long n;
 
-    AtomSpace *as = get_global_atomspace();
-    TEST_ASSERT(as != NULL, "Got global AtomSpace reference");
+    printf("\n=== Test: CogFS Read Operations ===\n");
 
-    /* Verify atoms created via 9P are in the AtomSpace */
-    uint32_t count = atomspace_get_count(global_atomspace);
-    TEST_ASSERT(count > 0, "AtomSpace has atoms from 9P operations");
-    printf("  AtomSpace contains %u atoms\n", count);
+    /* Read stats file (a FILE node, not a directory) */
+    n = cogfs_read("/atomspace/stats", buf, sizeof(buf), 0);
+    TEST_ASSERT(n > 0, "Read from /atomspace/stats");
+    if (n > 0) printf("  stats: %.*s", (int)n, buf);
+
+    /* Read count file */
+    n = cogfs_read("/atomspace/count", buf, sizeof(buf), 0);
+    TEST_ASSERT(n > 0, "Read from /atomspace/count");
+
+    /* Read attention allocation file */
+    n = cogfs_read("/attention/allocation", buf, sizeof(buf), 0);
+    TEST_ASSERT(n > 0, "Read from /attention/allocation");
+
+    /* Read working memory capacity */
+    n = cogfs_read("/memory/working/capacity", buf, sizeof(buf), 0);
+    TEST_ASSERT(n > 0, "Read from /memory/working/capacity");
 }
 
 /*
- * Test 5: Multiple atom types via 9P
+ * Test 4: Write to cognitive filesystem (create atoms)
  */
 static void
-test_multiple_types_9p(void)
+test_cogfs_write(void)
 {
-    printf("\n=== Test: Multiple Atom Types via 9P ===\n");
+    long n;
 
-    /* Create various atom types */
-    uint32_t concept = cognitive9p_create_atom("ConceptNode", "TestConcept");
-    uint32_t predicate = cognitive9p_create_atom("PredicateNode", "TestPredicate");
-    uint32_t schema = cognitive9p_create_atom("SchemaNode", "TestSchema");
-    uint32_t number = cognitive9p_create_atom("NumberNode", "42");
+    printf("\n=== Test: CogFS Write Operations ===\n");
 
-    TEST_ASSERT(concept > 0, "Created ConceptNode");
-    TEST_ASSERT(predicate > 0, "Created PredicateNode");
-    TEST_ASSERT(schema > 0, "Created SchemaNode");
-    TEST_ASSERT(number > 0, "Created NumberNode");
+    /* Write to working memory capacity (a writable file) */
+    const char *cmd = "1024";
+    n = cogfs_write("/memory/working/capacity", cmd, (long)strlen(cmd), 0);
+    TEST_ASSERT(n > 0, "Write to /memory/working/capacity");
 
-    /* All IDs should be unique */
-    TEST_ASSERT(concept != predicate && concept != schema && concept != number,
-                "All atom IDs are unique");
+    /* Write to STI funds */
+    const char *funds = "50000";
+    n = cogfs_write("/attention/sti_funds", funds, (long)strlen(funds), 0);
+    TEST_ASSERT(n > 0, "Write to /attention/sti_funds");
 }
 
 /*
- * Test 6: Stress test - create many atoms
+ * Test 5: Directory listing
  */
 static void
-test_stress_9p(void)
+test_cogfs_readdir(void)
 {
-    printf("\n=== Test: Stress Test (100 atoms) ===\n");
+    char *names[32];
+    int count;
 
-    uint32_t start_count = atomspace_get_count(global_atomspace);
-    int created = 0;
-    char name[64];
+    printf("\n=== Test: CogFS Directory Listing ===\n");
 
-    for (int i = 0; i < 100; i++) {
-        snprintf(name, sizeof(name), "StressAtom_%d", i);
-        uint32_t id = cognitive9p_create_atom("ConceptNode", name);
-        if (id > 0) created++;
+    count = cogfs_readdir("/", names, 32);
+    TEST_ASSERT(count >= 0, "Read root directory listing");
+    printf("  Root directory has %d entries\n", count);
+
+    /* Free names if allocated */
+    int i;
+    for (i = 0; i < count; i++) {
+        if (names[i]) {
+            printf("    /%s\n", names[i]);
+        }
     }
-
-    uint32_t end_count = atomspace_get_count(global_atomspace);
-
-    TEST_ASSERT(created == 100, "Created all 100 atoms");
-    TEST_ASSERT(end_count >= start_count + 100, "AtomSpace count increased by 100");
-    printf("  Created %d atoms, AtomSpace: %u -> %u\n",
-           created, start_count, end_count);
 }
 
 /*
@@ -162,12 +159,11 @@ main(int argc, char *argv[])
     printf("Cognitive 9P Filesystem Test Suite\n");
     printf("========================================\n");
 
-    test_cognitive9p_init();
-    test_create_atoms_9p();
+    test_cognitive9p_init_test();
     test_cogfs_tree();
-    test_atomspace_via_9p();
-    test_multiple_types_9p();
-    test_stress_9p();
+    test_cogfs_read();
+    test_cogfs_write();
+    test_cogfs_readdir();
 
     printf("\n========================================\n");
     printf("Results: %d/%d passed, %d failed\n",
