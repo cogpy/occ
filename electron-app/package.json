@@ -17,7 +17,7 @@
     "build:win": "electron-builder --win",
     "build:linux": "electron-builder --linux",
     "build:mac": "electron-builder --mac",
-    "rebuild": "electron-rebuild -f -w cognitive-addon",
+    "rebuild": "cd native && npx node-gyp rebuild && cd ..",
     "postinstall": "electron-builder install-app-deps",
     "test": "jest",
     "lint": "eslint src/**/*.js"

@@ -90,14 +90,63 @@ jobs:
         Write-Host "=== Building Native Cognitive Addon (Self-Contained AtomSpace) ===" -ForegroundColor Cyan
         Set-Location electron-app
         
-        # Rebuild native addon - no external dependencies needed
-        npm run rebuild
+        # Get Electron version for ABI compatibility
+        $electronVersion = (node -e "console.log(require('electron/package.json').version)")
+        Write-Host "Electron version: $electronVersion" -ForegroundColor Yellow
         
-        if (Test-Path "native/build/Release/cognitive-addon.node") {
-          $size = [math]::Round((Get-Item "native/build/Release/cognitive-addon.node").Length / 1KB, 2)
-          Write-Host "✓ Native addon built successfully (${size}KB)" -ForegroundColor Green
-        } else {
-          Write-Host "✗ Native addon build failed" -ForegroundColor Red
+        # Build native addon directly with node-gyp from the native/ directory
+        # electron-rebuild -w doesn't work for local addons not in node_modules
+        Set-Location native
+        
+        # Use node-gyp rebuild with Electron headers
+        $env:HOME = $env:USERPROFILE
+        npx node-gyp rebuild `
+          --target=$electronVersion `
+          --arch=x64 `
+          --dist-url=https://electronjs.org/headers `
+          --build-from-source
+        
+        Set-Location ..
+        
+        # Check multiple possible output locations
+        $possiblePaths = @(
+          "native/build/Release/cognitive-addon.node",
+          "native/build/Debug/cognitive-addon.node",
+          "build/Release/cognitive-addon.node"
+        )
+        
+        $found = $false
+        foreach ($p in $possiblePaths) {
+          if (Test-Path $p) {
+            $size = [math]::Round((Get-Item $p).Length / 1KB, 2)
+            Write-Host "✓ Native addon built successfully at $p (${size}KB)" -ForegroundColor Green
+            
+            # Ensure it's in the expected location
+            if ($p -ne "native/build/Release/cognitive-addon.node") {
+              New-Item -ItemType Directory -Force -Path "native/build/Release" | Out-Null
+              Copy-Item -Path $p -Destination "native/build/Release/cognitive-addon.node" -Force
+              Write-Host "  Copied to native/build/Release/cognitive-addon.node" -ForegroundColor Green
+            }
+            $found = $true
+            break
+          }
+        }
+        
+        if (-not $found) {
+          Write-Host "✗ Native addon build failed - .node file not found" -ForegroundColor Red
+          Write-Host "Searched paths:" -ForegroundColor Yellow
+          foreach ($p in $possiblePaths) {
+            Write-Host "  - $p" -ForegroundColor Yellow
+          }
+          # List what was actually built
+          Write-Host "Contents of native/build/:" -ForegroundColor Yellow
+          if (Test-Path "native/build") {
+            Get-ChildItem -Path "native/build" -Recurse | ForEach-Object {
+              Write-Host "  $($_.FullName)" -ForegroundColor Gray
+            }
+          } else {
+            Write-Host "  native/build/ directory does not exist" -ForegroundColor Red
+          }
           exit 1
         }
     

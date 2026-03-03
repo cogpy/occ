@@ -62,7 +62,18 @@ jobs:
         
         if [ -z "$GIT_PAT" ]; then
           echo "❌ Error: GIT_PAT secret not found!"
-          echo "Please add the git_pat secret to repository secrets"
+          echo "Please add the GIT_PAT secret to the o9nn org or repository secrets."
+          echo "Required PAT scopes: repo, admin:org, workflow"
+          echo "Create at: https://github.com/settings/tokens/new"
+          exit 1
+        fi
+        
+        # Validate PAT before using it
+        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token ${GIT_PAT}" https://api.github.com/user)
+        if [ "$HTTP_STATUS" != "200" ]; then
+          echo "❌ Error: GIT_PAT is invalid or expired (HTTP $HTTP_STATUS)"
+          echo "Please regenerate the PAT and update the GIT_PAT secret."
+          echo "Create at: https://github.com/settings/tokens/new"
           exit 1
         fi
         
@@ -70,7 +81,7 @@ jobs:
         git config --global credential.helper store
         echo "https://x-access-token:${GIT_PAT}@github.com" > ~/.git-credentials
         
-        echo "✓ Git PAT authentication configured"
+        echo "✓ Git PAT authentication configured and validated"
     
     - name: Add Target Remote
       run: |
