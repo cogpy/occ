@@ -45,6 +45,7 @@ OPTION(BUILD_COGGML "Build CogGML self-aware microkernel" ON)
 OPTION(BUILD_COGSELF "Build CogSelf AGI synergy framework" ON)
 OPTION(BUILD_ATOMSPACE_ACCELERATOR "Build AtomSpace accelerator inference engine" ON)
 OPTION(BUILD_AGENTIC_CHATBOTS "Build agentic chatbots integration" ON)
+OPTION(BUILD_ENTELECHY "Build Ontogenetic Entelechy (Cognitive City / Civic Angel / AFI)" ON)
 
 # Tensor Logic components
 OPTION(BUILD_ATEN "Build ATen tensor library" ON)
@@ -215,6 +216,12 @@ IF(BUILD_COGSELF AND BUILD_COGGML)
     add_subdirectory(cogself)
 ENDIF()
 
+# Ontogenetic Entelechy - Reactor Core: arc-vortex + arc-helix + arc-halo => cyc-phoenix
+IF(BUILD_ENTELECHY AND BUILD_COGSELF)
+    MESSAGE(STATUS "Building Ontogenetic Entelechy (Cognitive City / Civic Angel / AFI)...")
+    add_subdirectory(entelechy)
+ENDIF()
+
 # External integration packages
 IF(BUILD_GNUCASH AND BUILD_ATOMSPACE)
     MESSAGE(STATUS "Building Gnucash cognitive accounting integration...")
@@ -282,6 +289,7 @@ MESSAGE(STATUS "")
 MESSAGE(STATUS "Cognitive Architecture Components:")
 MESSAGE(STATUS "CogGML Microkernel (self-aware shards): ${BUILD_COGGML}")
 MESSAGE(STATUS "CogSelf AGI Framework: ${BUILD_COGSELF}")
+MESSAGE(STATUS "Ontogenetic Entelechy (Civic Angel / AFI): ${BUILD_ENTELECHY}")
 MESSAGE(STATUS "AtomSpace Accelerator (inference engine): ${BUILD_ATOMSPACE_ACCELERATOR}")
 MESSAGE(STATUS "Agentic Chatbots: ${BUILD_AGENTIC_CHATBOTS}")
 MESSAGE(STATUS "")
