@@ -29,6 +29,7 @@ set(COGSELF_SOURCES
     src/agi_goal_tracker.cpp
     src/cogprime_identity.cpp
     src/distributed_identity.cpp
+    src/unified_self_model.cpp
 )
 
 # CogSelf library headers
@@ -38,6 +39,7 @@ set(COGSELF_HEADERS
     include/cogself/agi_goal_tracker.h
     include/cogself/cogprime_identity.h
     include/cogself/distributed_identity.h
+    include/cogself/unified_self_model.h
 )
 
 # Build CogSelf shared library
