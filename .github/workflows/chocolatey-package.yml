@@ -257,7 +257,7 @@ jobs:
         
         if ($package) {
           Write-Host "Testing installation of: $($package.Name)" -ForegroundColor Yellow
-          choco install $package.Name -s . -y --force
+          choco install $env:PACKAGE_NAME -s . -y --force
           
           Write-Host "✓ Package installed successfully" -ForegroundColor Green
           

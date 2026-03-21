@@ -236,8 +236,19 @@ jobs:
             }
 
             git commit -m "chore: Vendor CogUtil (source hash: $hash) - rebuilt due to source changes"
-            git push origin HEAD:${{ github.ref_name }}
-            Write-Host "Committed CogUtil" -ForegroundColor Green
+
+            # Retry push with rebase to handle concurrent job conflicts
+            $maxRetries = 3
+            for ($i = 1; $i -le $maxRetries; $i++) {
+              git pull --rebase origin ${{ github.ref_name }} 2>&1 | Out-Null
+              git push origin HEAD:${{ github.ref_name }}
+              if ($LASTEXITCODE -eq 0) {
+                Write-Host "Committed CogUtil" -ForegroundColor Green
+                break
+              }
+              Write-Host "Push attempt $i failed, retrying..." -ForegroundColor Yellow
+              Start-Sleep -Seconds (5 * $i)
+            }
           }
 
       - name: Upload CogUtil artifact
@@ -314,7 +325,16 @@ jobs:
           $changes = git status --porcelain prebuilt/occ/
           if ($changes) {
             git commit -m "chore: Vendor AtomSpace (rebuilt due to changes)"
-            git push origin HEAD:${{ github.ref_name }}
+
+            # Retry push with rebase to handle concurrent job conflicts
+            $maxRetries = 3
+            for ($i = 1; $i -le $maxRetries; $i++) {
+              git pull --rebase origin ${{ github.ref_name }} 2>&1 | Out-Null
+              git push origin HEAD:${{ github.ref_name }}
+              if ($LASTEXITCODE -eq 0) { break }
+              Write-Host "Push attempt $i failed, retrying..." -ForegroundColor Yellow
+              Start-Sleep -Seconds (5 * $i)
+            }
           }
 
       - name: Upload AtomSpace artifact
@@ -391,7 +411,16 @@ jobs:
           $changes = git status --porcelain prebuilt/occ/
           if ($changes) {
             git commit -m "chore: Vendor Moses (rebuilt due to changes)"
-            git push origin HEAD:${{ github.ref_name }}
+
+            # Retry push with rebase to handle concurrent job conflicts
+            $maxRetries = 3
+            for ($i = 1; $i -le $maxRetries; $i++) {
+              git pull --rebase origin ${{ github.ref_name }} 2>&1 | Out-Null
+              git push origin HEAD:${{ github.ref_name }}
+              if ($LASTEXITCODE -eq 0) { break }
+              Write-Host "Push attempt $i failed, retrying..." -ForegroundColor Yellow
+              Start-Sleep -Seconds (5 * $i)
+            }
           }
 
   # =================================================================
@@ -469,7 +498,16 @@ jobs:
           $changes = git status --porcelain prebuilt/occ/
           if ($changes) {
             git commit -m "chore: Vendor CogServer (rebuilt due to changes)"
-            git push origin HEAD:${{ github.ref_name }}
+
+            # Retry push with rebase to handle concurrent job conflicts
+            $maxRetries = 3
+            for ($i = 1; $i -le $maxRetries; $i++) {
+              git pull --rebase origin ${{ github.ref_name }} 2>&1 | Out-Null
+              git push origin HEAD:${{ github.ref_name }}
+              if ($LASTEXITCODE -eq 0) { break }
+              Write-Host "Push attempt $i failed, retrying..." -ForegroundColor Yellow
+              Start-Sleep -Seconds (5 * $i)
+            }
           }
         continue-on-error: true
 
@@ -553,7 +591,16 @@ jobs:
           $changes = git status --porcelain
           if ($changes) {
             git commit -m "chore: Update vendored builds manifest with source hashes"
-            git push origin HEAD:${{ github.ref_name }}
+
+            # Retry push with rebase to handle concurrent job conflicts
+            $maxRetries = 3
+            for ($i = 1; $i -le $maxRetries; $i++) {
+              git pull --rebase origin ${{ github.ref_name }} 2>&1 | Out-Null
+              git push origin HEAD:${{ github.ref_name }}
+              if ($LASTEXITCODE -eq 0) { break }
+              Write-Host "Push attempt $i failed, retrying..." -ForegroundColor Yellow
+              Start-Sleep -Seconds (5 * $i)
+            }
           }
 
       - name: Summary

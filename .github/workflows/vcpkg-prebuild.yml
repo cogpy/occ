@@ -134,12 +134,25 @@ jobs:
 
           # In manifest mode, just run vcpkg install with triplet
           # It will read vcpkg.json and install all dependencies
-          & $vcpkgExe install --triplet x64-windows --x-install-root="$env:VCPKG_INSTALLED_DIR"
-
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "All packages installed successfully!" -ForegroundColor Green
-          } else {
-            Write-Host "Some packages may have failed. Exit code: $LASTEXITCODE" -ForegroundColor Yellow
+          # Retry up to 3 times to handle transient download failures (e.g. HTTP 502)
+          $maxRetries = 3
+          $success = $false
+          for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+            Write-Host "vcpkg install attempt $attempt of $maxRetries..." -ForegroundColor Yellow
+            & $vcpkgExe install --triplet x64-windows --x-install-root="$env:VCPKG_INSTALLED_DIR"
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "All packages installed successfully!" -ForegroundColor Green
+              $success = $true
+              break
+            }
+            Write-Host "Attempt $attempt failed (exit code $LASTEXITCODE)." -ForegroundColor Yellow
+            if ($attempt -lt $maxRetries) {
+              Write-Host "Retrying in 30 seconds..." -ForegroundColor Yellow
+              Start-Sleep -Seconds 30
+            }
+          }
+          if (-not $success) {
+            Write-Host "All $maxRetries vcpkg install attempts failed. Continuing to verification — missing packages will be reported below." -ForegroundColor Yellow
           }
 
       - name: Verify Tier 1 Installation
@@ -266,12 +279,25 @@ jobs:
           $vcpkgExe = Join-Path $vcpkgRoot "vcpkg.exe"
 
           # Manifest mode - just run vcpkg install
-          & $vcpkgExe install --triplet x64-windows --x-install-root="$env:VCPKG_INSTALLED_DIR"
-
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "Tier 2 packages installed!" -ForegroundColor Green
-          } else {
-            Write-Host "Some packages may have failed. Exit code: $LASTEXITCODE" -ForegroundColor Yellow
+          # Retry up to 3 times to handle transient download failures (e.g. HTTP 502)
+          $maxRetries = 3
+          $success = $false
+          for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+            Write-Host "vcpkg install attempt $attempt of $maxRetries..." -ForegroundColor Yellow
+            & $vcpkgExe install --triplet x64-windows --x-install-root="$env:VCPKG_INSTALLED_DIR"
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "Tier 2 packages installed!" -ForegroundColor Green
+              $success = $true
+              break
+            }
+            Write-Host "Attempt $attempt failed (exit code $LASTEXITCODE)." -ForegroundColor Yellow
+            if ($attempt -lt $maxRetries) {
+              Write-Host "Retrying in 30 seconds..." -ForegroundColor Yellow
+              Start-Sleep -Seconds 30
+            }
+          }
+          if (-not $success) {
+            Write-Host "All $maxRetries vcpkg install attempts failed. Continuing to verification — missing packages will be reported below." -ForegroundColor Yellow
           }
 
       - name: Verify Tier 2 Installation
@@ -389,10 +415,29 @@ jobs:
           $startTime = Get-Date
 
           # Manifest mode - install all packages from vcpkg.json
-          & $vcpkgExe install --triplet x64-windows --x-install-root="$env:VCPKG_INSTALLED_DIR"
+          # Retry up to 3 times to handle transient download failures (e.g. HTTP 502)
+          $maxRetries = 3
+          $success = $false
+          for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+            Write-Host "vcpkg install attempt $attempt of $maxRetries..." -ForegroundColor Yellow
+            & $vcpkgExe install --triplet x64-windows --x-install-root="$env:VCPKG_INSTALLED_DIR"
+            if ($LASTEXITCODE -eq 0) {
+              $success = $true
+              break
+            }
+            Write-Host "Attempt $attempt failed (exit code $LASTEXITCODE)." -ForegroundColor Yellow
+            if ($attempt -lt $maxRetries) {
+              Write-Host "Retrying in 30 seconds..." -ForegroundColor Yellow
+              Start-Sleep -Seconds 30
+            }
+          }
 
           $elapsed = (Get-Date) - $startTime
-          Write-Host "All packages completed in $([math]::Round($elapsed.TotalMinutes, 1)) minutes" -ForegroundColor Green
+          if ($success) {
+            Write-Host "All packages completed in $([math]::Round($elapsed.TotalMinutes, 1)) minutes" -ForegroundColor Green
+          } else {
+            Write-Host "All $maxRetries vcpkg install attempts failed after $([math]::Round($elapsed.TotalMinutes, 1)) minutes. Continuing to verification — missing packages will be reported below." -ForegroundColor Yellow
+          }
 
           # Verify key packages
           $verified = $true

@@ -398,24 +398,24 @@ jobs:
 
           Write-Host "Pushing to $branch..." -ForegroundColor Cyan
 
-          # Push with retries
+          # Push with retries and rebase to handle concurrent conflicts
           $maxRetries = 4
-          $retryDelay = 2
+          $retryDelay = 5
 
           for ($i = 1; $i -le $maxRetries; $i++) {
-            try {
-              git push origin HEAD:$branch
+            git pull --rebase origin $branch 2>&1 | Out-Null
+            git push origin HEAD:$branch
+            if ($LASTEXITCODE -eq 0) {
               Write-Host "Push successful!" -ForegroundColor Green
               break
-            } catch {
-              if ($i -eq $maxRetries) {
-                Write-Host "Push failed after $maxRetries attempts" -ForegroundColor Red
-                throw
-              }
-              Write-Host "Push attempt $i failed, retrying in $retryDelay seconds..." -ForegroundColor Yellow
-              Start-Sleep -Seconds $retryDelay
-              $retryDelay *= 2
             }
+            if ($i -eq $maxRetries) {
+              Write-Host "Failed to push vendored dependencies to $branch after $maxRetries attempts. The prebuilt artifacts are available as a workflow artifact backup." -ForegroundColor Red
+              exit 1
+            }
+            Write-Host "Push attempt $i failed, retrying in $retryDelay seconds..." -ForegroundColor Yellow
+            Start-Sleep -Seconds $retryDelay
+            $retryDelay *= 2
           }
 
       - name: Upload as artifact (backup)
