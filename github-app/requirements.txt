@@ -12,7 +12,7 @@ cryptography==46.0.5
 
 # HTTP Client
 httpx==0.26.0
-requests==2.32.4
+requests==2.33.0
 
 # Data Validation
 pydantic==2.5.3
