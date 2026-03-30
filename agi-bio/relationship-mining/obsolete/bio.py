@@ -642,7 +642,7 @@ class Bio:
                 else:
                     total_est = 'thinking about it...'
                 print("processed " + str(i) + ' sets of ' + str(
-                      num_sets) + ' in ' + str(timing) + ' minutes.' \
+                      num_sets) + ' in ' + str(timing) + ' minutes.'
                     + ' Total estimated: ' + str(total_est) + ' minutes')
 
                 # + ' Estimated remaining: ' + str(remaining_time) + ' minutes' \
@@ -764,7 +764,7 @@ class Bio:
             if i % 1000000 == 0:
                 self.link_creation_time = int((time.clock() - start) / 60)
                 print("processed " + str(i) + ' subset relationships of ' + str(
-                      num_subsets) + ' in ' \
+                      num_subsets) + ' in '
                     + str(self.link_creation_time) + ' minutes')
 
             importance_score = self.relationship_importance_score[set_pair]
