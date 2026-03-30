@@ -27,7 +27,7 @@ elapsed = timeit.timeit("test_operation()",
                         number=1)
 
 def report():
-    print(("{0} seconds elapsed performing {1} repeated calls = {2} calls / sec".\)
-          format(elapsed, NUMBER_OF_ITERATIONS, NUMBER_OF_ITERATIONS / elapsed))
+    print(("{0} seconds elapsed performing {1} repeated calls = {2} calls / sec".
+          format(elapsed, NUMBER_OF_ITERATIONS, NUMBER_OF_ITERATIONS / elapsed)))
 
 report()

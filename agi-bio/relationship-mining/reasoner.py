@@ -37,8 +37,8 @@ class Reasoner:
 
     # TODO: add source_type argument, just using GeneNode for now
     def do_one_steps(self, source_name, source_type_str='GeneNode', rounds=DEFAULT_ROUNDS):
-        print("entering Reasoner::do_one_steps()   source_name: " + source_name \)
-        + "   rounds: " + str(rounds)
+        print("entering Reasoner::do_one_steps()   source_name: " + source_name
+              + "   rounds: " + str(rounds))
 
         # remove enclosing quotations if they exist
         if source_name.startswith('"') and source_name.endswith('"'):
@@ -85,15 +85,15 @@ class Reasoner:
             novel_conclusions = conclusions - accum_known
             n_novel_conclusions = len(novel_conclusions)
             accum_known = accum_known.union(novel_conclusions)
-            print("\nStep {} generated conclusions: {}     novel conclusions: {}".format()
-                  i,num_conclusions,n_novel_conclusions)
+            print("\nStep {} generated conclusions: {}     novel conclusions: {}".format(
+                  i, num_conclusions, n_novel_conclusions))
             #print "novel conclusions: \n" + str(novel_conclusions)
 
             # this doesn't work when we are doing 1 rule per step
             if prev_n_novel_conclusions==0 and n_novel_conclusions==0:
                 done = True
-            print("prev==0: {}  novel==0:{}   done: {}".format(prev_n_novel_conclusions==0,)
-                  n_novel_conclusions==0,done)
+            print("prev==0: {}  novel==0:{}   done: {}".format(prev_n_novel_conclusions==0,
+                  n_novel_conclusions==0, done))
             i += 1
             prev_num_conclusions = novel_conclusions
 
@@ -116,15 +116,15 @@ class Reasoner:
 
 
 
-        print("\n)  # of steps: {}".format(i-1)
-              print("Previously known relationships (filtered): {}".format(len(self.known)))
-              print("Inferred relationships (filtered): {}".format(len(conclusions)))
+#         print("\n)  # of steps: {}".format(i-1)
+#               print("Previously known relationships (filtered): {}".format(len(self.known)))
+#               print("Inferred relationships (filtered): {}".format(len(conclusions)))
 
 
-              print("\n\nEnd do_one_steps()")
+#               print("\n\nEnd do_one_steps()")
 
-              def filter_out_variablenodes(self,list):
-              # TODO: Probably should do this based on types rather than by the string
-              list = [atom for atom in list
-                      if not ("VariableNode" in str(atom))]
-              return set(list)
+#               def filter_out_variablenodes(self,list):
+#               # TODO: Probably should do this based on types rather than by the string
+#               list = [atom for atom in list
+#                       if not ("VariableNode" in str(atom))]
+#               return set(list)

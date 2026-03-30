@@ -201,7 +201,7 @@ def parse_links(txt: str, tokens: list, offset: int) -> list:
     start_pos = 1
     end_pos = txt.find("]")
 
-    q = re.compile('(\d+)\s(\d+)\s\d+\s\(.+\)')
+    q = re.compile(r'(\d+)\s(\d+)\s\d+\s\(.+\)')
 
     while end_pos - start_pos > 0:
         mm = q.match(txt[start_pos:end_pos:])
@@ -226,7 +226,7 @@ def parse_postscript(text: str, options: int) -> ([], []):
     :param options      Bit mask, representing different parsing options. See `optconst.py` for details.
     :return:            Tuple of two lists: (tokens, links).
     """
-    p = re.compile('\[(\(.+?\)+?)\]\[(.*?)\]\[0\]', re.S)
+    p = re.compile(r'\[(\(.+?\)+?)\]\[(.*?)\]\[0\]', re.S)
 
     m = p.match(text.replace("\n", ""))
 

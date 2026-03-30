@@ -30,7 +30,7 @@ def main(argv):
                                                     string without spaces between the characters, e.g. "$%^&" would eliminate
                                                     only those 4 characters from appearances in the text.
             boundary_chars		Characters tokenized if token boundaries, only inside.
-                                                    Given as chars separated by space, e.g. "\" ' \."
+                                                    Given as chars separated by space, e.g. "\" ' \\."
                                                     Default: apostrophe, double quote, dot
             tokenized_chars		Characters tokenized everywhere. Given as a string without spaces between 
                                                     characters, e.g. "$%^&"
@@ -131,7 +131,7 @@ def main(argv):
     Execute_Precleaner(inputdir, outputdir, **kwargs)
 
 def Execute_Precleaner(inputdir: str, outputdir: str, invalid_chars: str = "",
-                       boundary_chars: str = u'\' " \.', tokenized_chars: str = u"[](){}<>,:;/\$#&+=?!¡¿",
+                       boundary_chars: str = u'\' " \\.', tokenized_chars: str = u"[](){}<>,:;/\\$#&+=?!¡¿",
                        suffix_list: str = "", max_tokens: int = 25, max_chars: int = 25, 
                        sentence_invalid_symbols: str = "",	sentence_invalid_tokens: list = [],
                        token_invalid_symbols: str = "", convert_lowercase: bool = True,
@@ -384,7 +384,7 @@ def Substitute_Dates(sentence):
     form1 = r"(\b" + mm + r"/" + dd + r"(/" + y + r")?\b)"
     form2 = r"(\b" + YY + r"/" + mm + r"/" + dd + r"\b)"
     form3 = r"(\b" + YY + r"-" + mm + r"(-" + dd + r")?\b)"
-    form4 = r"(\b" + dd + r"[\.-]" + mm + "[\.-](" + YY + r"|" + yy + r")\b)"
+    form4 = r"(\b" + dd + r"[\.-]" + mm + r"[\.-](" + YY + r"|" + yy + r")\b)"
     form5 = r"(\b" + dd + r"[ \.-]?" + m + r"([ \.-]?" + y + r")?\b)"
     form6 = r"(\b" + m + r"[ \.-]?" + YY + r"\b)"
     form7 = r"(\b" + YY + r"[ \.-]?" + m + r"\b)"

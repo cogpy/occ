@@ -115,13 +115,13 @@ def emote(name_node, magnitude_node, duration_node, blend_node):
     name = name_node.name
 
     # ugly hack because blender animation names are different
-    if name is "happy":
+    if name == "happy":
         name = "happy.001"
 
-    if name is "worry":
+    if name == "worry":
         name = "irritated"
 
-    if name is "smile":
+    if name == "smile":
         name = "happy.002"
 
     magnitude = float(magnitude_node.name)

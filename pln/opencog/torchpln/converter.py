@@ -4,7 +4,7 @@ import shutil
 import sys
 
 
-rep = re.compile("\((Grounded[a-zA-Z]+)\s*?\"\s*?(scm):\s*(.*?)\"\s*?\)")
+rep = re.compile(r"\((Grounded[a-zA-Z]+)\s*?\"\s*?(scm):\s*(.*?)\"\s*?\)")
 
 def replace(path, target_path):
     os.makedirs(os.path.dirname(target_path), exist_ok=True)
