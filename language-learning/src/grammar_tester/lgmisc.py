@@ -45,9 +45,9 @@ def get_dir_name(file_name: str) -> (str, str):
     :return: tuple (template_grammar_directory_name, grammar_directory_name)
     """
     if file_name.endswith(".db"):
-        regex_pattern = '(/?([+._:\w\d\[\]=~-]*/)*)((\S+))\.db'
+        regex_pattern = r'(/?([+._:\w\d\[\]=~-]*/)*)((\S+))\.db'
     else:
-        regex_pattern = '(/?([+._:\w\d\[\]=~-]*/)*)(([a-zA-Z-]+)_[0-9]{1,6}C_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9A-F]{4})\.(4\.0\.dict)'
+        regex_pattern = r'(/?([+._:\w\d\[\]=~-]*/)*)(([a-zA-Z-]+)_[0-9]{1,6}C_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9A-F]{4})\.(4\.0\.dict)'
 
     p = re.compile(regex_pattern)
     m = p.match(file_name)

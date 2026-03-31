@@ -19,8 +19,8 @@ from opencog.web.api.utilities import get_atoms_by_name
 try:
     from graphviz import dot
 except ImportError:
-    print(("DOT graph description format option not enabled in REST API. To " \)
-          "enable, install the dependencies listed here:\n" \
+    print("DOT graph description format option not enabled in REST API. To "
+          "enable, install the dependencies listed here:\n"
           "https://github.com/opencog/opencog/tree/master/opencog/python/graph_description#prerequisites")
 
 "AtomSpace management functionality"

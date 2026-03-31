@@ -34,7 +34,7 @@ class PipelineComponentException(Exception):
         if exception_obj is None:
             return ""
 
-        name_pattern = re.compile("<class '(\w+)'>", re.S)
+        name_pattern = re.compile(r"<class '(\w+)'>", re.S)
         result_list = re.findall(name_pattern, str(exception_obj.__class__))
         return result_list[0] if len(result_list) > 0 else ""
 

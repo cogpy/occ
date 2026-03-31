@@ -65,7 +65,7 @@ class PreCleanerTestCase(unittest.TestCase):
         sentence_ref = "This  i s  u nusual for a sentenc e "
         self.assertEqual(Char_Tokenizer(sentence, boundary_chars, ""), sentence_ref)
 
-        boundary_chars = "\" ' \."
+        boundary_chars = "\" ' \\."
         sentence2 = "We're testin' another. \"sentence\"."
         sentence2_ref = "We're testin '  another .   \" sentence \" ."
         self.assertEqual(Char_Tokenizer(sentence2, boundary_chars, ""), sentence2_ref)

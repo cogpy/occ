@@ -325,9 +325,8 @@ class Bio:
         if not load_scm(self.atomspace,filepath):
             print("*** Error loading scheme file: {0}".format(filepath))
         else:
-            print("Loaded subset relationships in {0} seconds".format()
-                  int(time.clock()-start)
-                  )
+            print("Loaded subset relationships in {0} seconds".format(
+                  int(time.clock()-start)))
 
     def get_go_term_node(self):
         """
@@ -376,8 +375,8 @@ class Bio:
             #     print "Unprocessed sets: {0}".format(len(unprocessed_sets))
 
         self.populate_time = int(time.clock() - start)
-        print("Completed populating sets with descendent members in " \)
-        + str(self.populate_time) + " seconds"
+        print("Completed populating sets with descendent members in "
+              + str(self.populate_time) + " seconds")
 
 
     def get_inheritance_children_of(self,parent):
@@ -434,11 +433,11 @@ class Bio:
         members = self.get_members_of(geneset)
 
         if V:
-            print("pre-members " + geneset.name + ": ";)
+            print("pre-members " + geneset.name + ": ")
             print(sorted_atom_names(members))
-            print("\n" + geneset.name + " children categories: " \)
-            + sorted_atom_names(
-                children)  #" ".join([child.name for child in children])
+            print("\n" + geneset.name + " children categories: "
+                  + sorted_atom_names(
+                      children))  #" ".join([child.name for child in children])
 
         for child in children:
             if V:
@@ -451,14 +450,14 @@ class Bio:
                 if V:
                     print("child " + child.name + " had already been processed")
                     print(child.name + " members: ")
-                    print(sorted_atom_names()
-                          child_members)  #" ".join([member.name for member in child_members])
+                    print(sorted_atom_names(
+                          child_members))  #" ".join([member.name for member in child_members])
             # print "members for child " + child.name + ": "
             # print child_members
             members = members.union(child_members)
 
         if V:
-            print("\npost members " + geneset.name + ":";)
+            print("\npost members " + geneset.name + ":")
             print(sorted_atom_names(members))
 
         self.set_members_with_descendents_dict[geneset] = members
@@ -642,9 +641,10 @@ class Bio:
                     total_est = timing + remaining_time
                 else:
                     total_est = 'thinking about it...'
-                print("processed " + str(i) + ' sets of ' + str()
-                      num_sets) + ' in ' + str(timing) + ' minutes.' \
-                    + ' Total estimated: ' + str(total_est) + ' minutes'
+                print("processed " + str(i) + ' sets of ' + str(
+                      num_sets) + ' in ' + str(timing) + ' minutes.'
+                    + ' Total estimated: ' + str(total_est) + ' minutes')
+
                 # + ' Estimated remaining: ' + str(remaining_time) + ' minutes' \
                 # + '  (Total est: ' + str(timing+remaining_time)
 
@@ -653,17 +653,18 @@ class Bio:
                 # print "\nprocessed " + str(i) + ' sets of ' + str(num_sets) + ' in ' + str(timing) + ' seconds'
 
         self.subset_time = int(time.clock() - start)
-        print('Gene category Subset truth values completed in ' + str()
-              self.subset_time) + " seconds"
-        print('Created {:,} subset relationships above cuttoff strength value.'.format()
-              len(self.subset_values))
-        print("\nSubset value percentiles: " + str()
+        print('Gene category Subset truth values completed in ' + str(
+              self.subset_time) + " seconds")
+
+        print('Created {:,} subset relationships above cuttoff strength value.'.format(
+              len(self.subset_values)))
+        print("\nSubset value percentiles: " + str(
               np.percentile(self.subset_values.values(),
-                            range(10, 100, 10))) + "\n"
-        print("Subset importance score percentile: {0}\n".format()
+                            range(10, 100, 10))) + "\n")
+        print("Subset importance score percentile: {0}\n".format(
               [int(x) for x in
                np.percentile(self.relationship_importance_score.values(),
-                             range(10, 100, 10))])
+                             range(10, 100, 10))]))
 
         # perist results to file
         f = open(SUBSET_VALUES_FILE, 'wb')
@@ -748,13 +749,13 @@ class Bio:
             self.relationship_importance_score.values(),
             IMPORTANCE_SCORE_PERCENTILE_CUTOFF * 100)
         # print "importance cuttoff: {0}".format(importance_cuttoff)
-        print("Creating subset links. Found " + str()
-              num_subsets) + " new subset relationships."
-        print("TV.strength cuttoff value: {0}".format()
-              SUBSET_LINK_TV_STRENGTH_CUTOFF)
-        print("Filtering found relationships with importance score cuttoff {0} ({1}th percentile)".format()
-              importance_cuttoff, int(IMPORTANCE_SCORE_PERCENTILE_CUTOFF * 100)
-              )
+        print("Creating subset links. Found " + str(
+              num_subsets) + " new subset relationships.")
+
+        print("TV.strength cuttoff value: {0}".format(
+              SUBSET_LINK_TV_STRENGTH_CUTOFF))
+        print("Filtering found relationships with importance score cuttoff {0} ({1}th percentile)".format(
+              importance_cuttoff, int(IMPORTANCE_SCORE_PERCENTILE_CUTOFF * 100)))
         subset_relationships = []
         start = time.clock()
         i = 1
@@ -762,9 +763,10 @@ class Bio:
         for set_pair in self.subset_values:
             if i % 1000000 == 0:
                 self.link_creation_time = int((time.clock() - start) / 60)
-                print("processed " + str(i) + ' subset relationships of ' + str()
-                      num_subsets) + ' in ' \
-                    + str(self.link_creation_time) + ' minutes'
+                print("processed " + str(i) + ' subset relationships of ' + str(
+                      num_subsets) + ' in '
+                    + str(self.link_creation_time) + ' minutes')
+
             importance_score = self.relationship_importance_score[set_pair]
             if importance_score < importance_cuttoff:
                 continue
@@ -778,10 +780,11 @@ class Bio:
             i = i + 1
 
         self.link_creation_time = int(time.clock() - start)
-        print("completed creating subsets in " + str()
-              self.link_creation_time) + " seconds"
-        print("{0} SubSet relationships created after importance score filtering".format()
-              created_count)
+        print("completed creating subsets in " + str(
+              self.link_creation_time) + " seconds")
+
+        print("{0} SubSet relationships created after importance score filtering".format(
+              created_count))
 
         # write to scheme file:
         f = open(SUBSET_SCHEME_FILE, 'wb')
@@ -836,8 +839,9 @@ class Bio:
                 n2 = self.a.get_atoms_by_name(types.ConceptNode, name2)[0]
                 subset_values[(n1, n2)] = subset_values2[key]
 
-        print("converted to atom pair key format in " + str()
-              time.clock() - start) + ' seconds'
+        print("converted to atom pair key format in " + str(
+              time.clock() - start) + ' seconds')
+
 
         # print some out
         # for i in range(10):
@@ -917,18 +921,18 @@ if __name__ == '__main__':
 
     print("\n=========================================================")
     print("final number of atoms in atomspace: " + str(bio.a.size()))
-    if hasattr(bio, 'scheme_load_time'): print "loaded scheme files in " + str(
-        bio.scheme_load_time) + " seconds"
+    if hasattr(bio, 'scheme_load_time'): print("loaded scheme files in " + str(
+        bio.scheme_load_time) + " seconds")
     if hasattr(bio,
-               'populate_time'): print "populated genesets with descendent members in " + str(
-        bio.populate_time) \
-        + " seconds"
+               'populate_time'): print("populated genesets with descendent members in " + str(
+        bio.populate_time)
+        + " seconds")
     if hasattr(bio,
-               'subset_time'): print "calculated subset truth values in " + str(
-        bio.subset_time) + " seconds"
+               'subset_time'): print("calculated subset truth values in " + str(
+        bio.subset_time) + " seconds")
     if hasattr(bio,
-               'link_creation_time'): print "completed creating subsets in " + str(
-        bio.link_creation_time) + " seconds"
+               'link_creation_time'): print("completed creating subsets in " + str(
+        bio.link_creation_time) + " seconds")
 
 
 

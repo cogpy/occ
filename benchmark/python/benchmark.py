@@ -439,8 +439,8 @@ def do_test(prep, test, description, op_time_adjustment):
         op_time = "{0:.03f}".format(adjusted_time * 1000000 / ops)
         ops_sec = "{0:,d}".format(int(ops / adjusted_time))
         if args.columns:
-            print("{0: <40} {1: >12}µs {2: >15}".format(description, op_time,)
-                  ops_sec)
+            print("{0: <40} {1: >12}µs {2: >15}".format(description, op_time,
+                  ops_sec))
         else:
             print("  Op time: {0: >12}µs".format(op_time))
             print("  Ops/sec: {0: >12}".format(ops_sec))

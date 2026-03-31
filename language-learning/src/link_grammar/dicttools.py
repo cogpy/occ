@@ -122,7 +122,7 @@ class LGDictionaryRuleSpace:
 
             for old_disjunct in old_disjuncts:
 
-                old_connectors = re.findall(re.compile("(\w+)[-+]", re.I), old_disjunct)
+                old_connectors = re.findall(re.compile(r"(\w+)[-+]", re.I), old_disjunct)
 
                 if len(set(old_connectors) & connector_set) != len(old_connectors):
                     continue

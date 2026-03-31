@@ -122,9 +122,9 @@ class Node:
                 m = np.mean(np.mean(activations,1))
                 for K in range(activations.shape[0]):
                         self.nodes[I][J].belief[K,0] = max(0, (activations[K,0] - 0.025))
-                print(self.nodes[0][0].belief""")
+                print(self.nodes[0][0].belief)
                 """
-                def produce_belief(self, sqdiff):
+                # def produce_belief(self, sqdiff):
         """
                 # Update belief state.
                 """
@@ -137,4 +137,4 @@ class Node:
             normdist = 1 / normdist
             self.belief = (normdist / sum(normdist)).reshape(1, self.CENTS)
 
-            """
+            # """

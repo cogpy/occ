@@ -30,9 +30,9 @@ output = moses.run(input=input_data, python=True)
 
 print("\nTraining data:\n\n{0}".format(input_data))
 
-print("\nThe following program was learned:" \)
-"\n-------------------\n\n{0}".\
-    format(output[0].program)
+print("\nThe following program was learned:"
+      "\n-------------------\n\n{0}".
+      format(output[0].program))
 
 model = output[0].eval
 
