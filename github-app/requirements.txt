@@ -8,11 +8,11 @@ python-multipart==0.0.22
 # GitHub Integration
 PyGithub==2.1.1
 PyJWT==2.8.0
-cryptography==46.0.5
+cryptography==46.0.7
 
 # HTTP Client
 httpx==0.26.0
-requests==2.32.4
+requests==2.33.0
 
 # Data Validation
 pydantic==2.5.3
