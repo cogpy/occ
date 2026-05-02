@@ -113,6 +113,38 @@
                           "cogserver" "matrix" "learn" "agents" "sensory" 
                           "agentic-chatbots" "cogself"))
               (format #t "=====================================~%~%")
+     (list
+      #:tests? #f
+      #:configure-flags
+      #~(list "-DCMAKE_BUILD_TYPE=Release"
+              "-DBUILD_COGUTIL=ON"
+              "-DBUILD_ATOMSPACE=ON"
+              "-DBUILD_COGSERVER=ON"
+              "-DBUILD_MATRIX=ON"
+              "-DBUILD_LEARN=ON"
+              "-DBUILD_AGENTS=ON"
+              "-DBUILD_SENSORY=ON"
+              "-DBUILD_COGGML=OFF"
+              "-DBUILD_COGSELF=OFF"
+              "-DBUILD_ATOMSPACE_ACCELERATOR=OFF"
+              "-DBUILD_AGENTIC_CHATBOTS=OFF"
+              "-DBUILD_ATOMSPACE_STORAGE=OFF"
+              "-DBUILD_ATOMSPACE_EXTENSIONS=OFF"
+              "-DBUILD_GNUCASH=OFF"
+              "-DBUILD_KOBOLDCPP=OFF"
+              "-DBUILD_APHRODITE=OFF"
+              (string-append "-DCMAKE_INSTALL_PREFIX=" #$output))
+      #:phases
+      #~(modify-phases %standard-phases
+          (add-before 'configure 'check-dependencies
+            (lambda* (#:key inputs outputs #:allow-other-keys)
+              (for-each (lambda (dir)
+                         (if (file-exists? dir)
+                             (format #t "Found directory: ~a~%" dir)
+                             (begin
+                               (format #t "ERROR: Required directory ~a not found~%" dir)
+                               (error "Missing required directory" dir))))
+                       '("cogutil" "atomspace" "cogserver" "matrix" "learn" "agents" "sensory"))
               #t))
           (add-before 'configure 'prepare-build-environment
             (lambda* (#:key inputs outputs #:allow-other-keys)
@@ -236,6 +268,12 @@
               
               (format #t "~%=== Build Artifact Validation Complete ===~%~%")
               #t))
+              (setenv "HOME" (getcwd))
+              (let ((boost (assoc-ref inputs "boost")))
+                (when boost
+                  (setenv "BOOST_ROOT" boost)
+                  (format #t "Set BOOST_ROOT to ~a~%" boost)))
+              #t))
           (replace 'install
             (lambda* (#:key outputs #:allow-other-keys)
               (format #t "~%=== Starting Installation ===~%")
@@ -254,6 +292,9 @@
                      (guile-site (string-append out "/share/guile/site/3.0"))
                      (python (search-input-file inputs "/bin/python3")))
                 (format #t "~%=== Installing Additional Components ===~%")
+                     (share (string-append out "/share/opencog-collection")))
+                
+                (invoke "make" "install")
                 
                 (mkdir-p share)
                 (mkdir-p bin)
@@ -300,6 +341,8 @@
                 (when (file-exists? "app.py")
                   (format #t "Installing app.py...~%")
                   (install-file "app.py" share)
+                (when (file-exists? "../app.py")
+                  (install-file "../app.py" share)
                   (call-with-output-file (string-append bin "/opencog-demo")
                     (lambda (port)
                       (format port "#!/bin/sh~%exec ~a ~a/app.py \"$@\"~%"
@@ -336,6 +379,10 @@
                 ;; List installed files
                 (format #t "~%Installed files in ~a:~%" out)
                 (system* "find" out "-type" "f" "-ls")
+                (when (file-exists? "../README.md")
+                  (install-file "../README.md" share))
+                (when (file-exists? "../requirements.txt")
+                  (install-file "../requirements.txt" share))
                 
                 (format #t "~%=== Installation Validation Complete ===~%~%")
                 #t))))))
@@ -343,6 +390,8 @@
      (list pkg-config
            cmake-minimal
            gcc-toolchain))
+           cmake
+           cxxtest))
     (inputs
      (list python
            python-numpy
@@ -373,6 +422,7 @@ whole, enabling cognitive synergy through the integration of various AI and
 cognitive computing approaches.
 
 Core OpenCog Components:
+The package includes the core OpenCog components:
 @itemize
 @item CogUtil - Base utilities and configuration system for OpenCog
 @item AtomSpace - Hypergraph database and knowledge representation system
@@ -402,6 +452,10 @@ This package is suitable for researchers, developers, and students working on
 artificial general intelligence, cognitive computing, knowledge representation,
 and related fields.")
     (license license:agpl3+)))
+@item Python-based machine learning demonstration using scikit-learn
+@item Complete source for research and development
+@item Development environment for cognitive computing applications
+@end itemize")
+    (license license:gpl3+)))
 
-;; Return the package for building
 opencog-collection
