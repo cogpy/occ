@@ -100,7 +100,15 @@ jobs:
         ERRORS=0
         FILES_CHECKED=0
         
-        for file in $(find . -name "*.py" -type f ! -path "./.git/*" ! -path "./venv/*" ! -path "./.venv/*"); do
+        # Exclude archive/, prebuilt/, external-tools/, and vendor directories with legacy/Python2 code
+        for file in $(find . -name "*.py" -type f \
+          ! -path "./.git/*" \
+          ! -path "./venv/*" \
+          ! -path "./.venv/*" \
+          ! -path "./archive/*" \
+          ! -path "./prebuilt/*" \
+          ! -path "./external-tools/*" \
+          ! -path "./third_party/*"); do
           FILES_CHECKED=$((FILES_CHECKED + 1))
           if ! python3 -m py_compile "$file" 2>/dev/null; then
             echo "❌ Syntax error in: $file"

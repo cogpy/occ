@@ -188,8 +188,9 @@ These workflows were disabled during the Windows-first focus period and have bee
 | `agi-os-debian-build.yml.disabled` | Merged → `ci-debian.yml` | Consolidated |
 | `agi-os-guix-build.yml.disabled` | Merged → `ci-guix.yml` | Consolidated |
 | `agi-os-integration-test.yml.disabled` | Merged → `ci-integration.yml` | Consolidated |
-| `occ-win-build-fast.yml` | Merged → `ci-windows.yml` | Consolidated |
-| `wincogpre.yml` | Merged → `ci-windows.yml` | Consolidated |
+| `occ-win-build.yml.disabled` | Merged → `ci-windows.yml` | Consolidated |
+| `occ-win-build-fast.yml.disabled` | Merged → `ci-windows.yml` | Consolidated |
+| `wincogpre.yml.disabled` | Merged → `ci-windows.yml` | Consolidated |
 | `python-lint.yml.disabled` | Merged → `ci-python-tests.yml` | Consolidated |
 | `python-type-check.yml.disabled` | Merged → `ci-python-tests.yml` | Consolidated |
 | `docker.yml.disabled` | Merged → `ci-docker.yml` | Consolidated |

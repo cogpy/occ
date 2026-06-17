@@ -103,7 +103,10 @@ jobs:
         path: |
           cogutil/build/opencog/*.so*
           cogutil/build/opencog/*.a
+          cogutil/build/**/*.so*
+          cogutil/build/**/*.a
         retention-days: 1
+        if-no-files-found: warn
 
   # Stage 2: Core (atomspace, coggml - requires cogutil)
   build-core:
@@ -138,6 +141,7 @@ jobs:
       with:
         name: cogutil-build
         path: /tmp/cogutil-build
+      continue-on-error: true  # Artifact may not exist; we rebuild from source below
 
     - name: Install CogUtil
       run: |
