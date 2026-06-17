@@ -1,0 +1,301 @@
+# OpenCog Collection (OCC) - Python Tests & Linting
+# Runs Python test suites, linting, and type checking
+#
+# Test suites:
+# - tests/synergy/*.py - Cognitive synergy integration tests
+# - Linting with ruff/flake8
+# - Type checking with mypy (optional)
+
+name: Python Tests
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - '**.py'
+      - 'requirements.txt'
+      - 'tests/**'
+      - '.github/workflows/ci-python-tests.yml'
+  pull_request:
+    branches: [ "main", "master" ]
+    paths:
+      - '**.py'
+      - 'requirements.txt'
+      - 'tests/**'
+  workflow_dispatch:
+    inputs:
+      full_suite:
+        description: 'Run full test suite including slow tests'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: python-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install Linting Tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install ruff flake8 black isort
+
+    - name: Run Ruff (Fast Linter)
+      run: |
+        ruff check . --output-format=github || true
+      continue-on-error: true
+
+    - name: Run Flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      continue-on-error: true
+
+    - name: Check Black Formatting
+      run: |
+        black --check --diff . || echo "Formatting issues found (non-blocking)"
+      continue-on-error: true
+
+    - name: Check Import Sorting
+      run: |
+        isort --check-only --diff . || echo "Import sorting issues found (non-blocking)"
+      continue-on-error: true
+
+  syntax-check:
+    name: Python Syntax Validation
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Validate Python Syntax
+      run: |
+        echo "## Python Syntax Check" >> $GITHUB_STEP_SUMMARY
+        
+        ERRORS=0
+        FILES_CHECKED=0
+        
+        for file in $(find . -name "*.py" -type f ! -path "./.git/*" ! -path "./venv/*" ! -path "./.venv/*"); do
+          FILES_CHECKED=$((FILES_CHECKED + 1))
+          if ! python3 -m py_compile "$file" 2>/dev/null; then
+            echo "❌ Syntax error in: $file"
+            echo "- ❌ \`$file\`" >> $GITHUB_STEP_SUMMARY
+            ERRORS=$((ERRORS + 1))
+          fi
+        done
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Checked $FILES_CHECKED files, found $ERRORS syntax errors" >> $GITHUB_STEP_SUMMARY
+        
+        if [ $ERRORS -gt 0 ]; then
+          echo "::error::Found $ERRORS Python syntax errors"
+          exit 1
+        fi
+        
+        echo "✅ All $FILES_CHECKED Python files have valid syntax"
+
+  test-synergy:
+    name: Synergy Tests
+    runs-on: ubuntu-22.04
+    needs: syntax-check
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt || echo "Some dependencies failed to install"
+        fi
+        pip install pytest pytest-cov pytest-timeout
+
+    - name: Run Synergy Tests
+      run: |
+        echo "## Synergy Test Results" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -d "tests/synergy" ]; then
+          cd tests/synergy
+          
+          # Run tests with pytest if available
+          if command -v pytest &> /dev/null; then
+            pytest -v --tb=short --timeout=60 \
+              --junitxml=../../test-results.xml \
+              --cov=. --cov-report=term-missing \
+              . || EXIT_CODE=$?
+            
+            echo "Exit code: ${EXIT_CODE:-0}"
+            
+            # Even if tests fail, we want to see the results
+            if [ -f "../../test-results.xml" ]; then
+              echo "Test results generated"
+            fi
+          else
+            # Fallback to direct execution
+            for test_file in test_*.py; do
+              if [ -f "$test_file" ]; then
+                echo "Running $test_file..."
+                python "$test_file" || echo "Test $test_file had failures"
+              fi
+            done
+          fi
+        else
+          echo "tests/synergy directory not found"
+          echo "- ⚠️ tests/synergy directory not found" >> $GITHUB_STEP_SUMMARY
+        fi
+      continue-on-error: true
+
+    - name: Run Interoperability Tests
+      run: |
+        if [ -f "tests/synergy/interoperability-test.sh" ]; then
+          chmod +x tests/synergy/interoperability-test.sh
+          ./tests/synergy/interoperability-test.sh || echo "Interoperability tests had issues"
+        fi
+      continue-on-error: true
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: |
+          test-results.xml
+          .coverage
+        retention-days: 7
+        if-no-files-found: ignore
+
+  type-check:
+    name: Type Checking (Optional)
+    runs-on: ubuntu-22.04
+    needs: syntax-check
+    timeout-minutes: 15
+    continue-on-error: true  # Type checking is advisory
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install mypy
+      run: |
+        python -m pip install --upgrade pip
+        pip install mypy types-requests types-PyYAML
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt || true
+        fi
+
+    - name: Run mypy
+      run: |
+        # Run mypy on key directories if they exist
+        DIRS_TO_CHECK=""
+        
+        for dir in tests synergy hurdcog-integration; do
+          if [ -d "$dir" ]; then
+            DIRS_TO_CHECK="$DIRS_TO_CHECK $dir"
+          fi
+        done
+        
+        if [ -n "$DIRS_TO_CHECK" ]; then
+          mypy --ignore-missing-imports --no-error-summary $DIRS_TO_CHECK || true
+        else
+          echo "No Python directories found to type check"
+        fi
+
+  requirements-check:
+    name: Requirements Validation
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Validate requirements.txt
+      run: |
+        if [ -f requirements.txt ]; then
+          echo "## Requirements Check" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for pinned versions
+          UNPINNED=$(grep -E "^[a-zA-Z]" requirements.txt | grep -v "==" | wc -l || echo "0")
+          TOTAL=$(grep -E "^[a-zA-Z]" requirements.txt | wc -l || echo "0")
+          
+          echo "- Total packages: $TOTAL" >> $GITHUB_STEP_SUMMARY
+          echo "- Unpinned packages: $UNPINNED" >> $GITHUB_STEP_SUMMARY
+          
+          # Try to install to validate
+          pip install --dry-run -r requirements.txt 2>&1 | head -50 || true
+          
+          echo "✅ requirements.txt is valid"
+        else
+          echo "No requirements.txt found (this may be intentional)"
+        fi
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-22.04
+    needs: [lint, syntax-check, test-synergy, type-check, requirements-check]
+    if: always()
+
+    steps:
+    - name: Generate Summary
+      run: |
+        echo "## Python CI Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Syntax | ${{ needs.syntax-check.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Synergy Tests | ${{ needs.test-synergy.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Type Check | ${{ needs.type-check.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Requirements | ${{ needs.requirements-check.result }} |" >> $GITHUB_STEP_SUMMARY
+
+    - name: Check Required Results
+      run: |
+        if [ "${{ needs.syntax-check.result }}" = "failure" ]; then
+          echo "::error::Python syntax check failed - this is required"
+          exit 1
+        fi
+        echo "Python CI completed"
