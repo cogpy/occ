@@ -6,7 +6,7 @@ name: Auto Sync to cogpy/occ
 
 on:
   workflow_run:
-    workflows: ["OCC Windows Build - Fixed"]
+    workflows: ["Windows Build"]  # Updated to match ci-windows.yml name
     types:
       - completed
     branches:
