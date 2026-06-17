@@ -56,14 +56,19 @@ jobs:
         ERRORS=0
         FILES_CHECKED=0
         
+        # Guix package definition files (guix.scm, etc.) use Guix-specific modules
+        # that aren't available with plain Guile. We validate them by checking
+        # they can be parsed as valid S-expressions, not fully loaded.
         for scm_file in guix.scm guix-simple.scm occ-hurdcog-unified.scm; do
           if [ -f "$scm_file" ]; then
             FILES_CHECKED=$((FILES_CHECKED + 1))
             echo "Checking $scm_file..."
             
-            if guile -c "(load \"$scm_file\")" 2>&1; then
-              echo "✅ $scm_file - Valid syntax"
-              echo "- ✅ \`$scm_file\`" >> $GITHUB_STEP_SUMMARY
+            # Use Guile's reader to parse as S-expressions without evaluating
+            # This validates Scheme syntax without requiring Guix modules
+            if guile -c "(with-input-from-file \"$scm_file\" (lambda () (let loop () (let ((x (read))) (unless (eof-object? x) (loop))))))" 2>&1; then
+              echo "✅ $scm_file - Valid Scheme syntax"
+              echo "- ✅ \`$scm_file\` (Guix package definition)" >> $GITHUB_STEP_SUMMARY
             else
               echo "❌ $scm_file - Syntax error"
               echo "- ❌ \`$scm_file\`" >> $GITHUB_STEP_SUMMARY
@@ -72,7 +77,7 @@ jobs:
           fi
         done
         
-        # Check synergy scheme files
+        # Check synergy scheme files (these are pure Guile, can be loaded)
         if [ -d "synergy" ]; then
           for scm_file in $(find synergy -name "*.scm" -type f 2>/dev/null | head -20); do
             FILES_CHECKED=$((FILES_CHECKED + 1))
