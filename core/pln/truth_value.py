@@ -101,7 +101,7 @@ class TruthValue(ABC):
         """
         strength = positive / total if total > 0 else 0.5
         confidence = total / (total + k)
-        return SimpleTruthValue(strength=strength, confidence=confidence)
+        return SimpleTruthValue(strength=strength, confidence_value=confidence)
 
 
 @dataclass

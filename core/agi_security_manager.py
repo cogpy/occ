@@ -25,7 +25,7 @@ from typing import Dict, Set, Any, Optional, List, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 
-from .capabilities import (
+from .security.capabilities import (
     Capability,
     CapabilityManager,
     SecurityLevel,
@@ -33,13 +33,13 @@ from .capabilities import (
     ResourceType,
     get_capability_manager
 )
-from .sandbox import (
+from .security.sandbox import (
     Sandbox,
     SandboxConfig,
     ResourceLimits,
     SandboxedModule
 )
-from .audit import (
+from .security.audit import (
     SecurityAuditLog,
     AuditEvent,
     AuditLevel,

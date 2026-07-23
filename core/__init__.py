@@ -48,7 +48,7 @@ from .agi_event_bus import (
 )
 
 from .agi_security_manager import (
-    AGI_SecurityManager,
+    AGISecurityManager,
     SecuritySession,
     get_security_manager
 )
