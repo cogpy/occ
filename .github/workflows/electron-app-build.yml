@@ -28,7 +28,7 @@ env:
 
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     name: Build Windows Desktop App
     if: |
       github.event.workflow_run.conclusion == 'success' ||
@@ -99,12 +99,16 @@ jobs:
         Set-Location native
         
         # Use node-gyp rebuild with Electron headers
+        # --msvs_version=2022 explicitly targets VS 2022 (version 17), which is
+        # required because newer runners may have VS 2025 (version 18) that
+        # node-gyp does not yet recognise.
         $env:HOME = $env:USERPROFILE
         npx node-gyp rebuild `
           --target=$electronVersion `
           --arch=x64 `
           --dist-url=https://electronjs.org/headers `
-          --build-from-source
+          --build-from-source `
+          --msvs_version=2022
         
         Set-Location ..
         
