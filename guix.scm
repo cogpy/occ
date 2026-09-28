@@ -452,10 +452,5 @@ This package is suitable for researchers, developers, and students working on
 artificial general intelligence, cognitive computing, knowledge representation,
 and related fields.")
     (license license:agpl3+)))
-@item Python-based machine learning demonstration using scikit-learn
-@item Complete source for research and development
-@item Development environment for cognitive computing applications
-@end itemize")
-    (license license:gpl3+)))
 
 opencog-collection
