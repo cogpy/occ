@@ -15,7 +15,7 @@ reverses a deliberate decision and duplicates runs.
 
 | Job | Role |
 |-----|------|
-| `syntax-validation` | **Required.** Reads `guix.scm`, `guix-simple.scm`, `occ-hurdcog-unified.scm` with Guile's reader (S-expressions only, Guix modules not loaded). |
+| `syntax-validation` | **Required.** Reads `guix.scm`, `guix-simple.scm`, `occ-hurdcog-unified.scm` with plain Guile's reader (S-expressions only, Guix modules not loaded), via a small `read-guix.scm` it writes to `$RUNNER_TEMP`. |
 | `guix-build` | **Experimental, non-blocking** (`continue-on-error`). Installs Guix, optionally pulls, builds on `workflow_dispatch`. |
 | `summary` | `if: always()`; fails only if syntax validation failed. |
 
@@ -43,6 +43,13 @@ and `.github/workflows/ci-guix.yml`. If you change something else the Guix
 job depends on (e.g. `test-guix-syntax.sh`), add it to `paths:` or the PR
 won't exercise it.
 
+**Plain Guile can't read G-expressions.** `#~`, `#$`, `#$@`, `#+` and
+`#+@` are defined by `(guix gexp)`, and the syntax job doesn't load Guix.
+Without stand-in `read-hash-extend` handlers, every file that uses gexps
+fails with `Unknown # object: "#~"`. That kept the required job red on `main`
+from the start. Keep those handlers in `read-guix.scm`, and add one if a new
+Guix reader prefix appears.
+
 **Watch `guix.scm` after merges.** A bad merge once left duplicate
 description lines and a stray `")` after the package's closing parens, which
 broke the required syntax job on `main`. Anything after the package's
@@ -50,12 +57,24 @@ closing `)))` other than the final `opencog-collection` line is a leftover.
 
 ## Testing
 
-The cloud sandbox usually can't run a real build: no `guix`, no `guile`, no
-Docker, `sudo` is broken (`/etc/sudoers is owned by uid 999`), and
-`guix-install.sh` downloads are blocked. Check once (`which guix guile docker`)
-and move on instead of trying to install.
+The cloud sandbox can't run a real `guix build`: there's no `guix`, no Docker,
+`sudo` is broken (`/etc/sudoers is owned by uid 999`), and `guix-install.sh`
+downloads are blocked. Don't spend time trying to install Guix.
 
-Run the bundled static checks:
+**Guile does work, though, and it's the check that matters most.** The
+required CI job is a Guile read. `apt-get download` + `dpkg -x` need no root:
+
+```bash
+export PATH="$(sh .claude/skills/guix-ci-workflow/scripts/local-guile.sh "$SCRATCH/guile"):$PATH"
+```
+
+Then run the syntax step exactly as CI does. Pull its `run:` script out of
+the YAML with PyYAML and execute it with `bash -e`, with `RUNNER_TEMP` and
+`GITHUB_STEP_SUMMARY` pointed at scratch paths. Run it on `origin/main` too
+(for example in a `git worktree`). Reproducing the CI failure first, then
+seeing it pass, is what shows the fix is right.
+
+Also run the bundled static checks:
 
 ```bash
 python3 .claude/skills/guix-ci-workflow/scripts/validate.py
@@ -73,13 +92,21 @@ so don't "fix" it in the workflow. The package-field checks only fit
 package-definition files. Expect "missing (use-modules" on a file like
 `occ-hurdcog-unified.scm`.
 
-Say plainly that these are static checks. The real verification is the PR's
-`Guix Build` run, or a manual dispatch with `attempt_build` on and
+`validate.py` doesn't understand Guile reader syntax, so it can't replace the
+Guile read. Neither check exercises an actual `guix build`. Say so, and point
+to the PR's `Guix Build` run, or a manual dispatch with `attempt_build` on and
 `update_channels` off.
+
+After pushing, check the PR's runs. `pull_request` workflows don't start
+while a PR has a merge conflict, so resolve conflicts before expecting CI.
+To read a job log through the API, don't send the GitHub auth header to the
+blob-storage redirect, or it returns 401.
 
 ## Finish
 
 Commit on the designated branch with a message that says what changed and
-why, push, and open a draft PR if none exists. The Cloudflare Pages and
-Workers Builds checks have been failing on every PR, independently of Guix.
-Don't chase them as part of Guix work, but do mention them.
+why, push, and open a draft PR if none exists. Some other checks have been
+failing on every PR, independently of Guix: Cloudflare Pages, Workers
+Builds, and `.github/workflows/ci.yml` (it finishes with 0 jobs, meaning
+GitHub rejects the workflow definition). Don't chase them as part of Guix
+work, but do mention them.
