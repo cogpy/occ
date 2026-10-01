@@ -164,7 +164,9 @@ jobs:
       timeout-minutes: 10
       run: |
         guix pull --verbosity=1
-        guix describe
+        # pull updates the runner profile, not the root current-guix later steps already have
+        echo "$HOME/.config/guix/current/bin" >> $GITHUB_PATH
+        "$HOME/.config/guix/current/bin/guix" describe
       continue-on-error: true
 
     - name: Cache Guix Store
