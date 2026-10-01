@@ -19,10 +19,16 @@ on:
     branches: [ "main", "master" ]
     paths:
       - '*.scm'
+      - '.github/workflows/ci-guix.yml'
   workflow_dispatch:
     inputs:
       attempt_build:
         description: 'Attempt full Guix build (may take hours)'
+        required: false
+        default: false
+        type: boolean
+      update_channels:
+        description: 'Run guix pull before building (slow, can hang - only if needed)'
         required: false
         default: false
         type: boolean
@@ -59,6 +65,24 @@ jobs:
         # Guix package definition files (guix.scm, etc.) use Guix-specific modules
         # that aren't available with plain Guile. We validate them by checking
         # they can be parsed as valid S-expressions, not fully loaded.
+        # Plain Guile doesn't know G-expression syntax (#~ #$ #$@ #+ #+@), which
+        # (guix gexp) normally registers, so register stand-in readers first.
+        cat > "$RUNNER_TEMP/read-guix.scm" <<'EOF'
+        (define (read-ungexp tag splice-tag)
+          (lambda (chr port)
+            (if (eqv? (peek-char port) #\@)
+                (begin (read-char port) (list splice-tag (read port)))
+                (list tag (read port)))))
+        (read-hash-extend #\~ (lambda (chr port) (list 'gexp (read port))))
+        (read-hash-extend #\$ (read-ungexp 'ungexp 'ungexp-splicing))
+        (read-hash-extend #\+ (read-ungexp 'ungexp-native 'ungexp-native-splicing))
+        (with-input-from-file (cadr (command-line))
+          (lambda ()
+            (let loop ()
+              (unless (eof-object? (read))
+                (loop)))))
+        EOF
+
         for scm_file in guix.scm guix-simple.scm occ-hurdcog-unified.scm; do
           if [ -f "$scm_file" ]; then
             FILES_CHECKED=$((FILES_CHECKED + 1))
@@ -66,7 +90,7 @@ jobs:
             
             # Use Guile's reader to parse as S-expressions without evaluating
             # This validates Scheme syntax without requiring Guix modules
-            if guile -c "(with-input-from-file \"$scm_file\" (lambda () (let loop () (let ((x (read))) (unless (eof-object? x) (loop))))))" 2>&1; then
+            if guile --no-auto-compile "$RUNNER_TEMP/read-guix.scm" "$scm_file" 2>&1; then
               echo "✅ $scm_file - Valid Scheme syntax"
               echo "- ✅ \`$scm_file\` (Guix package definition)" >> $GITHUB_STEP_SUMMARY
             else
@@ -129,6 +153,18 @@ jobs:
         if [ -f /etc/profile.d/guix.sh ]; then
           source /etc/profile.d/guix.sh
         fi
+
+        # `source` only lasts for this step; persist guix onto PATH for later steps
+        echo "/var/guix/profiles/per-user/root/current-guix/bin" >> $GITHUB_PATH
+      continue-on-error: true
+
+    # guix pull can hang the runner for hours, so it only runs on explicit opt-in
+    - name: Update Guix Channels
+      if: inputs.update_channels == true
+      timeout-minutes: 10
+      run: |
+        guix pull --verbosity=1
+        guix describe
       continue-on-error: true
 
     - name: Cache Guix Store
@@ -150,20 +186,24 @@ jobs:
         if command -v guix &> /dev/null; then
           echo "Guix is available, attempting build..."
           
-          # Try the simple build first
-          if [ -f "guix-simple.scm" ]; then
-            echo "Trying guix-simple.scm..."
-            guix build -f guix-simple.scm 2>&1 | tee guix-build.log || true
-          fi
-          
-          # Try full build
-          if [ -f "guix.scm" ]; then
-            echo "Trying guix.scm..."
-            guix build -f guix.scm 2>&1 | tee -a guix-build.log || true
-          fi
-          
-          echo "Build attempt completed (see logs for details)"
+          # Try the simple build first, then the full build.
+          # PIPESTATUS keeps guix's exit code, which `| tee` would otherwise hide.
+          FAILED=0
+          for scm_file in guix-simple.scm guix.scm; do
+            if [ -f "$scm_file" ]; then
+              echo "Trying $scm_file..."
+              guix build -f "$scm_file" 2>&1 | tee -a guix-build.log
+              if [ "${PIPESTATUS[0]}" -eq 0 ]; then
+                echo "- ✅ \`$scm_file\` built" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "- ❌ \`$scm_file\` failed" >> $GITHUB_STEP_SUMMARY
+                FAILED=1
+              fi
+            fi
+          done
+
           echo "- Build log saved to guix-build.log" >> $GITHUB_STEP_SUMMARY
+          exit $FAILED
         else
           echo "Guix not available - skipping build"
           echo "- ⚠️ Guix not installed" >> $GITHUB_STEP_SUMMARY
