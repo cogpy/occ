@@ -214,9 +214,10 @@ jobs:
           python3-dev cython3 \
           cxxtest \
           libzmq3-dev \
-          libpq-dev
+          libpq-dev \
+          libasio-dev
 
-    - name: Build Prerequisites (cogutil + atomspace)
+    - name: Build Prerequisites (cogutil + atomspace + atomspace-storage)
       run: |
         # Build cogutil
         cd cogutil
@@ -230,6 +231,16 @@ jobs:
         
         # Build atomspace
         cd atomspace
+        mkdir -p build && cd build
+        cmake .. -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+                 -DCMAKE_INSTALL_PREFIX=/usr/local
+        make -j${{ env.NPROC }}
+        sudo make install
+        sudo ldconfig
+        cd ../..
+
+        # Build atomspace-storage (cogserver requires AtomSpaceStorage)
+        cd atomspace-storage
         mkdir -p build && cd build
         cmake .. -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
                  -DCMAKE_INSTALL_PREFIX=/usr/local
@@ -250,6 +261,17 @@ jobs:
         else
           echo "Component ${{ matrix.component }} directory not found, skipping"
         fi
+      continue-on-error: true
+
+    # atomspace-cog (network storage) needs an installed cogserver
+    - name: Build atomspace-cog
+      if: matrix.component == 'cogserver'
+      run: |
+        cd atomspace-cog
+        mkdir -p build && cd build
+        cmake .. -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+                 -DCMAKE_INSTALL_PREFIX=/usr/local
+        make -j${{ env.NPROC }}
       continue-on-error: true
 
   # Stage 4: Reasoning (unify, ure, pln, miner)
