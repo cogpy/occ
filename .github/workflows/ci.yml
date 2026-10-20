@@ -1,0 +1,196 @@
+# OpenCog Collection (OCC) - CI Orchestrator
+# Top-level workflow that coordinates all CI checks
+#
+# This workflow:
+# 1. Triggers appropriate sub-workflows based on changed files
+# 2. Provides a unified status check for branch protection
+# 3. Generates comprehensive CI summary
+
+name: CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+    inputs:
+      run_all:
+        description: 'Run all CI checks regardless of changed files'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Determine which workflows to run based on changed files
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-22.04
+    outputs:
+      linux: ${{ steps.filter.outputs.linux }}
+      windows: ${{ steps.filter.outputs.windows }}
+      python: ${{ steps.filter.outputs.python }}
+      guix: ${{ steps.filter.outputs.guix }}
+      docker: ${{ steps.filter.outputs.docker }}
+      docs: ${{ steps.filter.outputs.docs }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Check Changed Files
+      id: filter
+      run: |
+        # For workflow_dispatch with run_all, enable everything
+        if [ "${{ inputs.run_all }}" = "true" ]; then
+          echo "linux=true" >> $GITHUB_OUTPUT
+          echo "windows=true" >> $GITHUB_OUTPUT
+          echo "python=true" >> $GITHUB_OUTPUT
+          echo "guix=true" >> $GITHUB_OUTPUT
+          echo "docker=true" >> $GITHUB_OUTPUT
+          echo "docs=true" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        # Get changed files
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} 2>/dev/null || echo "")
+        else
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+        fi
+        
+        echo "Changed files:"
+        echo "$CHANGED_FILES"
+        
+        # Determine what to run
+        LINUX=false
+        WINDOWS=false
+        PYTHON=false
+        GUIX=false
+        DOCKER=false
+        DOCS=false
+        
+        if echo "$CHANGED_FILES" | grep -qE '\.cpp$|\.h$|\.hpp$|CMakeLists\.txt|Makefile'; then
+          LINUX=true
+          WINDOWS=true
+        fi
+        
+        if echo "$CHANGED_FILES" | grep -qE '\.py$|requirements\.txt|tests/'; then
+          PYTHON=true
+        fi
+        
+        if echo "$CHANGED_FILES" | grep -qE '\.scm$|guix'; then
+          GUIX=true
+        fi
+        
+        if echo "$CHANGED_FILES" | grep -qE 'Dockerfile|docker-compose|docker/'; then
+          DOCKER=true
+        fi
+        
+        if echo "$CHANGED_FILES" | grep -qE '\.md$|docs/'; then
+          DOCS=true
+        fi
+        
+        # Always run at least one check
+        if [ "$LINUX" = "false" ] && [ "$PYTHON" = "false" ]; then
+          LINUX=true
+          PYTHON=true
+        fi
+        
+        echo "linux=$LINUX" >> $GITHUB_OUTPUT
+        echo "windows=$WINDOWS" >> $GITHUB_OUTPUT
+        echo "python=$PYTHON" >> $GITHUB_OUTPUT
+        echo "guix=$GUIX" >> $GITHUB_OUTPUT
+        echo "docker=$DOCKER" >> $GITHUB_OUTPUT
+        echo "docs=$DOCS" >> $GITHUB_OUTPUT
+
+  # Core CI jobs
+  linux:
+    name: Linux Build
+    needs: changes
+    if: needs.changes.outputs.linux == 'true'
+    uses: ./.github/workflows/ci-linux.yml
+
+  python:
+    name: Python Tests
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
+    uses: ./.github/workflows/ci-python-tests.yml
+
+  integration:
+    name: Integration Tests
+    needs: [linux, python]
+    if: always() && (needs.linux.result == 'success' || needs.linux.result == 'skipped')
+    uses: ./.github/workflows/ci-integration.yml
+
+  # Optional CI jobs
+  guix:
+    name: Guix Build
+    needs: changes
+    if: needs.changes.outputs.guix == 'true'
+    uses: ./.github/workflows/ci-guix.yml
+
+  docker:
+    name: Docker Build
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
+    uses: ./.github/workflows/ci-docker.yml
+
+  # Summary job
+  ci-summary:
+    name: CI Summary
+    runs-on: ubuntu-22.04
+    needs: [changes, linux, python, integration, guix, docker]
+    if: always()
+
+    steps:
+    - name: Generate Summary
+      run: |
+        echo "# CI Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Workflow Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Workflow | Status | Required |" >> $GITHUB_STEP_SUMMARY
+        echo "|----------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Linux Build | ${{ needs.linux.result || 'skipped' }} | ✅ |" >> $GITHUB_STEP_SUMMARY
+        echo "| Python Tests | ${{ needs.python.result || 'skipped' }} | ✅ |" >> $GITHUB_STEP_SUMMARY
+        echo "| Integration | ${{ needs.integration.result || 'skipped' }} | ⚠️ |" >> $GITHUB_STEP_SUMMARY
+        echo "| Guix Build | ${{ needs.guix.result || 'skipped' }} | ❌ |" >> $GITHUB_STEP_SUMMARY
+        echo "| Docker Build | ${{ needs.docker.result || 'skipped' }} | ❌ |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Changes Detected" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- Linux/C++: ${{ needs.changes.outputs.linux }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Python: ${{ needs.changes.outputs.python }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Guix/Scheme: ${{ needs.changes.outputs.guix }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Docker: ${{ needs.changes.outputs.docker }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Docs: ${{ needs.changes.outputs.docs }}" >> $GITHUB_STEP_SUMMARY
+
+    - name: Check Required Results
+      run: |
+        FAILED=false
+        
+        # Linux is required if it ran
+        if [ "${{ needs.linux.result }}" = "failure" ]; then
+          echo "::error::Linux build failed"
+          FAILED=true
+        fi
+        
+        # Python is required if it ran
+        if [ "${{ needs.python.result }}" = "failure" ]; then
+          echo "::error::Python tests failed"
+          FAILED=true
+        fi
+        
+        if [ "$FAILED" = "true" ]; then
+          exit 1
+        fi
+        
+        echo "✅ All required CI checks passed"

@@ -30,20 +30,8 @@
 #include <sys/types.h>
 #ifdef _WIN32
 #include <winsock2.h>
-#ifdef _WIN32
-#include <winsock2.h>
-#else
-#else
-#endif
-#ifdef _WIN32
-#include <winsock2.h>
-#else
-#ifdef _WIN32
-#include <winsock2.h>
 #else
 #include <sys/socket.h>
-#endif
-#endif
 #endif
 #include <netinet/tcp.h>
 #include <netdb.h>
