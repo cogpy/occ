@@ -111,7 +111,10 @@ jobs:
 
           foreach ($pkg in $packages) {
             Write-Host "Installing $pkg..." -ForegroundColor Yellow
-            & "$env:VCPKG_ROOT/vcpkg.exe" install "${pkg}:x64-windows" --x-install-root="$env:VCPKG_INSTALLED_DIR" 2>&1 | Out-Null
+            & "$env:VCPKG_ROOT/vcpkg.exe" install --classic "${pkg}:x64-windows" --x-install-root="$env:VCPKG_INSTALLED_DIR"
+            if ($LASTEXITCODE -ne 0) {
+              throw "vcpkg failed to install $pkg (exit code $LASTEXITCODE)."
+            }
           }
           Write-Host "Phase 1 complete!" -ForegroundColor Green
 
@@ -134,7 +137,10 @@ jobs:
           foreach ($pkg in $packages) {
             $start = Get-Date
             Write-Host "Installing $pkg..." -ForegroundColor Yellow
-            & "$env:VCPKG_ROOT/vcpkg.exe" install "${pkg}:x64-windows" --x-install-root="$env:VCPKG_INSTALLED_DIR"
+            & "$env:VCPKG_ROOT/vcpkg.exe" install --classic "${pkg}:x64-windows" --x-install-root="$env:VCPKG_INSTALLED_DIR"
+            if ($LASTEXITCODE -ne 0) {
+              throw "vcpkg failed to install $pkg (exit code $LASTEXITCODE)."
+            }
             $elapsed = (Get-Date) - $start
             Write-Host "  Done in $([math]::Round($elapsed.TotalSeconds))s" -ForegroundColor Green
           }
@@ -157,7 +163,10 @@ jobs:
           foreach ($pkg in $packages) {
             $start = Get-Date
             Write-Host "Installing $pkg..." -ForegroundColor Yellow
-            & "$env:VCPKG_ROOT/vcpkg.exe" install "${pkg}:x64-windows" --x-install-root="$env:VCPKG_INSTALLED_DIR"
+            & "$env:VCPKG_ROOT/vcpkg.exe" install --classic "${pkg}:x64-windows" --x-install-root="$env:VCPKG_INSTALLED_DIR"
+            if ($LASTEXITCODE -ne 0) {
+              throw "vcpkg failed to install $pkg (exit code $LASTEXITCODE)."
+            }
             $elapsed = (Get-Date) - $start
             Write-Host "  Done in $([math]::Round($elapsed.TotalSeconds))s" -ForegroundColor Green
           }
@@ -192,7 +201,7 @@ jobs:
             $start = Get-Date
             Write-Host "`n>>> Building $($pkg.name) (expected: $($pkg.time))..." -ForegroundColor Magenta
 
-            & "$env:VCPKG_ROOT/vcpkg.exe" install "$($pkg.name):x64-windows" --x-install-root="$env:VCPKG_INSTALLED_DIR"
+            & "$env:VCPKG_ROOT/vcpkg.exe" install --classic "$($pkg.name):x64-windows" --x-install-root="$env:VCPKG_INSTALLED_DIR"
 
             $elapsed = (Get-Date) - $start
             if ($LASTEXITCODE -eq 0) {
