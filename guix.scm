@@ -61,58 +61,6 @@
                                              (string-contains file "/.devcontainer/"))))))
     (build-system cmake-build-system)
     (arguments
-      `(#:tests? #f  ; Disable tests for now as they may require network access
-        #:configure-flags
-        ;; Fixed: Use quoted list instead of ,(list ...) to avoid Scheme error
-        ;; "Wrong type to apply" - see commit 70c2752785a1b9316ffe03d09ebf81f4d01e6529
-        '("-DCMAKE_BUILD_TYPE=Release"
-          "-DCMAKE_VERBOSE_MAKEFILE=ON"
-          "-DBUILD_COGUTIL=ON"
-          "-DBUILD_ATOMSPACE=ON"
-          "-DBUILD_COGSERVER=ON"
-          "-DBUILD_MATRIX=ON"
-          "-DBUILD_LEARN=ON"
-          "-DBUILD_AGENTS=ON"
-          "-DBUILD_SENSORY=ON"
-          "-DBUILD_COGGML=ON"
-          "-DBUILD_COGSELF=ON"
-          "-DBUILD_ATOMSPACE_ACCELERATOR=ON"
-          "-DBUILD_AGENTIC_CHATBOTS=ON"
-          "-DBUILD_ATOMSPACE_STORAGE=OFF"
-          "-DBUILD_ATOMSPACE_EXTENSIONS=OFF"
-          "-DBUILD_GNUCASH=OFF"
-          "-DBUILD_KOBOLDCPP=OFF"
-          "-DBUILD_APHRODITE=OFF")
-        #:phases
-        (modify-phases %standard-phases
-          (add-after 'unpack 'set-source-permissions
-            (lambda _
-              ;; Ensure all source files are readable and directories accessible
-              (for-each (lambda (file)
-                          (when (file-exists? file)
-                            (chmod file #o644)))
-                        (find-files "." ".*" #:directories? #f))
-              (for-each (lambda (dir)
-                          (when (file-exists? dir)
-                            (chmod dir #o755)))
-                        (find-files "." ".*" #:directories? #t))
-              #t))
-          (add-after 'unpack 'show-build-info
-            (lambda _
-              (format #t "~%=== OpenCog Collection Build Info ===~%")
-              (format #t "Source directory: ~a~%" (getcwd))
-              (format #t "Directory contents:~%")
-              (system* "ls" "-la")
-              (format #t "~%Checking for CMakeLists.txt:~%")
-              (system* "ls" "-la" "CMakeLists.txt")
-              (format #t "~%Checking subdirectories:~%")
-              (for-each (lambda (dir)
-                          (when (file-exists? (string-append dir "/CMakeLists.txt"))
-                            (format #t "  ✓ ~a has CMakeLists.txt~%" dir)))
-                        '("cogutil" "coggml" "atomspace" "atomspace-accelerator" 
-                          "cogserver" "matrix" "learn" "agents" "sensory" 
-                          "agentic-chatbots" "cogself"))
-              (format #t "=====================================~%~%")
      (list
       #:tests? #f
       #:configure-flags
@@ -268,12 +216,6 @@
               
               (format #t "~%=== Build Artifact Validation Complete ===~%~%")
               #t))
-              (setenv "HOME" (getcwd))
-              (let ((boost (assoc-ref inputs "boost")))
-                (when boost
-                  (setenv "BOOST_ROOT" boost)
-                  (format #t "Set BOOST_ROOT to ~a~%" boost)))
-              #t))
           (replace 'install
             (lambda* (#:key outputs #:allow-other-keys)
               (format #t "~%=== Starting Installation ===~%")
@@ -292,9 +234,6 @@
                      (guile-site (string-append out "/share/guile/site/3.0"))
                      (python (search-input-file inputs "/bin/python3")))
                 (format #t "~%=== Installing Additional Components ===~%")
-                     (share (string-append out "/share/opencog-collection")))
-                
-                (invoke "make" "install")
                 
                 (mkdir-p share)
                 (mkdir-p bin)
@@ -341,8 +280,6 @@
                 (when (file-exists? "app.py")
                   (format #t "Installing app.py...~%")
                   (install-file "app.py" share)
-                (when (file-exists? "../app.py")
-                  (install-file "../app.py" share)
                   (call-with-output-file (string-append bin "/opencog-demo")
                     (lambda (port)
                       (format port "#!/bin/sh~%exec ~a ~a/app.py \"$@\"~%"
@@ -379,17 +316,13 @@
                 ;; List installed files
                 (format #t "~%Installed files in ~a:~%" out)
                 (system* "find" out "-type" "f" "-ls")
-                (when (file-exists? "../README.md")
-                  (install-file "../README.md" share))
-                (when (file-exists? "../requirements.txt")
-                  (install-file "../requirements.txt" share))
                 
                 (format #t "~%=== Installation Validation Complete ===~%~%")
                 #t))))))
     (native-inputs
      (list pkg-config
            cmake-minimal
-           gcc-toolchain))
+           gcc-toolchain
            cmake
            cxxtest))
     (inputs
