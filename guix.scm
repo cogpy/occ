@@ -8,7 +8,8 @@
 ;;;   cogutil -> atomspace -> atomspace-storage -> cogserver
 ;;;                                             -> atomspace-rocks
 ;;;                        -> matrix, unify -> ure, sensory
-;;;   cogserver + atomspace-rocks -> learn
+;;;                        -> lg-atomese
+;;;   cogserver + atomspace-rocks + lg-atomese -> learn
 ;;;
 ;;; agents (Scheme only), coggml and cogself (standalone C++) have no OpenCog
 ;;; dependencies.
@@ -33,6 +34,8 @@
              (gnu packages databases)
              (gnu packages datastructures)
              (gnu packages guile)
+             (gnu packages language)
+             (gnu packages linux)
              (gnu packages multiprecision)
              (gnu packages networking)
              (gnu packages pkg-config)
@@ -261,6 +264,25 @@ restores Atoms and AtomSpaces to disk using RocksDB.  This is the OCC
 monorepo copy.")
     (license license:agpl3)))
 
+(define-public occ-lg-atomese
+  (package
+    (name "occ-lg-atomese")
+    (version %occ-version)
+    (source (occ-source "lg-atomese"))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:tests? #f
+           #:configure-flags (occ-atomspace-configure-flags)))
+    (inputs (list boost occ-atomspace occ-atomspace-storage occ-cogutil gmp
+                  guile-3.0 link-grammar python `(,util-linux "lib")))
+    (native-inputs (list cxxtest pkg-config python-cython))
+    (home-page "https://github.com/cogpy/occ")
+    (synopsis "Link Grammar parses as Atomese for the OpenCog AtomSpace")
+    (description "LG-Atomese makes Link Grammar parses available in the
+AtomSpace and provides the @code{(opencog nlp)} Guile modules that Learn
+uses.  This is the OCC monorepo copy.")
+    (license license:agpl3)))
+
 (define-public occ-learn
   (package
     (name "occ-learn")
@@ -274,6 +296,9 @@ monorepo copy.")
            #:configure-flags (occ-atomspace-configure-flags)))
     (inputs (list boost occ-atomspace occ-atomspace-rocks occ-atomspace-storage
                   occ-cogserver occ-cogutil occ-matrix gmp guile-3.0 python))
+    ;; Needed at run time by (opencog learn): (ice-9 readline) from
+    ;; scm/utils/utilities.scm, and (opencog nlp) from lg-atomese.
+    (propagated-inputs (list guile-readline occ-lg-atomese))
     (native-inputs (list cxxtest pkg-config python-cython))
     (home-page "https://github.com/cogpy/occ")
     (synopsis "Symbolic learning of structure from data for OpenCog")
@@ -342,6 +367,7 @@ synergy between components, part of the OCC cognitive architecture.")
            occ-ure
            occ-sensory
            occ-atomspace-rocks
+           occ-lg-atomese
            occ-learn
            occ-agents
            occ-coggml
@@ -364,6 +390,7 @@ components, each built as its own package:
 @item Unify and URE - unification and the Unified Rule Engine
 @item Sensory - dataflow system for external world interaction
 @item AtomSpace Rocks - RocksDB storage backend
+@item LG-Atomese - Link Grammar parses in the AtomSpace
 @item Learn - symbolic learning of structure from data
 @item Agents - prototype interactive agents in Atomese
 @item CogGML - self-aware microkernel for cognitive processing
