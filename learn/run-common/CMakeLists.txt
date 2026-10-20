@@ -1,7 +1,11 @@
+# Install into learn's own data directory.  COGUTIL_DATA_DIR is cogutil's
+# install location, which is only the same place when everything shares one
+# prefix (e.g. /usr/local); with separate prefixes (e.g. Guix) it's read-only.
+SET(LEARN_DATA_DIR "${CMAKE_INSTALL_PREFIX}/share/opencog")
 
 INSTALL(FILES
 	README.md
-	DESTINATION ${COGUTIL_DATA_DIR}/learn/run-common
+	DESTINATION ${LEARN_DATA_DIR}/learn/run-common
 )
 
 INSTALL(PROGRAMS
@@ -25,7 +29,7 @@ INSTALL(PROGRAMS
 	submit-block.pl
 	submit-lines.pl
 	trim-pair.scm
-	DESTINATION ${COGUTIL_DATA_DIR}/learn/run-common
+	DESTINATION ${LEARN_DATA_DIR}/learn/run-common
 )
 
 INSTALL(FILES
@@ -34,36 +38,36 @@ INSTALL(FILES
 	../run-config/3-mpg-conf.sh
 	../run-config/4-gram-conf.sh
 	../run-config/README.md
-	DESTINATION ${COGUTIL_DATA_DIR}/learn/run-config
+	DESTINATION ${LEARN_DATA_DIR}/learn/run-config
 )
 
 INSTALL(FILES
 	../run-config/dict-combined/storage.dict
 	../run-config/dict-combined/README.md
 	../run-config/dict-combined/4.0.affix
-	DESTINATION ${COGUTIL_DATA_DIR}/../link-grammar/dict-combined
+	DESTINATION ${LEARN_DATA_DIR}/../link-grammar/dict-combined
 )
 
 INSTALL(FILES
 	../run-config/dict-pair/storage.dict
 	../run-config/dict-pair/README.md
 	../run-config/dict-pair/4.0.affix
-	DESTINATION ${COGUTIL_DATA_DIR}/../link-grammar/dict-pair
+	DESTINATION ${LEARN_DATA_DIR}/../link-grammar/dict-pair
 )
 
 INSTALL(FILES
 	../run/README.md
-	DESTINATION ${COGUTIL_DATA_DIR}/learn/run
+	DESTINATION ${LEARN_DATA_DIR}/learn/run
 )
 
 INSTALL(PROGRAMS
 	../run/run-tmux.sh
-	DESTINATION ${COGUTIL_DATA_DIR}/learn/run
+	DESTINATION ${LEARN_DATA_DIR}/learn/run
 )
 
 INSTALL(FILES
 	../run/2-word-pairs/README.md
-	DESTINATION ${COGUTIL_DATA_DIR}/learn/run/2-word-pairs
+	DESTINATION ${LEARN_DATA_DIR}/learn/run/2-word-pairs
 )
 
 INSTALL(PROGRAMS
@@ -74,12 +78,12 @@ INSTALL(PROGRAMS
 	../run/2-word-pairs/halt.sh
 	../run/2-word-pairs/run-all.sh
 	../run/2-word-pairs/run-cogserver.sh
-	DESTINATION ${COGUTIL_DATA_DIR}/learn/run/2-word-pairs
+	DESTINATION ${LEARN_DATA_DIR}/learn/run/2-word-pairs
 )
 
 INSTALL(FILES
 	../run/3-mst-parsing/README.md
-	DESTINATION ${COGUTIL_DATA_DIR}/learn/run/3-mst-parsing
+	DESTINATION ${LEARN_DATA_DIR}/learn/run/3-mst-parsing
 )
 
 INSTALL(PROGRAMS
@@ -88,18 +92,18 @@ INSTALL(PROGRAMS
 	../run/3-mst-parsing/mst-submit.sh
 	../run/3-mst-parsing/run-all-mst.sh
 	../run/3-mst-parsing/compute-mst-marginals.sh
-	DESTINATION ${COGUTIL_DATA_DIR}/learn/run/3-mst-parsing
+	DESTINATION ${LEARN_DATA_DIR}/learn/run/3-mst-parsing
 )
 
 INSTALL(FILES
 	../run/4-gram-class/README.md
-	DESTINATION ${COGUTIL_DATA_DIR}/learn/run/4-gram-class
+	DESTINATION ${LEARN_DATA_DIR}/learn/run/4-gram-class
 )
 
 INSTALL(PROGRAMS
 	../run/4-gram-class/run-all-gram.sh
 	../run/4-gram-class/run-gram-cogserver.sh
-	DESTINATION ${COGUTIL_DATA_DIR}/learn/run/4-gram-class
+	DESTINATION ${LEARN_DATA_DIR}/learn/run/4-gram-class
 )
 
 # ----------- the end -----------

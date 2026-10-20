@@ -6,7 +6,13 @@
 ;;; order (the same order as .github/workflows/ci-linux.yml):
 ;;;
 ;;;   cogutil -> atomspace -> atomspace-storage -> cogserver
+;;;                                             -> atomspace-rocks
 ;;;                        -> matrix, unify -> ure, sensory
+;;;                        -> lg-atomese
+;;;   cogserver + atomspace-rocks + lg-atomese -> learn
+;;;
+;;; agents (Scheme only), coggml and cogself (standalone C++) have no OpenCog
+;;; dependencies.
 ;;;
 ;;; The recipes follow upstream Guix's (gnu packages opencog), adapted to
 ;;; build from local checkouts instead of separate git repositories.
@@ -14,7 +20,8 @@
 ;;; Build everything:      guix build -f guix.scm
 ;;; Build one component:   guix build -e '(begin (load "guix.scm") occ-atomspace)'
 
-(use-modules (guix packages)
+(use-modules (srfi srfi-1)
+             (guix packages)
              (guix gexp)
              (guix utils)
              (guix build-system cmake)
@@ -24,8 +31,11 @@
              (gnu packages boost)
              (gnu packages check)
              (gnu packages cpp)
+             (gnu packages databases)
              (gnu packages datastructures)
              (gnu packages guile)
+             (gnu packages language)
+             (gnu packages linux)
              (gnu packages multiprecision)
              (gnu packages networking)
              (gnu packages pkg-config)
@@ -40,10 +50,14 @@
 
 (define %occ-version "0.1.0")
 
-(define (occ-source directory)
+(define* (occ-source directory #:key (exclude '()))
   "Return the source of the OCC component in DIRECTORY, without VCS data
-and build artifacts."
-  (local-file (string-append %occ-root "/" directory)
+and build artifacts.  EXCLUDE lists subdirectories of DIRECTORY to leave
+out, such as archives the build doesn't use."
+  (define root (string-append %occ-root "/" directory))
+  (define excluded
+    (map (lambda (sub) (string-append root "/" sub)) exclude))
+  (local-file root
               (string-append "occ-" directory "-source")
               #:recursive? #t
               #:select? (lambda (file stat)
@@ -52,7 +66,12 @@ and build artifacts."
                                    (string-contains file "/__pycache__/")
                                    (string-suffix? ".pyc" file)
                                    (string-suffix? ".o" file)
-                                   (string-suffix? ".so" file))))))
+                                   (string-suffix? ".so" file)
+                                   (any (lambda (dir)
+                                          (or (string=? file dir)
+                                              (string-prefix?
+                                               (string-append dir "/") file)))
+                                        excluded))))))
 
 (define (occ-configure-flags)
   "CMake flags shared by the Guile-using OpenCog components: point them at
@@ -226,6 +245,108 @@ chaining over rules stored in the AtomSpace.  This is the OCC monorepo copy.")
 the AtomSpace and the external world.  This is the OCC monorepo copy.")
     (license license:agpl3)))
 
+(define-public occ-atomspace-rocks
+  (package
+    (name "occ-atomspace-rocks")
+    (version %occ-version)
+    (source (occ-source "atomspace-rocks"))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:tests? #f
+           #:configure-flags (occ-atomspace-configure-flags)))
+    (inputs (list boost occ-atomspace occ-atomspace-storage occ-cogutil gmp
+                  guile-3.0 python rocksdb))
+    (native-inputs (list cxxtest pkg-config python-cython))
+    (home-page "https://github.com/cogpy/occ")
+    (synopsis "RocksDB storage backend for the OpenCog AtomSpace")
+    (description "AtomSpace Rocks provides RocksStorageNode, which saves and
+restores Atoms and AtomSpaces to disk using RocksDB.  This is the OCC
+monorepo copy.")
+    (license license:agpl3)))
+
+(define-public occ-lg-atomese
+  (package
+    (name "occ-lg-atomese")
+    (version %occ-version)
+    (source (occ-source "lg-atomese"))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:tests? #f
+           #:configure-flags (occ-atomspace-configure-flags)))
+    (inputs (list boost occ-atomspace occ-atomspace-storage occ-cogutil gmp
+                  guile-3.0 link-grammar python `(,util-linux "lib")))
+    (native-inputs (list cxxtest pkg-config python-cython))
+    (home-page "https://github.com/cogpy/occ")
+    (synopsis "Link Grammar parses as Atomese for the OpenCog AtomSpace")
+    (description "LG-Atomese makes Link Grammar parses available in the
+AtomSpace and provides the @code{(opencog nlp)} Guile modules that Learn
+uses.  This is the OCC monorepo copy.")
+    (license license:agpl3)))
+
+(define-public occ-learn
+  (package
+    (name "occ-learn")
+    (version %occ-version)
+    ;; attic/ (old experiments) and learn-lang-diary/ (research notes) are
+    ;; about 700 MB and not part of the build.
+    (source (occ-source "learn" #:exclude '("attic" "learn-lang-diary")))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:tests? #f
+           #:configure-flags (occ-atomspace-configure-flags)))
+    (inputs (list boost occ-atomspace occ-atomspace-rocks occ-atomspace-storage
+                  occ-cogserver occ-cogutil occ-matrix gmp guile-3.0 python))
+    ;; Needed at run time by (opencog learn): (ice-9 readline) from
+    ;; scm/utils/utilities.scm, and (opencog nlp) from lg-atomese.
+    (propagated-inputs (list guile-readline occ-lg-atomese))
+    (native-inputs (list cxxtest pkg-config python-cython))
+    (home-page "https://github.com/cogpy/occ")
+    (synopsis "Symbolic learning of structure from data for OpenCog")
+    (description "Learn discovers grammatical and semantic structure in data,
+such as natural language, by counting statistics in the AtomSpace.  This is
+the OCC monorepo copy.")
+    (license license:agpl3)))
+
+(define-public occ-agents
+  (package
+    (name "occ-agents")
+    (version %occ-version)
+    (source (occ-source "agents"))
+    (build-system cmake-build-system)
+    (arguments (list #:tests? #f))       ;installs Scheme files only
+    (home-page "https://github.com/cogpy/occ")
+    (synopsis "Prototype interactive agents written in Atomese")
+    (description "Agents is an early prototype of interactive cognitive
+agents written in Atomese (Scheme).  This is the OCC monorepo copy.")
+    (license license:agpl3)))
+
+(define-public occ-coggml
+  (package
+    (name "occ-coggml")
+    (version %occ-version)
+    (source (occ-source "coggml"))
+    (build-system cmake-build-system)
+    (arguments (list #:tests? #f))
+    (home-page "https://github.com/cogpy/occ")
+    (synopsis "CogGML self-aware microkernel for cognitive processing")
+    (description "CogGML is a microkernel of cognitive shards with
+self-awareness and distributed coordination, part of the OCC cognitive
+architecture.")
+    (license license:agpl3)))
+
+(define-public occ-cogself
+  (package
+    (name "occ-cogself")
+    (version %occ-version)
+    (source (occ-source "cogself"))
+    (build-system cmake-build-system)
+    (arguments (list #:tests? #f))
+    (home-page "https://github.com/cogpy/occ")
+    (synopsis "CogSelf AGI cognitive synergy framework")
+    (description "CogSelf is the OCC framework that coordinates cognitive
+synergy between components, part of the OCC cognitive architecture.")
+    (license license:agpl3)))
+
 (define-public opencog-collection
   (package
     (name "opencog-collection")
@@ -244,7 +365,13 @@ the AtomSpace and the external world.  This is the OCC monorepo copy.")
            occ-matrix
            occ-unify
            occ-ure
-           occ-sensory))
+           occ-sensory
+           occ-atomspace-rocks
+           occ-lg-atomese
+           occ-learn
+           occ-agents
+           occ-coggml
+           occ-cogself))
     (home-page "https://github.com/cogpy/occ")
     (synopsis "OpenCog Collection - Cognitive Computing and AGI Framework")
     (description
@@ -262,6 +389,12 @@ components, each built as its own package:
 @item Matrix - sparse matrix and graph processing for machine learning
 @item Unify and URE - unification and the Unified Rule Engine
 @item Sensory - dataflow system for external world interaction
+@item AtomSpace Rocks - RocksDB storage backend
+@item LG-Atomese - Link Grammar parses in the AtomSpace
+@item Learn - symbolic learning of structure from data
+@item Agents - prototype interactive agents in Atomese
+@item CogGML - self-aware microkernel for cognitive processing
+@item CogSelf - AGI cognitive synergy framework
 @end itemize")
     (license license:agpl3+)))
 
