@@ -78,8 +78,11 @@ Guix's Guile and install Guile and Python modules into the output."
     (arguments
      (list
       #:tests? #f                       ;not yet run in CI either
-      ;; Skip ldconfig, which requires root and is unnecessary in Guix.
-      #:configure-flags #~(list "-DSKIP_LDCONF=ON")))
+      ;; etc/CMakeLists.txt installs an ld.so.conf.d snippet under
+      ;; CMAKE_CONF_PREFIX, /etc by default, which is outside the store.
+      ;; Guix doesn't use ld.so.conf, so keep it inside the output.
+      #:configure-flags
+      #~(list (string-append "-DCMAKE_CONF_PREFIX=" #$output "/etc"))))
     (inputs (list boost))
     (native-inputs (list cxxtest pkg-config python-minimal))
     (home-page "https://github.com/cogpy/occ")
