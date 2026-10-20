@@ -69,6 +69,16 @@ Guix's Guile and install Guile and Python modules into the output."
                          #$(version-major+minor (package-version python))
                          "/site-packages")))
 
+(define (occ-atomspace-configure-flags)
+  "Configure flags for components built on the AtomSpace.  Their CMake files
+only search cogutil's module directory, which works when everything shares
+one prefix such as /usr/local.  In Guix each package has its own prefix, so
+also point them at the AtomSpace's modules (OpenCogMacros, OpenCogGuile,
+OpenCogAtomTypes, ...)."
+  #~(cons (string-append "-DCMAKE_MODULE_PATH=" #$occ-atomspace
+                         "/share/opencog/cmake")
+          #$(occ-configure-flags)))
+
 (define-public occ-cogutil
   (package
     (name "occ-cogutil")
@@ -117,7 +127,7 @@ rule-driven inference engine.  This is the OCC monorepo copy.")
     (build-system cmake-build-system)
     (arguments
      (list #:tests? #f
-           #:configure-flags (occ-configure-flags)))
+           #:configure-flags (occ-atomspace-configure-flags)))
     (inputs (list boost occ-atomspace occ-cogutil gmp guile-3.0 python))
     (native-inputs (list cxxtest pkg-config python-cython))
     (home-page "https://github.com/cogpy/occ")
@@ -135,7 +145,7 @@ is the OCC monorepo copy.")
     (build-system cmake-build-system)
     (arguments
      (list #:tests? #f                 ;tests start a network server
-           #:configure-flags (occ-configure-flags)))
+           #:configure-flags (occ-atomspace-configure-flags)))
     (inputs (list asio boost occ-atomspace occ-atomspace-storage occ-cogutil
                   gmp guile-3.0 jsoncpp openssl python))
     (native-inputs (list cxxtest pkg-config python-cython))
@@ -154,7 +164,7 @@ monorepo copy.")
     (build-system cmake-build-system)
     (arguments
      (list #:tests? #f
-           #:configure-flags (occ-configure-flags)))
+           #:configure-flags (occ-atomspace-configure-flags)))
     (inputs (list boost occ-atomspace occ-cogutil gmp guile-3.0 python))
     (native-inputs (list cxxtest pkg-config python-cython))
     (home-page "https://github.com/cogpy/occ")
@@ -172,7 +182,7 @@ the OCC monorepo copy.")
     (build-system cmake-build-system)
     (arguments
      (list #:tests? #f
-           #:configure-flags (occ-configure-flags)))
+           #:configure-flags (occ-atomspace-configure-flags)))
     (inputs (list boost occ-atomspace occ-cogutil gmp guile-3.0 python))
     (native-inputs (list cxxtest pkg-config python-cython))
     (home-page "https://github.com/cogpy/occ")
@@ -189,7 +199,7 @@ by the Unified Rule Engine.  This is the OCC monorepo copy.")
     (build-system cmake-build-system)
     (arguments
      (list #:tests? #f
-           #:configure-flags (occ-configure-flags)))
+           #:configure-flags (occ-atomspace-configure-flags)))
     (inputs (list boost occ-atomspace occ-cogutil occ-unify gmp guile-3.0
                   python))
     (native-inputs (list cxxtest pkg-config python-cython))
@@ -207,7 +217,7 @@ chaining over rules stored in the AtomSpace.  This is the OCC monorepo copy.")
     (build-system cmake-build-system)
     (arguments
      (list #:tests? #f
-           #:configure-flags (occ-configure-flags)))
+           #:configure-flags (occ-atomspace-configure-flags)))
     (inputs (list boost occ-atomspace occ-cogutil gmp guile-3.0 python))
     (native-inputs (list cxxtest pkg-config python-cython))
     (home-page "https://github.com/cogpy/occ")
