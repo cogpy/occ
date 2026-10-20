@@ -21,6 +21,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <algorithm>
 #include <atomic>
 #include <uuid/uuid.h>
 #include <link-grammar/link-includes.h>
