@@ -62,9 +62,13 @@ def check_scm(path):
             errors.append(f"{path}: missing {needle}")
 
     # `guix build -f` builds whatever the file's last expression returns.
-    m = re.search(r"\(define-public\s+([\w-]+)", text)
-    if m and not re.search(rf"^\s*{re.escape(m.group(1))}\s*$", text, re.M):
-        warnings.append(f"{path}: file should end by returning `{m.group(1)}` for `guix build -f`")
+    # With several packages, any one of them may be the returned value, but
+    # it has to be the last expression, not just a bare name somewhere.
+    names = re.findall(r"\(define-public\s+([\w-]+)", text)
+    code = [l.strip() for l in text.splitlines() if l.strip() and not l.strip().startswith(";")]
+    if names and (not code or code[-1] not in names):
+        warnings.append(f"{path}: file should end by returning one of its packages "
+                        f"({', '.join(names)}) for `guix build -f`")
 
     for bs, mod in (("cmake-build-system", "(guix build-system cmake)"),
                     ("gnu-build-system", "(guix build-system gnu)"),
