@@ -33,7 +33,9 @@
              (gnu packages cpp)
              (gnu packages databases)
              (gnu packages datastructures)
+             (gnu packages gtk)
              (gnu packages guile)
+             (gnu packages image-processing)
              (gnu packages language)
              (gnu packages linux)
              (gnu packages multiprecision)
@@ -42,6 +44,7 @@
              (gnu packages python)
              (gnu packages python-xyz)
              (gnu packages serialization)
+             (gnu packages tbb)
              (gnu packages tls))
 
 (define %occ-root
@@ -346,6 +349,247 @@ architecture.")
     (description "CogSelf is the OCC framework that coordinates cognitive
 synergy between components, part of the OCC cognitive architecture.")
     (license license:agpl3)))
+
+;;; Components below share one of two recipes, so they're built with these
+;;; helpers.  Each adds what a component needs on top of the common inputs.
+
+(define* (occ-atomspace-component directory
+                                  #:key (inputs '()) (propagated-inputs '())
+                                  synopsis description)
+  "Return a package for the OCC component in DIRECTORY, a CMake project
+built on the AtomSpace, with extra INPUTS and PROPAGATED-INPUTS."
+  (package
+    (name (string-append "occ-" directory))
+    (version %occ-version)
+    (source (occ-source directory))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:tests? #f
+           #:configure-flags (occ-atomspace-configure-flags)))
+    (inputs (append (list boost occ-atomspace occ-cogutil gmp guile-3.0 python)
+                    inputs))
+    (propagated-inputs propagated-inputs)
+    (native-inputs (list cxxtest pkg-config python-cython))
+    (home-page "https://github.com/cogpy/occ")
+    (synopsis synopsis)
+    (description (string-append description "  This is the OCC monorepo copy."))
+    (license license:agpl3)))
+
+(define* (occ-standalone-component directory #:key (inputs '())
+                                   synopsis description)
+  "Return a package for the OCC component in DIRECTORY, a CMake project
+with no OpenCog dependencies."
+  (package
+    (name (string-append "occ-" directory))
+    (version %occ-version)
+    (source (occ-source directory))
+    (build-system cmake-build-system)
+    (arguments (list #:tests? #f))
+    (inputs inputs)
+    (home-page "https://github.com/cogpy/occ")
+    (synopsis synopsis)
+    (description description)
+    (license license:agpl3)))
+
+;; Attention allocation, reasoning and learning.
+
+(define-public occ-attention
+  (occ-atomspace-component "attention"
+    #:inputs (list occ-atomspace-storage occ-cogserver)
+    #:synopsis "Economic attention allocation for the OpenCog AtomSpace"
+    #:description "Attention implements ECAN, which spreads short- and
+long-term importance through the AtomSpace to focus processing."))
+
+(define-public occ-spacetime
+  (occ-atomspace-component "spacetime"
+    #:synopsis "Spatial and temporal representations for the AtomSpace"
+    #:description "SpaceTime provides time and space servers that index
+Atoms by location and time."))
+
+(define-public occ-pln
+  (occ-atomspace-component "pln"
+    #:inputs (list occ-spacetime occ-unify occ-ure)
+    #:synopsis "Probabilistic Logic Networks for OpenCog"
+    #:description "PLN is a probabilistic reasoning system built as rules for
+the Unified Rule Engine."))
+
+(define-public occ-miner
+  (occ-atomspace-component "miner"
+    #:inputs (list occ-unify occ-ure)
+    #:synopsis "Frequent pattern miner for the OpenCog AtomSpace"
+    #:description "Miner finds frequent and surprising patterns in the
+AtomSpace using the Unified Rule Engine."))
+
+(define-public occ-moses
+  (occ-atomspace-component "moses"
+    #:synopsis "Meta-Optimizing Semantic Evolutionary Search"
+    #:description "MOSES is a program-learning system that evolves
+programs to fit data using estimation-of-distribution algorithms."))
+
+(define-public occ-asmoses
+  (occ-atomspace-component "asmoses"
+    #:inputs (list occ-unify occ-ure)
+    #:synopsis "MOSES ported to represent programs in the AtomSpace"
+    #:description "AS-MOSES is MOSES with its programs represented as
+Atomese in the AtomSpace."))
+
+;; AtomSpace storage and networking backends.
+
+(define-public occ-atomspace-cog
+  (occ-atomspace-component "atomspace-cog"
+    #:inputs (list occ-atomspace-storage occ-cogserver)
+    #:synopsis "CogServer-based network storage for the AtomSpace"
+    #:description "AtomSpace Cog provides CogStorageNode, which moves Atoms
+between AtomSpaces over the network through a CogServer."))
+
+(define-public occ-atomspace-pgres
+  (occ-atomspace-component "atomspace-pgres"
+    #:inputs (list occ-atomspace-storage postgresql unixodbc)
+    #:synopsis "PostgreSQL storage backend for the AtomSpace"
+    #:description "AtomSpace Pgres stores Atoms and AtomSpaces in a
+PostgreSQL database."))
+
+(define-public occ-atomspace-bridge
+  (occ-atomspace-component "atomspace-bridge"
+    #:inputs (list occ-atomspace-storage postgresql)
+    #:synopsis "Bridge between SQL databases and the AtomSpace"
+    #:description "AtomSpace Bridge maps rows of SQL tables to Atoms."))
+
+(define-public occ-atomspace-dht
+  (occ-atomspace-component "atomspace-dht"
+    #:synopsis "Distributed hash table storage for the AtomSpace"
+    #:description "AtomSpace DHT stores Atoms in a distributed hash table."))
+
+(define-public occ-atomspace-ipfs
+  (occ-atomspace-component "atomspace-ipfs"
+    #:synopsis "IPFS storage for the AtomSpace"
+    #:description "AtomSpace IPFS stores Atoms in the InterPlanetary File
+System."))
+
+(define-public occ-atomspace-metta
+  (occ-atomspace-component "atomspace-metta"
+    #:synopsis "MeTTa language support for the AtomSpace"
+    #:description "AtomSpace MeTTa lets MeTTa programs work with the
+AtomSpace."))
+
+(define-public occ-atomspace-rpc
+  (occ-atomspace-component "atomspace-rpc"
+    #:synopsis "RPC interface to the AtomSpace"
+    #:description "AtomSpace RPC exposes AtomSpace operations over remote
+procedure calls."))
+
+(define-public occ-atomspace-websockets
+  (occ-atomspace-component "atomspace-websockets"
+    #:synopsis "WebSocket interface to the AtomSpace"
+    #:description "AtomSpace WebSockets exposes AtomSpace operations to
+WebSocket clients."))
+
+(define-public occ-atomspace-restful
+  (occ-atomspace-component "atomspace-restful"
+    #:inputs (list occ-atomspace-storage occ-attention occ-cogserver
+                   cppzmq jsoncpp tbb zeromq)
+    #:synopsis "REST API for the AtomSpace"
+    #:description "AtomSpace RESTful serves the AtomSpace over HTTP with a
+JSON REST API."))
+
+(define-public occ-atomspace-agents
+  (occ-atomspace-component "atomspace-agents"
+    #:synopsis "Agents that run over the AtomSpace"
+    #:description "AtomSpace Agents provides agents that process the
+AtomSpace."))
+
+;; Analysis, tooling and applications.
+
+(define-public occ-pattern-index
+  (occ-atomspace-component "pattern-index"
+    #:synopsis "Pattern index for fast AtomSpace queries"
+    #:description "Pattern Index builds an index of AtomSpace patterns to
+speed up pattern queries."))
+
+(define-public occ-dimensional-embedding
+  (occ-atomspace-component "dimensional-embedding"
+    #:synopsis "Dimensional embedding of AtomSpace graphs"
+    #:description "Dimensional Embedding maps Atoms into vector spaces so
+graph distances can be approximated geometrically."))
+
+(define-public occ-generate
+  (occ-atomspace-component "generate"
+    #:synopsis "Network generation from AtomSpace grammars"
+    #:description "Generate creates random networks that follow a grammar
+expressed in the AtomSpace."))
+
+(define-public occ-agi-bio
+  (occ-atomspace-component "agi-bio"
+    #:synopsis "OpenCog tools for biological data"
+    #:description "AGI-Bio applies the AtomSpace and its reasoning tools to
+genomic and biological data."))
+
+(define-public occ-cheminformatics
+  (occ-atomspace-component "cheminformatics"
+    #:synopsis "Chemical structures in the AtomSpace"
+    #:description "Cheminformatics represents molecules and chemical
+reactions as Atoms."))
+
+(define-public occ-vision
+  (occ-atomspace-component "vision"
+    #:inputs (list opencv)
+    #:synopsis "Computer vision for the OpenCog AtomSpace"
+    #:description "Vision brings OpenCV image processing results into the
+AtomSpace."))
+
+(define-public occ-visualization
+  (occ-atomspace-component "visualization"
+    #:inputs (list gtk+)
+    #:synopsis "AtomSpace visualization tools"
+    #:description "Visualization provides GTK-based tools for viewing the
+AtomSpace."))
+
+(define-public occ-atomese-simd
+  (occ-atomspace-component "atomese-simd"
+    #:inputs (list occ-sensory)
+    #:synopsis "SIMD and GPU processing for Atomese"
+    #:description "Atomese SIMD runs Atomese vector operations on SIMD
+hardware."))
+
+(define-public occ-opencog
+  (occ-atomspace-component "opencog"
+    #:inputs (list occ-atomspace-storage occ-attention occ-cogserver
+                   occ-lg-atomese occ-pln occ-unify occ-ure link-grammar)
+    #:synopsis "OpenCog cognitive architecture glue"
+    #:description "OpenCog combines the AtomSpace components into the
+cognitive architecture, with natural-language and reasoning modules."))
+
+(define-public occ-integration
+  (occ-atomspace-component "integration"
+    #:synopsis "OCC integration layer"
+    #:description "The OCC integration layer connects the AtomSpace to the
+cognitive scheduler and kernel bridges."))
+
+;; Standalone components (no OpenCog dependencies).
+
+(define-public occ-agentic-chatbots
+  (occ-standalone-component "agentic-chatbots"
+    #:synopsis "Conversational AI integration for OCC"
+    #:description "Agentic Chatbots connects conversational agents to the
+OCC cognitive architecture."))
+
+(define-public occ-atomspace-accelerator
+  (occ-standalone-component "atomspace-accelerator"
+    #:synopsis "High-performance inference engine for OCC"
+    #:description "AtomSpace Accelerator is a high-performance inference
+engine for the OCC cognitive architecture."))
+
+(define-public occ-tensor-logic
+  (occ-standalone-component "tensor-logic"
+    #:synopsis "Tensor Logic integration layer for OCC"
+    #:description "Tensor Logic combines tensor computation with logical
+inference for OCC."))
+
+(define-public occ-entelechy
+  (occ-standalone-component "entelechy"
+    #:synopsis "Entelechy self-actualization framework for OCC"
+    #:description "Entelechy is the OCC framework for goal-directed
+self-development of the cognitive architecture."))
 
 (define-public opencog-collection
   (package
