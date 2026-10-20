@@ -1,0 +1,300 @@
+# OpenCog Collection (OCC) - Integration Tests
+# End-to-end integration and cognitive synergy tests
+#
+# Test Suites:
+# 1. Repository structure validation
+# 2. Build system integration
+# 3. Cognitive synergy scripts
+# 4. Component interoperability
+
+name: Integration Tests
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+    inputs:
+      full_suite:
+        description: 'Run full integration suite (including slow tests)'
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+concurrency:
+  group: integration-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  structure-test:
+    name: Repository Structure
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Validate Directory Structure
+      run: |
+        echo "## Repository Structure Test" >> $GITHUB_STEP_SUMMARY
+        
+        REQUIRED_DIRS=(
+          "cogutil"
+          "atomspace"
+          "cogserver"
+          "tests"
+          ".github/workflows"
+        )
+        
+        ERRORS=0
+        for dir in "${REQUIRED_DIRS[@]}"; do
+          if [ -d "$dir" ]; then
+            echo "✅ $dir exists"
+            echo "- ✅ \`$dir/\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ $dir missing"
+            echo "- ❌ \`$dir/\` **missing**" >> $GITHUB_STEP_SUMMARY
+            ERRORS=$((ERRORS + 1))
+          fi
+        done
+        
+        REQUIRED_FILES=(
+          "CMakeLists.txt"
+          "Makefile"
+          "guix.scm"
+          "README.md"
+        )
+        
+        for file in "${REQUIRED_FILES[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✅ $file exists"
+          else
+            echo "⚠️ $file missing"
+          fi
+        done
+        
+        if [ $ERRORS -gt 0 ]; then
+          echo "::error::Missing $ERRORS required directories"
+          exit 1
+        fi
+
+  build-system-test:
+    name: Build System Validation
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake make guile-3.0
+
+    - name: Test CMake Configuration
+      run: |
+        echo "Testing CMake configuration..."
+        mkdir -p /tmp/build-test
+        cd /tmp/build-test
+        
+        # Test that CMake can parse the root CMakeLists.txt
+        cmake $GITHUB_WORKSPACE -DBUILD_COGUTIL=OFF -DBUILD_ATOMSPACE=OFF 2>&1 || true
+        
+        echo "CMake configuration test completed"
+
+    - name: Test Makefile Targets
+      run: |
+        echo "## Build System Test" >> $GITHUB_STEP_SUMMARY
+        
+        # Check that key Makefile targets exist
+        if grep -q "^all:" Makefile; then
+          echo "✅ Makefile has 'all' target"
+          echo "- ✅ Makefile 'all' target" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if grep -q "^test:" Makefile; then
+          echo "✅ Makefile has 'test' target"
+          echo "- ✅ Makefile 'test' target" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if grep -q "^help:" Makefile; then
+          echo "✅ Makefile has 'help' target"
+          make help 2>&1 | head -30 || true
+        fi
+
+  synergy-test:
+    name: Cognitive Synergy Scripts
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y guile-3.0 python3
+
+    - name: Run Integration Test Script
+      run: |
+        echo "## Cognitive Synergy Tests" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -x "./test-integration.sh" ]; then
+          echo "Running test-integration.sh..."
+          ./test-integration.sh 2>&1 | tee integration-test.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "- ✅ test-integration.sh passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ test-integration.sh had failures" >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "test-integration.sh not found or not executable"
+        fi
+      continue-on-error: true
+
+    - name: Run Synergy Scripts
+      run: |
+        # Test synergy.sh
+        if [ -x "./synergy.sh" ]; then
+          echo "Running synergy.sh..."
+          timeout 60 ./synergy.sh 2>&1 | tee synergy.log || true
+          echo "- synergy.sh executed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Test basic build script
+        if [ -x "./test-basic-build.sh" ]; then
+          echo "Running test-basic-build.sh..."
+          ./test-basic-build.sh 2>&1 | tee basic-build.log || true
+        fi
+      continue-on-error: true
+
+    - name: Upload Test Logs
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: integration-logs
+        path: |
+          *.log
+        retention-days: 7
+        if-no-files-found: ignore
+
+  documentation-test:
+    name: Documentation Validation
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Check Documentation
+      run: |
+        echo "## Documentation Check" >> $GITHUB_STEP_SUMMARY
+        
+        # Check for essential documentation
+        DOCS=(
+          "README.md"
+          "CONTRIBUTING.md"
+          "docs/CI.md"
+          "docs/architecture.md"
+        )
+        
+        for doc in "${DOCS[@]}"; do
+          if [ -f "$doc" ]; then
+            LINES=$(wc -l < "$doc")
+            echo "- ✅ \`$doc\` ($LINES lines)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ \`$doc\` not found" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
+        
+        # Check for broken internal links (basic)
+        echo ""
+        echo "Checking for potential broken links..."
+        grep -r '\[.*\](.*.md)' docs/ 2>/dev/null | head -20 || true
+
+  dependency-test:
+    name: Dependency Order Validation
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Validate Build Dependencies
+      run: |
+        echo "## Dependency Order Check" >> $GITHUB_STEP_SUMMARY
+        
+        # Check that CMakeLists.txt references components in correct order
+        echo "Checking CMakeLists.txt dependency order..."
+        
+        # Extract component order from CMakeLists.txt
+        grep -E "add_subdirectory\(" CMakeLists.txt | head -20 || true
+        
+        # Check Makefile.build-sequences
+        if [ -f "Makefile.build-sequences" ]; then
+          echo "Build sequences file found"
+          echo "- ✅ Makefile.build-sequences present" >> $GITHUB_STEP_SUMMARY
+        fi
+
+  summary:
+    name: Integration Test Summary
+    runs-on: ubuntu-22.04
+    needs: [structure-test, build-system-test, synergy-test, documentation-test, dependency-test]
+    if: always()
+
+    steps:
+    - name: Generate Summary
+      run: |
+        echo "## Integration Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Repository Structure | ${{ needs.structure-test.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Build System | ${{ needs.build-system-test.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Cognitive Synergy | ${{ needs.synergy-test.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Documentation | ${{ needs.documentation-test.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Dependencies | ${{ needs.dependency-test.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Count results
+        PASSED=0
+        FAILED=0
+        
+        for result in "${{ needs.structure-test.result }}" "${{ needs.build-system-test.result }}" \
+                      "${{ needs.synergy-test.result }}" "${{ needs.documentation-test.result }}" \
+                      "${{ needs.dependency-test.result }}"; do
+          if [ "$result" = "success" ]; then
+            PASSED=$((PASSED + 1))
+          elif [ "$result" = "failure" ]; then
+            FAILED=$((FAILED + 1))
+          fi
+        done
+        
+        echo "**Results:** $PASSED passed, $FAILED failed" >> $GITHUB_STEP_SUMMARY
+
+    - name: Check Required Results
+      run: |
+        if [ "${{ needs.structure-test.result }}" = "failure" ]; then
+          echo "::error::Repository structure test failed"
+          exit 1
+        fi
+        echo "Integration tests completed"

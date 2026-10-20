@@ -1,0 +1,250 @@
+# OpenCog Collection (OCC) - Windows CI Build
+# Consolidated Windows build with mode selection (fast/full)
+#
+# Modes:
+#   - fast: Uses vendored prebuilt dependencies (5-10 min)
+#   - full: Uses vcpkg with GitHub Actions caching (30-120 min first build)
+#
+# Build order: cogutil → atomspace → cogserver → reasoning components
+
+name: Windows Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.github/workflows/ci-linux.yml'
+      - '.github/workflows/ci-guix.yml'
+  pull_request:
+    branches: [ "main", "master" ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Build mode'
+        required: false
+        default: 'fast'
+        type: choice
+        options:
+          - fast
+          - full
+      skip_cache:
+        description: 'Skip vcpkg cache (full mode only)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  BUILD_TYPE: Release
+  CMAKE_GENERATOR: "Visual Studio 17 2022"
+  BUILD_MODE: ${{ inputs.mode || 'fast' }}
+  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg_cache
+  VCPKG_INSTALLED_DIR: ${{ github.workspace }}/vcpkg_installed
+  VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}/vcpkg_cache,readwrite"
+
+jobs:
+  # Stage 1: Build CogUtil (Foundation)
+  build-cogutil:
+    name: CogUtil (${{ inputs.mode || 'fast' }})
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    outputs:
+      cogutil_success: ${{ steps.build.outcome }}
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup MSVC
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Create Directories
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
+        Write-Host "Build mode: $env:BUILD_MODE"
+
+    # Fast mode: Use vendored dependencies
+    - name: Check Vendored Dependencies (Fast Mode)
+      if: env.BUILD_MODE == 'fast'
+      shell: pwsh
+      run: |
+        if (Test-Path "prebuilt/windows/x64") {
+          Write-Host "Using vendored prebuilt dependencies" -ForegroundColor Green
+          $libCount = (Get-ChildItem -Path "prebuilt/windows/x64" -Recurse -Filter "*.lib" -ErrorAction SilentlyContinue).Count
+          Write-Host "Found $libCount prebuilt libraries"
+        } else {
+          Write-Host "No vendored deps found, will use vcpkg" -ForegroundColor Yellow
+          echo "BUILD_MODE=full" >> $env:GITHUB_ENV
+        }
+
+    # Full mode: Setup vcpkg
+    - name: Try Download Prebuilt vcpkg Packages
+      if: env.BUILD_MODE == 'full'
+      id: download-prebuilt
+      continue-on-error: true
+      uses: dawidd6/action-download-artifact@v6
+      with:
+        workflow: vcpkg-prebuild.yml
+        name: vcpkg-complete-x64-windows
+        path: ${{ env.VCPKG_INSTALLED_DIR }}
+        search_artifacts: true
+        if_no_artifact_found: warn
+
+    - name: Setup vcpkg (Full Mode)
+      if: env.BUILD_MODE == 'full' && steps.download-prebuilt.outcome != 'success'
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgGitCommitId: 'a42af01b72c28a8e1d7b48107b33e4f286a55ef6'
+        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+        vcpkgJsonGlob: '**/vcpkg.json'
+
+    - name: Configure CMake
+      shell: pwsh
+      run: |
+        $toolchainFile = ""
+        
+        if ($env:BUILD_MODE -eq "fast" -and (Test-Path "prebuilt/windows/x64")) {
+          # Use vendored dependencies
+          $toolchainFile = ""
+          $prefixPath = "${{ github.workspace }}/prebuilt/windows/x64"
+          
+          cmake -B build/cogutil -S cogutil `
+            -G "$env:CMAKE_GENERATOR" -A x64 `
+            -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE `
+            -DCMAKE_PREFIX_PATH="$prefixPath" `
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+        } else {
+          # Use vcpkg
+          if (Test-Path "${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake") {
+            $toolchainFile = "${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+          } elseif ($env:VCPKG_ROOT) {
+            $toolchainFile = "$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+          }
+          
+          cmake -B build/cogutil -S cogutil `
+            -G "$env:CMAKE_GENERATOR" -A x64 `
+            -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE `
+            -DCMAKE_TOOLCHAIN_FILE="$toolchainFile" `
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+        }
+
+    - name: Build CogUtil
+      id: build
+      shell: pwsh
+      run: |
+        cmake --build build/cogutil --config $env:BUILD_TYPE --parallel 4
+        cmake --install build/cogutil --config $env:BUILD_TYPE
+
+    - name: Upload CogUtil Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: cogutil-windows
+        path: |
+          install/
+          build/cogutil/Release/*.lib
+          build/cogutil/Release/*.dll
+        retention-days: 7
+
+  # Stage 2: Build AtomSpace
+  build-atomspace:
+    name: AtomSpace
+    runs-on: windows-latest
+    needs: build-cogutil
+    timeout-minutes: 90
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup MSVC
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Download CogUtil
+      uses: actions/download-artifact@v4
+      with:
+        name: cogutil-windows
+        path: ${{ github.workspace }}/cogutil-install
+
+    - name: Setup vcpkg (if needed)
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgGitCommitId: 'a42af01b72c28a8e1d7b48107b33e4f286a55ef6'
+        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+        vcpkgJsonGlob: '**/vcpkg.json'
+      continue-on-error: true
+
+    - name: Configure & Build AtomSpace
+      shell: pwsh
+      run: |
+        $cogutilPath = "${{ github.workspace }}/cogutil-install/install"
+        
+        cmake -B build/atomspace -S atomspace `
+          -G "$env:CMAKE_GENERATOR" -A x64 `
+          -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE `
+          -DCMAKE_PREFIX_PATH="$cogutilPath" `
+          -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+        
+        cmake --build build/atomspace --config $env:BUILD_TYPE --parallel 4
+        cmake --install build/atomspace --config $env:BUILD_TYPE
+      continue-on-error: true
+
+    - name: Upload AtomSpace Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: atomspace-windows
+        path: |
+          install/
+          build/atomspace/Release/*.lib
+          build/atomspace/Release/*.dll
+        retention-days: 7
+        if-no-files-found: ignore
+
+  # Summary
+  build-summary:
+    name: Windows Build Summary
+    runs-on: windows-latest
+    needs: [build-cogutil, build-atomspace]
+    if: always()
+
+    steps:
+    - name: Generate Summary
+      shell: pwsh
+      run: |
+        $summary = @"
+        ## Windows Build Summary
+        
+        | Component | Status |
+        |-----------|--------|
+        | CogUtil | ${{ needs.build-cogutil.result }} |
+        | AtomSpace | ${{ needs.build-atomspace.result }} |
+        
+        **Build Mode**: ${{ env.BUILD_MODE }}
+        "@
+        
+        $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+
+    - name: Check Critical Results
+      shell: pwsh
+      run: |
+        if ("${{ needs.build-cogutil.result }}" -eq "failure") {
+          Write-Error "CogUtil build failed - this is critical"
+          exit 1
+        }
+        Write-Host "Windows build completed"

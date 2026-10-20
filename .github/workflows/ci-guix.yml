@@ -1,0 +1,247 @@
+# OpenCog Collection (OCC) - Guix CI Build
+# GNU Guix reproducible build validation
+#
+# Note: Full Guix builds may fail in CI due to cross-compilation requirements.
+# Syntax validation is required; build failures are non-blocking (for now).
+
+name: Guix Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - 'guix.scm'
+      - 'guix-simple.scm'
+      - 'occ-hurdcog-unified.scm'
+      - '*.scm'
+      - '.github/workflows/ci-guix.yml'
+  pull_request:
+    branches: [ "main", "master" ]
+    paths:
+      - '*.scm'
+      - '.github/workflows/ci-guix.yml'
+  workflow_dispatch:
+    inputs:
+      attempt_build:
+        description: 'Attempt full Guix build (may take hours)'
+        required: false
+        default: false
+        type: boolean
+      update_channels:
+        description: 'Run guix pull before building (slow, can hang - only if needed)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: guix-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  syntax-validation:
+    name: Scheme Syntax Validation
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install Guile
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y guile-3.0
+
+    - name: Validate Scheme Syntax
+      run: |
+        echo "## Guix/Scheme Syntax Validation" >> $GITHUB_STEP_SUMMARY
+        
+        ERRORS=0
+        FILES_CHECKED=0
+        
+        # Guix package definition files (guix.scm, etc.) use Guix-specific modules
+        # that aren't available with plain Guile. We validate them by checking
+        # they can be parsed as valid S-expressions, not fully loaded.
+        # Plain Guile doesn't know G-expression syntax (#~ #$ #$@ #+ #+@), which
+        # (guix gexp) normally registers, so register stand-in readers first.
+        cat > "$RUNNER_TEMP/read-guix.scm" <<'EOF'
+        (define (read-ungexp tag splice-tag)
+          (lambda (chr port)
+            (if (eqv? (peek-char port) #\@)
+                (begin (read-char port) (list splice-tag (read port)))
+                (list tag (read port)))))
+        (read-hash-extend #\~ (lambda (chr port) (list 'gexp (read port))))
+        (read-hash-extend #\$ (read-ungexp 'ungexp 'ungexp-splicing))
+        (read-hash-extend #\+ (read-ungexp 'ungexp-native 'ungexp-native-splicing))
+        (with-input-from-file (cadr (command-line))
+          (lambda ()
+            (let loop ()
+              (unless (eof-object? (read))
+                (loop)))))
+        EOF
+
+        for scm_file in guix.scm guix-simple.scm occ-hurdcog-unified.scm; do
+          if [ -f "$scm_file" ]; then
+            FILES_CHECKED=$((FILES_CHECKED + 1))
+            echo "Checking $scm_file..."
+            
+            # Use Guile's reader to parse as S-expressions without evaluating
+            # This validates Scheme syntax without requiring Guix modules
+            if guile --no-auto-compile "$RUNNER_TEMP/read-guix.scm" "$scm_file" 2>&1; then
+              echo "✅ $scm_file - Valid Scheme syntax"
+              echo "- ✅ \`$scm_file\` (Guix package definition)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ $scm_file - Syntax error"
+              echo "- ❌ \`$scm_file\`" >> $GITHUB_STEP_SUMMARY
+              ERRORS=$((ERRORS + 1))
+            fi
+          fi
+        done
+        
+        # Check synergy scheme files (these are pure Guile, can be loaded)
+        if [ -d "synergy" ]; then
+          for scm_file in $(find synergy -name "*.scm" -type f 2>/dev/null | head -20); do
+            FILES_CHECKED=$((FILES_CHECKED + 1))
+            if guile -c "(load \"$scm_file\")" 2>/dev/null; then
+              echo "✅ $scm_file"
+            else
+              echo "⚠️ $scm_file - Has issues (non-blocking)"
+            fi
+          done
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Total files checked:** $FILES_CHECKED" >> $GITHUB_STEP_SUMMARY
+        echo "**Errors:** $ERRORS" >> $GITHUB_STEP_SUMMARY
+        
+        if [ $ERRORS -gt 0 ]; then
+          echo "::error::Found $ERRORS Scheme syntax errors in core files"
+          exit 1
+        fi
+
+    - name: Run Guix Syntax Test Script
+      run: |
+        if [ -x "./test-guix-syntax.sh" ]; then
+          ./test-guix-syntax.sh || echo "Syntax test script had warnings"
+        fi
+      continue-on-error: true
+
+  guix-build:
+    name: Guix Build (Experimental)
+    runs-on: ubuntu-22.04
+    needs: syntax-validation
+    timeout-minutes: 180
+    continue-on-error: true  # Build failures are non-blocking
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install Guix
+      run: |
+        # Install Guix package manager
+        sudo apt-get update
+        sudo apt-get install -y nscd
+        
+        wget -qO- https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh | \
+          sudo bash -s -- --yes || echo "Guix installation may need manual steps"
+        
+        # Source Guix profile
+        if [ -f /etc/profile.d/guix.sh ]; then
+          source /etc/profile.d/guix.sh
+        fi
+
+        # `source` only lasts for this step; persist guix onto PATH for later steps
+        echo "/var/guix/profiles/per-user/root/current-guix/bin" >> $GITHUB_PATH
+      continue-on-error: true
+
+    # guix pull can hang the runner for hours, so it only runs on explicit opt-in
+    - name: Update Guix Channels
+      if: inputs.update_channels == true
+      timeout-minutes: 10
+      run: |
+        guix pull --verbosity=1
+        guix describe
+      continue-on-error: true
+
+    - name: Cache Guix Store
+      uses: actions/cache@v4
+      with:
+        path: |
+          /gnu/store
+          ~/.cache/guix
+        key: guix-store-${{ hashFiles('guix.scm') }}
+        restore-keys: |
+          guix-store-
+      continue-on-error: true
+
+    - name: Build with Guix
+      if: inputs.attempt_build == true || github.event_name == 'workflow_dispatch'
+      run: |
+        echo "## Guix Build Attempt" >> $GITHUB_STEP_SUMMARY
+        
+        if command -v guix &> /dev/null; then
+          echo "Guix is available, attempting build..."
+          
+          # Try the simple build first, then the full build.
+          # PIPESTATUS keeps guix's exit code, which `| tee` would otherwise hide.
+          FAILED=0
+          for scm_file in guix-simple.scm guix.scm; do
+            if [ -f "$scm_file" ]; then
+              echo "Trying $scm_file..."
+              guix build -f "$scm_file" 2>&1 | tee -a guix-build.log
+              if [ "${PIPESTATUS[0]}" -eq 0 ]; then
+                echo "- ✅ \`$scm_file\` built" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "- ❌ \`$scm_file\` failed" >> $GITHUB_STEP_SUMMARY
+                FAILED=1
+              fi
+            fi
+          done
+
+          echo "- Build log saved to guix-build.log" >> $GITHUB_STEP_SUMMARY
+          exit $FAILED
+        else
+          echo "Guix not available - skipping build"
+          echo "- ⚠️ Guix not installed" >> $GITHUB_STEP_SUMMARY
+        fi
+      continue-on-error: true
+
+    - name: Upload Build Logs
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: guix-build-logs
+        path: |
+          guix-build.log
+        retention-days: 7
+        if-no-files-found: ignore
+
+  summary:
+    name: Guix CI Summary
+    runs-on: ubuntu-22.04
+    needs: [syntax-validation, guix-build]
+    if: always()
+
+    steps:
+    - name: Generate Summary
+      run: |
+        echo "## Guix CI Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Check | Status | Required |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Syntax Validation | ${{ needs.syntax-validation.result }} | ✅ Yes |" >> $GITHUB_STEP_SUMMARY
+        echo "| Guix Build | ${{ needs.guix-build.result }} | ❌ No |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "_Note: Full Guix builds may fail due to cross-compilation limitations in CI._" >> $GITHUB_STEP_SUMMARY
+
+    - name: Check Required Results
+      run: |
+        if [ "${{ needs.syntax-validation.result }}" = "failure" ]; then
+          echo "::error::Scheme syntax validation failed - this is required"
+          exit 1
+        fi
+        echo "Guix CI completed (syntax validated)"

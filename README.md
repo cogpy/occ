@@ -1,6 +1,11 @@
 > # OpenCog Collection (OCC)
 > ### An Integrated Architecture for Cognitive Synergy
 
+[![CI](https://github.com/cogpy/occ/actions/workflows/ci.yml/badge.svg)](https://github.com/cogpy/occ/actions/workflows/ci.yml)
+[![Linux Build](https://github.com/cogpy/occ/actions/workflows/ci-linux.yml/badge.svg)](https://github.com/cogpy/occ/actions/workflows/ci-linux.yml)
+[![Windows Build](https://github.com/cogpy/occ/actions/workflows/ci-windows.yml/badge.svg)](https://github.com/cogpy/occ/actions/workflows/ci-windows.yml)
+[![Python Tests](https://github.com/cogpy/occ/actions/workflows/ci-python-tests.yml/badge.svg)](https://github.com/cogpy/occ/actions/workflows/ci-python-tests.yml)
+
 **The OpenCog Collection (OCC) is a monorepo that integrates multiple OpenCog components and external tools into a unified cognitive architecture.** Our primary goal is to foster **cognitive synergy**, where the interaction of diverse AI components leads to emergent intelligence and capabilities beyond the sum of their individual parts.
 
 This repository provides a complete, FSF-endorsed, and reproducible environment for research and development in Artificial General Intelligence (AGI), cognitive computing, and hypergraph-based AI.
