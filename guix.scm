@@ -34,7 +34,8 @@
              (gnu packages check)
              (gnu packages build-tools)
              (gnu packages commencement)
-             (gnu packages datastructures))  ;; For sparsehash
+             (gnu packages datastructures)  ;; For sparsehash
+             (gnu packages multiprecision))  ;; For gmp
 
 (define-public opencog-collection
   (package
@@ -337,7 +338,8 @@
            lapack
            gsl
            cxxtest
-           sparsehash))  ;; Added for sparse data structures
+           sparsehash  ;; Added for sparse data structures
+           gmp))       ;; Required by OpenCogFindGuile.cmake (gmp.h, libgmp)
     (propagated-inputs
      (list python-numpy
            python-pandas
