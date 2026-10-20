@@ -3,7 +3,8 @@
 # 1. Scheme syntax validation of the Guix files (fast).
 # 2. A real `guix build -f guix.scm` with the GNU Guix 1.5.0 release,
 #    installed from its signed binary tarball. Component sources are
-#    watched too, since guix.scm builds them.
+#    watched too, since guix.scm builds them. guix-simple.scm is
+#    syntax-checked only.
 
 name: Guix Build
 
@@ -229,7 +230,9 @@ jobs:
       run: |
         echo "## Guix Build ($(guix --version | head -1))" >> "$GITHUB_STEP_SUMMARY"
         FAILED=0
-        for scm_file in guix.scm guix-simple.scm; do
+        # guix-simple.scm is only syntax-checked: it was never buildable (it
+        # quasi-quotes its phases and copies the whole checkout).
+        for scm_file in guix.scm; do
           [ -f "$scm_file" ] || continue
           echo "::group::guix build -f $scm_file"
           # PIPESTATUS keeps guix's exit code, which `| tee` would otherwise hide.
