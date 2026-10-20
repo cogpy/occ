@@ -21,6 +21,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 env:
   NODE_VERSION: '20'
   ELECTRON_CACHE: ${{ github.workspace }}/.cache/electron
@@ -28,6 +31,8 @@ env:
 
 jobs:
   build-windows:
+    permissions:
+      contents: write
     runs-on: windows-2022
     name: Build Windows Desktop App
     if: |
@@ -195,6 +200,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-linux:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     name: Build Linux Desktop App
     # TEMPORARILY DISABLED - Focus on Windows builds first
