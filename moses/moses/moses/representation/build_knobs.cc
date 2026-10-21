@@ -741,7 +741,7 @@ void build_knobs::contin_canonize(pre_it it)
         _exemplar.move_after(it, pre_it(it.last_child()));
         // Handle any divs.
         for (sib_it div = _exemplar.partition(it.begin(), it.end(),
-                                              bind(std::not_equal_to<vertex>(), _1,
+                                              boost::bind(std::not_equal_to<vertex>(), _1,
                                                    id::div));
              div != it.end();)
             canonize_div(_exemplar.move_after(it, pre_it(div++)));

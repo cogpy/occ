@@ -35,6 +35,7 @@
 #include <opencog/util/lru_cache.h>
 #include <opencog/util/numeric.h>
 #include <opencog/util/oc_omp.h>
+#include <opencog/util/iostreamContainer.h>
 
 #include "../main/feature-selection.h"  // needed for feature_set, feature_selection_parameters
 

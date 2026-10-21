@@ -30,8 +30,8 @@ namespace opencog { namespace reduct {
   {
     using namespace boost::placeholders;
     return (std::adjacent_find(c.begin(), c.end(),
-			       bind(std::equal_to<int>(), _1,
-				    bind(std::negate<int>(), _2))) != c.end());
+			       boost::bind(std::equal_to<int>(), _1,
+				    boost::bind(std::negate<int>(), _2))) != c.end());
   }
 
   /// Is c1 a subset of (or equal to) c2?
@@ -53,7 +53,7 @@ namespace opencog { namespace reduct {
   {
     using namespace boost::placeholders;
     return std::accumulate(f.begin(), f.end(), 0,
-			   bind(std::plus<int>(), _1, bind(&clause::size, _2)));
+			   boost::bind(std::plus<int>(), _1, boost::bind(&clause::size, _2)));
   }
 
 } // ~namespace reduct

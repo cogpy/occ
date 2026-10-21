@@ -10,6 +10,7 @@ ADD_SUBDIRECTORY(crutil)
 
 ADD_LIBRARY(comboreduct SHARED
 	crutil/exception.cc
+	crutil/tree.cc
 
 	combo/action.cc
 	combo/action_symbol.cc

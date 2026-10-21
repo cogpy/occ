@@ -82,7 +82,7 @@ void uniform_randomize_bit(const field_set& fs, instance& inst,
 {
     //could be faster
     generate(fs.begin_bit(inst), fs.end_bit(inst),
-             bind(&RandGen::randbool, ref(rng)));
+             boost::bind(&RandGen::randbool, ref(rng)));
 }
 
 void uniform_randomize_disc(const field_set& fs, instance& inst,

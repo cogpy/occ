@@ -288,7 +288,7 @@ void local_structure_probs_learning::operator()(const field_set& fs,
     for_each(dst.begin(), dst.end(), make_counting_iterator(0),
              boost::bind(&local_structure_probs_learning::rec_learn<It>,
                   this, boost::ref(fs),
-                  from, to, _2, bind(&dtree::begin, _1)));
+                  from, to, _2, boost::bind(&dtree::begin, _1)));
 }
 
 // For each node in the dependency tree, accumulate statistics from
@@ -318,7 +318,7 @@ void local_structure_probs_learning::rec_learn(const field_set& fs,
         pivots.front() = from;
         pivots.back() = to;
         n_way_partition(from, to,
-                        bind(&field_set::get_raw, &fs, _1, dtr->front()),
+                        boost::bind(&field_set::get_raw, &fs, _1, dtr->front()),
                         raw_arity, ++pivots.begin());
         for_each(pivots.begin(), --pivots.end(), ++pivots.begin(),
                  make_counting_iterator(dtr.begin()),

@@ -12,6 +12,7 @@
 
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/persist/api/BackingStore.h>
+#include <opencog/attentionbank/avalue/AttentionValue.h>
 #include <opencog/atoms/base/Node.h>
 
 namespace opencog

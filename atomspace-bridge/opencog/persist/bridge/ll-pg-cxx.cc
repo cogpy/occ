@@ -29,7 +29,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <postgresql/libpq-fe.h>
+#include <libpq-fe.h>
 
 #include <opencog/util/exceptions.h>
 #include <opencog/util/Logger.h>
