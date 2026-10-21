@@ -18,7 +18,7 @@ set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(BOOST_USE_STATIC_RUNTIME OFF)
 
-find_package(Boost 1.46 COMPONENTS system filesystem program_options)
+find_package(Boost 1.46 COMPONENTS filesystem program_options)
 
 IF(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
