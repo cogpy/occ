@@ -32,6 +32,7 @@
 (use-modules (srfi srfi-1)
              (guix packages)
              (guix gexp)
+             (guix git-download)
              (guix utils)
              (guix build-system cmake)
              (guix build-system copy)
@@ -413,8 +414,36 @@ with no OpenCog dependencies."
     #:description "Attention implements ECAN, which spreads short- and
 long-term importance through the AtomSpace to focus processing."))
 
+(define octomap
+  ;; Not packaged in Guix; spacetime (and so pln) needs it.  Only the core
+  ;; library is built, not the octovis viewer or dynamicEDT3D.
+  (package
+    (name "octomap")
+    (version "1.10.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/OctoMap/octomap")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1k7cgczv079qwf0pk1cp2cdnln5g4qnz5nqzpjf1x2aw273hf523"))))
+    (build-system cmake-build-system)
+    (arguments
+     (list #:tests? #f
+           #:configure-flags
+           #~(list "-DBUILD_OCTOVIS_SUBPROJECT=OFF"
+                   "-DBUILD_DYNAMICETD3D_SUBPROJECT=OFF")))
+    (home-page "https://octomap.github.io/")
+    (synopsis "Probabilistic 3D occupancy mapping based on octrees")
+    (description "OctoMap implements a 3D occupancy grid mapping approach
+based on octrees, providing data structures and mapping algorithms.")
+    (license license:bsd-3)))
+
 (define-public occ-spacetime
   (occ-atomspace-component "spacetime"
+    #:inputs (list octomap)
     #:synopsis "Spatial and temporal representations for the AtomSpace"
     #:description "SpaceTime provides time and space servers that index
 Atoms by location and time."))
