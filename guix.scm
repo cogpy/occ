@@ -14,6 +14,13 @@
 ;;; agents (Scheme only), coggml and cogself (standalone C++) have no OpenCog
 ;;; dependencies.
 ;;;
+;;; Not packaged: atomspace-ipfs (needs an IPFS C++ client that Guix doesn't
+;;; have), tensor-logic (its code doesn't compile with any compiler: it passes
+;;; a FlowTensor where a FlowRecord is expected), motor (installs only a
+;;; README), the OS layers (cognumach, hurdcog, inferno-agi-os), wrappers for
+;;; external projects (gnucash, koboldcpp, aphrodite-engine), ROS/catkin
+;;; packages and the benchmark harness.
+;;;
 ;;; The recipes follow upstream Guix's (gnu packages opencog), adapted to
 ;;; build from local checkouts instead of separate git repositories.
 ;;;
@@ -40,6 +47,7 @@
              (gnu packages linux)
              (gnu packages multiprecision)
              (gnu packages networking)
+             (gnu packages opencl)
              (gnu packages pkg-config)
              (gnu packages python)
              (gnu packages python-xyz)
@@ -457,14 +465,9 @@ PostgreSQL database."))
 
 (define-public occ-atomspace-dht
   (occ-atomspace-component "atomspace-dht"
+    #:inputs (list opendht)
     #:synopsis "Distributed hash table storage for the AtomSpace"
     #:description "AtomSpace DHT stores Atoms in a distributed hash table."))
-
-(define-public occ-atomspace-ipfs
-  (occ-atomspace-component "atomspace-ipfs"
-    #:synopsis "IPFS storage for the AtomSpace"
-    #:description "AtomSpace IPFS stores Atoms in the InterPlanetary File
-System."))
 
 (define-public occ-atomspace-metta
   (occ-atomspace-component "atomspace-metta"
@@ -546,7 +549,7 @@ AtomSpace."))
 
 (define-public occ-atomese-simd
   (occ-atomspace-component "atomese-simd"
-    #:inputs (list occ-sensory)
+    #:inputs (list occ-sensory opencl-headers opencl-icd-loader)
     #:synopsis "SIMD and GPU processing for Atomese"
     #:description "Atomese SIMD runs Atomese vector operations on SIMD
 hardware."))
@@ -561,6 +564,7 @@ cognitive architecture, with natural-language and reasoning modules."))
 
 (define-public occ-integration
   (occ-atomspace-component "integration"
+    #:inputs (list occ-atomspace-storage)
     #:synopsis "OCC integration layer"
     #:description "The OCC integration layer connects the AtomSpace to the
 cognitive scheduler and kernel bridges."))
@@ -578,12 +582,6 @@ OCC cognitive architecture."))
     #:synopsis "High-performance inference engine for OCC"
     #:description "AtomSpace Accelerator is a high-performance inference
 engine for the OCC cognitive architecture."))
-
-(define-public occ-tensor-logic
-  (occ-standalone-component "tensor-logic"
-    #:synopsis "Tensor Logic integration layer for OCC"
-    #:description "Tensor Logic combines tensor computation with logical
-inference for OCC."))
 
 (define-public occ-entelechy
   (occ-standalone-component "entelechy"
