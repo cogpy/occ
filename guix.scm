@@ -508,13 +508,6 @@ PostgreSQL database."))
     #:description "AtomSpace MeTTa lets MeTTa programs work with the
 AtomSpace."))
 
-(define-public occ-atomspace-rpc
-  (occ-atomspace-component "atomspace-rpc"
-    #:inputs (list abseil-cpp c-ares grpc openssl protobuf re2 zlib)
-    #:synopsis "RPC interface to the AtomSpace"
-    #:description "AtomSpace RPC exposes AtomSpace operations over remote
-procedure calls."))
-
 (define-public occ-atomspace-restful
   (occ-atomspace-component "atomspace-restful"
     #:inputs (list occ-atomspace-storage occ-attention occ-cogserver
@@ -547,6 +540,15 @@ genomic and biological data."))
     #:synopsis "Chemical structures in the AtomSpace"
     #:description "Cheminformatics represents molecules and chemical
 reactions as Atoms."))
+
+;; Uses the AGI-Bio atom types, so it comes after occ-agi-bio.
+(define-public occ-atomspace-rpc
+  (occ-atomspace-component "atomspace-rpc"
+    #:inputs (list occ-agi-bio occ-atomspace-storage abseil-cpp c-ares grpc
+                   nlohmann-json openssl protobuf re2 zlib)
+    #:synopsis "RPC interface to the AtomSpace"
+    #:description "AtomSpace RPC exposes AtomSpace operations over remote
+procedure calls."))
 
 (define-public occ-vision
   (occ-atomspace-component "vision"

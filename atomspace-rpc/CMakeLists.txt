@@ -51,6 +51,8 @@ ENDIF (ATOMSPACE_FOUND)
 
 include(OpenCogFindGuile)
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+# The libraries are installed in lib/opencog, which the default RPATH misses.
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/opencog")
 
 add_subdirectory(src)
 

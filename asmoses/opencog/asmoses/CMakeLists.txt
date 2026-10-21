@@ -28,6 +28,24 @@ IF (HAVE_ATOMSPACE AND HAVE_GUILE )
 	ADD_SUBDIRECTORY (urereduct)
 ENDIF (HAVE_ATOMSPACE AND HAVE_GUILE )
 
+# Much of the tree includes the generated atomese/atom_types/atom_types.h,
+# directly or through headers such as combo_atomese.h, so every library and
+# program waits for it; otherwise parallel builds can compile them first.
+FUNCTION(ASMOSES_DEPEND_ON_ATOM_TYPES dir)
+	GET_PROPERTY(targets DIRECTORY ${dir} PROPERTY BUILDSYSTEM_TARGETS)
+	FOREACH(target ${targets})
+		GET_TARGET_PROPERTY(type ${target} TYPE)
+		IF (type MATCHES "^(SHARED_LIBRARY|STATIC_LIBRARY|MODULE_LIBRARY|OBJECT_LIBRARY|EXECUTABLE)$")
+			ADD_DEPENDENCIES(${target} asmoses_atom_types)
+		ENDIF ()
+	ENDFOREACH()
+	GET_PROPERTY(subdirs DIRECTORY ${dir} PROPERTY SUBDIRECTORIES)
+	FOREACH(subdir ${subdirs})
+		ASMOSES_DEPEND_ON_ATOM_TYPES(${subdir})
+	ENDFOREACH()
+ENDFUNCTION()
+ASMOSES_DEPEND_ON_ATOM_TYPES(${CMAKE_CURRENT_SOURCE_DIR})
+
 
 WRITE_GUILE_CONFIG(${GUILE_BIN_DIR}/opencog/asmoses-config.scm SCM_CONFIG TRUE)
 WRITE_GUILE_CONFIG(${GUILE_BIN_DIR}/opencog/asmoses-config-installable.scm SCM_CONFIG FALSE)
