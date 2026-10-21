@@ -33,6 +33,7 @@
 #include <opencog/util/algorithm.h>
 #include <opencog/util/functional.h>
 #include <opencog/util/oc_omp.h>
+#include <opencog/util/iostreamContainer.h>
 
 #include "../main/feature-selection.h" // needed for feature_set, feature_selection_parameters
 

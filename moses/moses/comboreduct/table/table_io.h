@@ -39,6 +39,7 @@
 
 #include "table.h"
 #include "../type_checker/type_tree.h"
+#include <opencog/util/iostreamContainer.h>
 
 namespace opencog { namespace combo {
 

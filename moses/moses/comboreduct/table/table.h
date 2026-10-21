@@ -41,6 +41,7 @@
 #include <opencog/util/dorepeat.h>
 #include <opencog/util/exceptions.h>
 #include <opencog/util/KLD.h>
+#include <opencog/util/iostreamContainer.h>
 
 #include "../type_checker/type_tree.h"
 #include "../interpreter/eval.h"
