@@ -2,23 +2,23 @@
   "status": {
     "vcpkg_deps": "missing",
     "cogutil": "missing",
-    "cogserver": "check",
+    "atomspace": "check",
     "moses": "check",
-    "atomspace": "check"
+    "cogserver": "check"
   },
-  "build_type": "Release",
-  "generated": "2026-10-21 00:45:34 UTC",
+  "generated": "2026-10-21 06:10:08 UTC",
   "rebuild_triggers": {
     "cogutil": "cogutil/ changes",
-    "cogserver": "cogserver/, atomspace/, or cogutil/ changes",
+    "atomspace": "atomspace/ or cogutil/ changes",
     "moses": "moses/ or cogutil/ changes",
-    "atomspace": "atomspace/ or cogutil/ changes"
+    "cogserver": "cogserver/, atomspace/, or cogutil/ changes"
   },
+  "platform": "windows-x64",
   "source_hashes": {
-    "cogserver": "E4A10D4E5FFAB9C1",
     "cogutil": "0B30E229580F6B36",
+    "moses": "8B1D0AB5DBC3097F",
     "atomspace": "B359DB96BF45C2A3",
-    "moses": "DBC13C012D2B120D"
+    "cogserver": "E4A10D4E5FFAB9C1"
   },
-  "platform": "windows-x64"
+  "build_type": "Release"
 }
