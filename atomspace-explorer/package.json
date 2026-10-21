@@ -66,6 +66,6 @@
     "tslint": "^5.7.0",
     "typescript": "^3.9.5",
     "webpack": "^5.105.2",
-    "webpack-dev-server": "^5.2.6"
+    "webpack-dev-server": "^6.1.0"
   }
 }
