@@ -15,7 +15,9 @@
 ;;; dependencies.
 ;;;
 ;;; Not packaged: atomspace-ipfs (needs an IPFS C++ client that Guix doesn't
-;;; have), tensor-logic (its code doesn't compile with any compiler: it passes
+;;; have), atomspace-agents (its lib/CogAgentsConfig.cmake.in is missing from
+;;; the repo), dimensional-embedding (needs opencog/util/cluster.h, which
+;;; cogutil no longer has), tensor-logic (its code doesn't compile with any compiler: it passes
 ;;; a FlowTensor where a FlowRecord is expected), motor (installs only a
 ;;; README), the OS layers (cognumach, hurdcog, inferno-agi-os), wrappers for
 ;;; external projects (gnucash, koboldcpp, aphrodite-engine), ROS/catkin
@@ -37,6 +39,7 @@
              (gnu packages)
              (gnu packages boost)
              (gnu packages check)
+             (gnu packages compression)
              (gnu packages cpp)
              (gnu packages databases)
              (gnu packages datastructures)
@@ -49,8 +52,10 @@
              (gnu packages networking)
              (gnu packages opencl)
              (gnu packages pkg-config)
+             (gnu packages protobuf)
              (gnu packages python)
              (gnu packages python-xyz)
+             (gnu packages rpc)
              (gnu packages serialization)
              (gnu packages tbb)
              (gnu packages tls))
@@ -465,7 +470,7 @@ PostgreSQL database."))
 
 (define-public occ-atomspace-dht
   (occ-atomspace-component "atomspace-dht"
-    #:inputs (list opendht)
+    #:inputs (list occ-atomspace-storage opendht)
     #:synopsis "Distributed hash table storage for the AtomSpace"
     #:description "AtomSpace DHT stores Atoms in a distributed hash table."))
 
@@ -477,12 +482,14 @@ AtomSpace."))
 
 (define-public occ-atomspace-rpc
   (occ-atomspace-component "atomspace-rpc"
+    #:inputs (list grpc protobuf)
     #:synopsis "RPC interface to the AtomSpace"
     #:description "AtomSpace RPC exposes AtomSpace operations over remote
 procedure calls."))
 
 (define-public occ-atomspace-websockets
   (occ-atomspace-component "atomspace-websockets"
+    #:inputs (list openssl zlib)
     #:synopsis "WebSocket interface to the AtomSpace"
     #:description "AtomSpace WebSockets exposes AtomSpace operations to
 WebSocket clients."))
@@ -495,28 +502,15 @@ WebSocket clients."))
     #:description "AtomSpace RESTful serves the AtomSpace over HTTP with a
 JSON REST API."))
 
-(define-public occ-atomspace-agents
-  (occ-atomspace-component "atomspace-agents"
-    #:synopsis "Agents that run over the AtomSpace"
-    #:description "AtomSpace Agents provides agents that process the
-AtomSpace."))
-
-;; Analysis, tooling and applications.
-
 (define-public occ-pattern-index
   (occ-atomspace-component "pattern-index"
     #:synopsis "Pattern index for fast AtomSpace queries"
     #:description "Pattern Index builds an index of AtomSpace patterns to
 speed up pattern queries."))
 
-(define-public occ-dimensional-embedding
-  (occ-atomspace-component "dimensional-embedding"
-    #:synopsis "Dimensional embedding of AtomSpace graphs"
-    #:description "Dimensional Embedding maps Atoms into vector spaces so
-graph distances can be approximated geometrically."))
-
 (define-public occ-generate
   (occ-atomspace-component "generate"
+    #:inputs (list `(,util-linux "lib"))
     #:synopsis "Network generation from AtomSpace grammars"
     #:description "Generate creates random networks that follow a grammar
 expressed in the AtomSpace."))
@@ -549,7 +543,7 @@ AtomSpace."))
 
 (define-public occ-atomese-simd
   (occ-atomspace-component "atomese-simd"
-    #:inputs (list occ-sensory opencl-headers opencl-icd-loader)
+    #:inputs (list occ-sensory opencl-clhpp opencl-headers opencl-icd-loader)
     #:synopsis "SIMD and GPU processing for Atomese"
     #:description "Atomese SIMD runs Atomese vector operations on SIMD
 hardware."))
@@ -564,7 +558,7 @@ cognitive architecture, with natural-language and reasoning modules."))
 
 (define-public occ-integration
   (occ-atomspace-component "integration"
-    #:inputs (list occ-atomspace-storage)
+    #:inputs (list occ-atomspace-storage occ-attention)
     #:synopsis "OCC integration layer"
     #:description "The OCC integration layer connects the AtomSpace to the
 cognitive scheduler and kernel bridges."))
