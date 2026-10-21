@@ -510,8 +510,8 @@ AtomSpace."))
 
 (define-public occ-atomspace-rpc
   (occ-atomspace-component "atomspace-rpc"
-    #:inputs (list abseil-cpp c-ares grpc nlohmann-json openssl protobuf re2
-                   zlib)
+    #:inputs (list occ-agi-bio occ-atomspace-storage abseil-cpp c-ares grpc
+                   nlohmann-json openssl protobuf re2 zlib)
     #:synopsis "RPC interface to the AtomSpace"
     #:description "AtomSpace RPC exposes AtomSpace operations over remote
 procedure calls."))

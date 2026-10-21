@@ -1,9 +1,16 @@
 include(OpenCogGccOptions)
-#Bioscience
+#Bioscience (AtomServiceClient.h includes its atom types)
 find_library(BIOSCIENCE_LIB
-        NAME libbioscience-types.dylib libbioscience-types.so
+        NAMES bioscience-types
         PATHS ${CMAKE_INSTALL_PREFIX}/lib/opencog
-        NO_DEFAULT_PATH)
+        PATH_SUFFIXES opencog)
+
+#load_file() from atomspace-storage
+find_library(FAST_LOAD_LIB
+        NAMES fast_load_scm
+        PATHS ${CMAKE_INSTALL_PREFIX}/lib/opencog
+        PATH_SUFFIXES opencog
+        REQUIRED)
 
 #Protobuff
 set(protobuf_MODULE_COMPATIBLE ON CACHE BOOL "")
@@ -59,6 +66,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}
 target_link_libraries(atom_server
         ${COGUTIL_LIBRARIES}
         ${ATOMSPACE_LIBRARIES}
+        ${FAST_LOAD_LIB}
         ${Boost_LIBRARIES}
         protobuf::libprotobuf
         gRPC::grpc++_unsecure)
@@ -67,6 +75,7 @@ target_link_libraries(atom_server
 target_link_libraries(atom_service_client
         ${COGUTIL_LIBRARIES}
         ${ATOMSPACE_LIBRARIES}
+        ${FAST_LOAD_LIB}
         ${Boost_LIBRARIES}
         ${GUILE_LIBRARIES}
         protobuf::libprotobuf
