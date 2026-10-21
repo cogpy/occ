@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "electron-store": "^8.1.0",
-    "ws": "^8.16.0"
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "electron": "^41.10.6",
