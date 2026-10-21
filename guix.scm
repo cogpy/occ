@@ -14,7 +14,8 @@
 ;;; agents (Scheme only), coggml and cogself (standalone C++) have no OpenCog
 ;;; dependencies.
 ;;;
-;;; Not packaged: atomspace-ipfs (needs an IPFS C++ client that Guix doesn't
+;;; Not packaged: atomspace-websockets (needs uSockets, which Guix doesn't
+;;; have), atomspace-ipfs (needs an IPFS C++ client that Guix doesn't
 ;;; have), atomspace-agents (its lib/CogAgentsConfig.cmake.in is missing from
 ;;; the repo), dimensional-embedding (needs opencog/util/cluster.h, which
 ;;; cogutil no longer has), atomspace-dht (needs opencog/atomspace/AtomTable.h,
@@ -40,6 +41,7 @@
              (guix build-system copy)
              ((guix licenses) #:prefix license:)
              (gnu packages)
+             (gnu packages adns)
              (gnu packages boost)
              (gnu packages check)
              (gnu packages compression)
@@ -58,6 +60,7 @@
              (gnu packages protobuf)
              (gnu packages python)
              (gnu packages python-xyz)
+             (gnu packages regex)
              (gnu packages rpc)
              (gnu packages serialization)
              (gnu packages tbb)
@@ -507,17 +510,10 @@ AtomSpace."))
 
 (define-public occ-atomspace-rpc
   (occ-atomspace-component "atomspace-rpc"
-    #:inputs (list grpc openssl protobuf zlib)
+    #:inputs (list abseil-cpp c-ares grpc openssl protobuf re2 zlib)
     #:synopsis "RPC interface to the AtomSpace"
     #:description "AtomSpace RPC exposes AtomSpace operations over remote
 procedure calls."))
-
-(define-public occ-atomspace-websockets
-  (occ-atomspace-component "atomspace-websockets"
-    #:inputs (list nlohmann-json openssl zlib)
-    #:synopsis "WebSocket interface to the AtomSpace"
-    #:description "AtomSpace WebSockets exposes AtomSpace operations to
-WebSocket clients."))
 
 (define-public occ-atomspace-restful
   (occ-atomspace-component "atomspace-restful"
@@ -561,7 +557,7 @@ AtomSpace."))
 
 (define-public occ-visualization
   (occ-atomspace-component "visualization"
-    #:inputs (list occ-atomspace-storage occ-cogserver gtk+)
+    #:inputs (list asio occ-atomspace-storage occ-cogserver gtk+)
     #:synopsis "AtomSpace visualization tools"
     #:description "Visualization provides GTK-based tools for viewing the
 AtomSpace."))
@@ -623,7 +619,30 @@ self-development of the cognitive architecture."))
            occ-learn
            occ-agents
            occ-coggml
-           occ-cogself))
+           occ-cogself
+           occ-attention
+           occ-spacetime
+           occ-pln
+           occ-miner
+           occ-moses
+           occ-asmoses
+           occ-atomspace-cog
+           occ-atomspace-pgres
+           occ-atomspace-bridge
+           occ-atomspace-metta
+           occ-atomspace-rpc
+           occ-atomspace-restful
+           occ-pattern-index
+           occ-generate
+           occ-agi-bio
+           occ-cheminformatics
+           occ-vision
+           occ-visualization
+           occ-atomese-simd
+           occ-opencog
+           occ-agentic-chatbots
+           occ-atomspace-accelerator
+           occ-entelechy))
     (home-page "https://github.com/cogpy/occ")
     (synopsis "OpenCog Collection - Cognitive Computing and AGI Framework")
     (description
@@ -647,6 +666,21 @@ components, each built as its own package:
 @item Agents - prototype interactive agents in Atomese
 @item CogGML - self-aware microkernel for cognitive processing
 @item CogSelf - AGI cognitive synergy framework
+@item Attention - economic attention allocation (ECAN)
+@item SpaceTime - spatial and temporal representations
+@item PLN - Probabilistic Logic Networks
+@item Miner - frequent pattern mining
+@item MOSES and AS-MOSES - evolutionary program learning
+@item AtomSpace Cog, Pgres, Bridge, MeTTa, RPC and RESTful - network, SQL,
+MeTTa, RPC and REST interfaces to the AtomSpace
+@item Pattern Index - pattern index for fast AtomSpace queries
+@item Generate - network generation from AtomSpace grammars
+@item AGI-Bio and Cheminformatics - biological and chemical data
+@item Vision and Visualization - computer vision and AtomSpace viewers
+@item Atomese SIMD - SIMD and GPU processing for Atomese
+@item OpenCog - cognitive architecture glue
+@item Agentic Chatbots, AtomSpace Accelerator and Entelechy - OCC conversational
+AI, inference engine and self-actualization framework
 @end itemize")
     (license license:agpl3+)))
 
