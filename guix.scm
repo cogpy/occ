@@ -17,7 +17,9 @@
 ;;; Not packaged: atomspace-ipfs (needs an IPFS C++ client that Guix doesn't
 ;;; have), atomspace-agents (its lib/CogAgentsConfig.cmake.in is missing from
 ;;; the repo), dimensional-embedding (needs opencog/util/cluster.h, which
-;;; cogutil no longer has), tensor-logic (its code doesn't compile with any compiler: it passes
+;;; cogutil no longer has), atomspace-dht (needs opencog/atomspace/AtomTable.h,
+;;; removed from the AtomSpace), integration (MACHSPACE_STORAGE_NODE is never
+;;; defined as an atom type), tensor-logic (its code doesn't compile with any compiler: it passes
 ;;; a FlowTensor where a FlowRecord is expected), motor (installs only a
 ;;; README), the OS layers (cognumach, hurdcog, inferno-agi-os), wrappers for
 ;;; external projects (gnucash, koboldcpp, aphrodite-engine), ROS/catkin
@@ -497,12 +499,6 @@ PostgreSQL database."))
     #:synopsis "Bridge between SQL databases and the AtomSpace"
     #:description "AtomSpace Bridge maps rows of SQL tables to Atoms."))
 
-(define-public occ-atomspace-dht
-  (occ-atomspace-component "atomspace-dht"
-    #:inputs (list occ-atomspace-storage opendht)
-    #:synopsis "Distributed hash table storage for the AtomSpace"
-    #:description "AtomSpace DHT stores Atoms in a distributed hash table."))
-
 (define-public occ-atomspace-metta
   (occ-atomspace-component "atomspace-metta"
     #:synopsis "MeTTa language support for the AtomSpace"
@@ -511,14 +507,14 @@ AtomSpace."))
 
 (define-public occ-atomspace-rpc
   (occ-atomspace-component "atomspace-rpc"
-    #:inputs (list grpc protobuf)
+    #:inputs (list grpc openssl protobuf zlib)
     #:synopsis "RPC interface to the AtomSpace"
     #:description "AtomSpace RPC exposes AtomSpace operations over remote
 procedure calls."))
 
 (define-public occ-atomspace-websockets
   (occ-atomspace-component "atomspace-websockets"
-    #:inputs (list openssl zlib)
+    #:inputs (list nlohmann-json openssl zlib)
     #:synopsis "WebSocket interface to the AtomSpace"
     #:description "AtomSpace WebSockets exposes AtomSpace operations to
 WebSocket clients."))
@@ -565,7 +561,7 @@ AtomSpace."))
 
 (define-public occ-visualization
   (occ-atomspace-component "visualization"
-    #:inputs (list gtk+)
+    #:inputs (list occ-atomspace-storage occ-cogserver gtk+)
     #:synopsis "AtomSpace visualization tools"
     #:description "Visualization provides GTK-based tools for viewing the
 AtomSpace."))
@@ -584,15 +580,6 @@ hardware."))
     #:synopsis "OpenCog cognitive architecture glue"
     #:description "OpenCog combines the AtomSpace components into the
 cognitive architecture, with natural-language and reasoning modules."))
-
-(define-public occ-integration
-  (occ-atomspace-component "integration"
-    #:inputs (list occ-atomspace-storage occ-attention)
-    #:synopsis "OCC integration layer"
-    #:description "The OCC integration layer connects the AtomSpace to the
-cognitive scheduler and kernel bridges."))
-
-;; Standalone components (no OpenCog dependencies).
 
 (define-public occ-agentic-chatbots
   (occ-standalone-component "agentic-chatbots"
