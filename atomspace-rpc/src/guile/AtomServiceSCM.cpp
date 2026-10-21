@@ -108,7 +108,7 @@ void AtomServiceSCM::init(void) {
 HandleSeq AtomServiceSCM::ExecutePattern(const std::string &atom_id, const Handle &patt) {
     if(patt->is_executable()){
         HandleSeq res;
-        AtomSpace* as = SchemeSmob::ss_get_env_as("exec-pattern");
+        AtomSpace* as = SchemeSmob::ss_get_env_as("exec-pattern").get();
         AtomServiceClient client(_channel);
         client.ExecutePattern(atom_id, patt, as, res);
         return res;
@@ -127,7 +127,7 @@ bool AtomServiceSCM::CheckNode(const std::string &atom_id, const std::string &ty
 
 HandleSeq AtomServiceSCM::FindSimilar(const std::string &atom_id, const std::string &type_name, const std::string
 &node_name) {
-    AtomSpace* as = SchemeSmob::ss_get_env_as("exec-pattern");
+    AtomSpace* as = SchemeSmob::ss_get_env_as("exec-pattern").get();
     AtomServiceClient client(_channel);
     HandleSeq res;
     client.FindSimilar(atom_id, type_name, node_name, res, as);

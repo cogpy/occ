@@ -138,8 +138,8 @@ void AtomSpaceManager::findSimilarNames(const std::string &id, const std::string
     std::string patt = name + ".+$";
     std::regex similar_regex(patt, std::regex_constants::ECMAScript | std::regex_constants::icase);
 
-    opencog::HandleSet atoms;
-    as->get_handleset_by_type(atoms, type);
+    opencog::HandleSeq atoms;
+    as->get_handles_by_type(atoms, type);
 
     for(auto& h : atoms){
         if(result.size() == 10) break;

@@ -41,6 +41,7 @@ ADD_LIBRARY (moses SHARED
 	moses/complexity.cc
 	moses/distributed_moses.cc
 	moses/local_moses.cc
+	moses/log_prog_name.cc
 	moses/moses_main.cc
 	moses/mpi_moses.cc
 	moses/neighborhood_sampling.cc
