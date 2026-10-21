@@ -13,6 +13,9 @@ ADD_LIBRARY(atomese SHARED
 		type_checker/AtomeseTypeChecker.cpp
 )
 
+# Interpreter.cc includes the generated atom_types/atom_types.h.
+ADD_DEPENDENCIES(atomese asmoses_atom_types)
+
 TARGET_LINK_LIBRARIES(atomese
 	${ATOMSPACE_LIBRARIES}
 	${COGUTIL_LIBRARY}
