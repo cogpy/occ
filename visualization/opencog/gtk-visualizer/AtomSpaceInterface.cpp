@@ -261,7 +261,7 @@ void AtomSpaceInterface::UpdateAtom(UUID uuid, short lti, short sti, const strin
 string AtomSpaceInterface::GetResultFromCogServer(const string &queryString)
 {
 
-	boost::asio::io_service io_service;
+	boost::asio::io_context io_service;
 	tcp::socket socket(io_service);
 	ConnectToCogServer(io_service, socket);
 
@@ -324,7 +324,7 @@ string AtomSpaceInterface::GetResultFromCogServer(const string &queryString)
 string AtomSpaceInterface::PostToCogServer(const string &queryString, const string &postBody)
 {
 
-	boost::asio::io_service io_service;
+	boost::asio::io_context io_service;
 	tcp::socket socket(io_service);
 	ConnectToCogServer(io_service,socket);
 
@@ -397,23 +397,12 @@ string AtomSpaceInterface::PostToCogServer(const string &queryString, const stri
 
 }
 
-void AtomSpaceInterface::ConnectToCogServer(boost::asio::io_service &io_service, tcp::socket &socket)
+void AtomSpaceInterface::ConnectToCogServer(boost::asio::io_context &io_service, tcp::socket &socket)
 {
-	// Get a list of endpoints corresponding to the server name.
+	// Get a list of endpoints corresponding to the server name, then try
+	// each one until a connection succeeds; connect() throws if none does.
 	tcp::resolver resolver(io_service);
-	tcp::resolver::query query(server, "17034");
-	tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-	tcp::resolver::iterator end;
-	// Try each endpoint until we successfully establish a connection.
-	boost::system::error_code errorConnecting =
-			boost::asio::error::host_not_found;
-	while (errorConnecting && endpoint_iterator != end)
-	{
-		socket.close();
-		socket.connect(*endpoint_iterator++, errorConnecting);
-	}
-	if (errorConnecting)
-		throw boost::system::system_error(errorConnecting);
+	boost::asio::connect(socket, resolver.resolve(server, "17034"));
 }
 
 void AtomSpaceInterface::AssertChar(char c, char d, stringstream &ss)

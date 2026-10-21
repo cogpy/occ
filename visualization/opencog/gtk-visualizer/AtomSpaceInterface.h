@@ -112,7 +112,7 @@ class AtomSpaceInterface
         void RetrieveVerticesFromCogServer(const string &query,vector<Vertex*>& foundVertices, bool &isFinished);
         string GetResultFromCogServer(const string &queryString);
         string PostToCogServer(const string &queryString, const string &postBody);
-        void ConnectToCogServer(boost::asio::io_service &io_service,tcp::socket &socket);
+        void ConnectToCogServer(boost::asio::io_context &io_service,tcp::socket &socket);
         void AssertChar(char c, char d, stringstream &ss);
         void SkipWhiteSpace(stringstream &ss, char &c);
         void ParseString(stringstream &ss, string &str);

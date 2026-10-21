@@ -215,7 +215,7 @@ class PatternIndexAPI
 
         int lastUsedTicket;
         IndexMap indexes;
-        AtomSpace *atomSpace;
+        AtomSpacePtr atomSpace;
         SchemeEval *schemeEval;
 
         PatternIndexAPI();
