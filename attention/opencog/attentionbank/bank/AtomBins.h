@@ -23,6 +23,7 @@
 #ifndef _OPENCOG_ATOM_BINS_H
 #define _OPENCOG_ATOM_BINS_H
 
+#include <algorithm>
 #include <vector>
 #include <mutex>
 #include <atomic>

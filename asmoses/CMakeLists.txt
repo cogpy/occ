@@ -227,7 +227,9 @@ ENDIF (NOT DEFINED LIB_DIR_SUFFIX)
 # rpath handling
 SET(CMAKE_SKIP_BUILD_RPATH FALSE)
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/moses")
+# The libraries are installed in lib/opencog, so it has to be on the RPATH
+# too; otherwise they only resolve via an ld.so.conf entry for it.
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/moses;${CMAKE_INSTALL_PREFIX}/lib/opencog")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # -------------------------------------------------

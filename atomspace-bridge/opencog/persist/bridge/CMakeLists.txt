@@ -13,6 +13,10 @@ ADD_LIBRARY (persist-bridge SHARED
 # The atom_types.h file is written to the build directory
 TARGET_INCLUDE_DIRECTORIES(persist-bridge PRIVATE ${CMAKE_BINARY_DIR})
 
+# libpq-fe.h is at <include>/postgresql/ on Debian but <include>/ elsewhere;
+# FIND_PACKAGE(PGSQL) reports the right directory.
+TARGET_INCLUDE_DIRECTORIES(persist-bridge PRIVATE ${PGSQL_INCLUDE_DIRS})
+
 TARGET_LINK_LIBRARIES(persist-bridge
 	persist-bridge-types
 	${ATOMSPACE_STORAGE_LIBRARIES}
