@@ -1,24 +1,24 @@
 {
-  "rebuild_triggers": {
-    "moses": "moses/ or cogutil/ changes",
-    "cogserver": "cogserver/, atomspace/, or cogutil/ changes",
-    "cogutil": "cogutil/ changes",
-    "atomspace": "atomspace/ or cogutil/ changes"
-  },
-  "generated": "2026-10-20 21:17:48 UTC",
   "status": {
-    "moses": "check",
-    "cogserver": "check",
     "vcpkg_deps": "missing",
     "cogutil": "missing",
+    "cogserver": "check",
+    "moses": "check",
     "atomspace": "check"
   },
-  "platform": "windows-x64",
   "build_type": "Release",
+  "generated": "2026-10-21 00:45:34 UTC",
+  "rebuild_triggers": {
+    "cogutil": "cogutil/ changes",
+    "cogserver": "cogserver/, atomspace/, or cogutil/ changes",
+    "moses": "moses/ or cogutil/ changes",
+    "atomspace": "atomspace/ or cogutil/ changes"
+  },
   "source_hashes": {
-    "moses": "2C3AAFFD8354D79D",
-    "atomspace": "B359DB96BF45C2A3",
+    "cogserver": "E4A10D4E5FFAB9C1",
     "cogutil": "0B30E229580F6B36",
-    "cogserver": "E4A10D4E5FFAB9C1"
-  }
+    "atomspace": "B359DB96BF45C2A3",
+    "moses": "DBC13C012D2B120D"
+  },
+  "platform": "windows-x64"
 }
