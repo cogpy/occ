@@ -24,10 +24,10 @@
   },
   "dependencies": {
     "electron-store": "^8.1.0",
-    "ws": "^8.21.0"
+    "ws": "^8.22.0"
   },
   "devDependencies": {
-    "electron": "^41.10.6",
+    "electron": "^42.11.16",
     "electron-builder": "^26.15.3",
     "electron-rebuild": "^3.2.9",
     "node-addon-api": "^7.1.0",
